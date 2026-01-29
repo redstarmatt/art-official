@@ -69,12 +69,12 @@ app.post('/api/artist/register', (req, res) => {
 
     const existingArtist = Object.values(db.artists).find(a => a.email === email);
     if (existingArtist) {
-        return res.json({ success: true, artistId: existingArtist.id });
+        return res.json({ success: true, artist: existingArtist });
     }
 
     const artistId = uuidv4();
     const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-    db.artists[artistId] = {
+    const artist = {
         id: artistId,
         name,
         email,
@@ -84,8 +84,9 @@ app.post('/api/artist/register', (req, res) => {
         slug,
         createdAt: new Date().toISOString()
     };
+    db.artists[artistId] = artist;
     saveDB(db);
-    res.json({ success: true, artistId });
+    res.json({ success: true, artist });
 });
 
 // Get artist by email
