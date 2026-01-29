@@ -1163,6 +1163,9 @@
                             <p style="margin-top:0.5rem;font-size:0.78rem;">WIP images, drafts, sketches, source files, screenshots</p>
                         </div>
                         <input type="file" id="evidence-input" class="file-input-hidden" multiple accept="image/*,video/*,.pdf,.psd,.ai,.svg,.sketch,.doc,.docx,.txt">
+                        <div id="evidence-visibility-note" style="display:none;margin-top:0.75rem;padding:0.75rem 1rem;background:rgba(26,54,93,0.03);border:1px solid rgba(26,54,93,0.08);border-radius:8px;font-size:0.82rem;color:#4a5568;line-height:1.6;">
+                            <strong style="color:#1a365d;">Visibility:</strong> Each file has a <em>"Show on certificate"</em> toggle. Files you mark as visible will be <strong>publicly shown</strong> on your verification page for anyone to see. Unmarked files stay private &mdash; they still count towards your evidence tier but won&rsquo;t be displayed publicly.
+                        </div>
                         <div class="file-thumbnails" id="file-thumbnails"></div>
                         <div class="file-count" id="file-count"></div>
                     </div>
@@ -1621,6 +1624,10 @@
             $('file-count').textContent = selectedFiles.length > 0
                 ? selectedFiles.length + ' of 10 files selected'
                 : '';
+
+            // Show/hide visibility explanation when files are present
+            var visNote = $('evidence-visibility-note');
+            if (visNote) visNote.style.display = selectedFiles.length > 0 ? 'block' : 'none';
         }
 
         // ---- Writing guidance ----

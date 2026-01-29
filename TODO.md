@@ -15,6 +15,11 @@
 - [x] Certificate email on artwork registration
 - [x] Embeddable website widget/badge for creators
 - [x] Set up GitHub repo
+- [x] Free/Creator pricing tiers with Stripe payment integration
+- [x] "Our Story" section on landing page
+- [x] Changed hero example to digital illustration (more relevant to AI risk)
+- [x] Evidence visibility prompting (explain public vs private WIP files)
+- [x] Increased watermark visibility on certificate images
 
 ## Pending
 - [ ] Configure Stripe for production (set STRIPE_SECRET_KEY, STRIPE_PUBLISHABLE_KEY, STRIPE_WEBHOOK_SECRET, STRIPE_CREATOR_PRICE_ID on Railway)
