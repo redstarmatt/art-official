@@ -1372,6 +1372,10 @@
                 <p>Submit your first artwork to receive a certificate of human creation.</p>
                 <button type="button" class="btn btn-gold" id="empty-submit-btn">Submit Artwork</button>
             </div>
+
+            <div id="account-danger-zone" style="display:none;margin-top:3rem;padding-top:1.5rem;border-top:1px solid rgba(26,54,93,0.08);">
+                <button type="button" id="delete-account-btn" style="background:none;border:none;color:var(--ink-faint);font-size:0.8rem;cursor:pointer;font-family:inherit;text-decoration:underline;">Delete account</button>
+            </div>
         </div>
     </main>
 
@@ -1414,6 +1418,29 @@
             <div class="modal-actions">
                 <button type="button" class="btn btn-sm btn-outline" id="edit-cancel-btn">Cancel</button>
                 <button type="button" class="btn btn-sm btn-gold" id="edit-save-btn">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Account Modal -->
+    <div class="modal-overlay" id="delete-account-modal">
+        <div class="modal-box">
+            <button type="button" class="modal-close" id="delete-account-modal-close">&times;</button>
+            <h3 style="color:var(--error);">Delete Account</h3>
+            <p style="color:var(--ink-light);font-size:0.9rem;line-height:1.6;">
+                This will <strong>permanently delete</strong> your account, all certificates, uploaded files, and associated data. This action cannot be undone.
+            </p>
+            <div id="delete-account-alert" class="alert alert-error" style="display:none;">
+                <span class="alert-icon">!</span>
+                <span id="delete-account-alert-msg"></span>
+            </div>
+            <div class="form-group" style="margin-top:1rem;">
+                <label for="delete-account-password">Enter your password to confirm</label>
+                <input type="password" id="delete-account-password" class="form-input" placeholder="Your password" required>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-sm btn-outline" id="delete-account-cancel-btn">Cancel</button>
+                <button type="button" class="btn btn-sm" id="delete-account-confirm-btn" style="background:var(--error);">Delete My Account</button>
             </div>
         </div>
     </div>
@@ -1506,6 +1533,8 @@
             var slug = artist.slug || artist.id;
             $('profile-link').href = '/profile.html?artist=' + encodeURIComponent(slug);
             loadPlanInfo(artist.id);
+            var dangerZone = $('account-danger-zone');
+            if (dangerZone) dangerZone.style.display = '';
             switchTab('submit');
         }
 
@@ -1524,6 +1553,8 @@
             $('file-count').textContent = '';
             $('desc-count').textContent = '0';
             $('success-card').classList.remove('show');
+            var dangerZone = $('account-danger-zone');
+            if (dangerZone) dangerZone.style.display = 'none';
             updateStrength();
         }
 
@@ -2010,79 +2041,187 @@
             var tierClass = (cert.tier || 'bronze').toLowerCase();
             var tierLabel = (cert.tierLabel || cert.tier || 'Bronze').toUpperCase();
             var tierColors = { gold: '#b7960b', silver: '#718096', bronze: '#9c6b30' };
+            var tierBgs = { gold: '#f5efd0', silver: '#e8edf2', bronze: '#f0e6d8' };
             var tierColor = tierColors[tierClass] || tierColors.bronze;
+            var tierBg = tierBgs[tierClass] || tierBgs.bronze;
 
+            var W = 1200;
+            var H = 1500;
             var canvas = document.createElement('canvas');
-            canvas.width = 600;
-            canvas.height = 400;
+            canvas.width = W;
+            canvas.height = H;
             var ctx = canvas.getContext('2d');
 
-            // Navy header
-            ctx.fillStyle = '#1a365d';
-            ctx.fillRect(0, 0, 600, 80);
-            ctx.fillStyle = '#fffef0';
-            ctx.font = 'bold 28px Georgia, serif';
-            ctx.textAlign = 'center';
-            ctx.fillText('Art-Official', 300, 45);
-            ctx.font = '11px sans-serif';
-            ctx.fillStyle = 'rgba(255,254,240,0.8)';
-            ctx.fillText('CERTIFICATE OF HUMAN CREATION', 300, 68);
+            function drawCard() {
+                // Background
+                ctx.fillStyle = '#fffef0';
+                ctx.fillRect(0, 0, W, H);
 
-            // White body
-            ctx.fillStyle = '#ffffff';
-            ctx.fillRect(0, 80, 600, 280);
+                // Navy header
+                ctx.fillStyle = '#1a365d';
+                ctx.fillRect(0, 0, W, 140);
+                ctx.fillStyle = '#fffef0';
+                ctx.font = 'bold 52px Georgia, serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('Art-Official', W / 2, 70);
+                ctx.font = '18px sans-serif';
+                ctx.fillStyle = 'rgba(255,254,240,0.7)';
+                ctx.fillText('CERTIFICATE OF HUMAN CREATION', W / 2, 115);
 
-            // Title
-            ctx.fillStyle = '#1a365d';
-            ctx.font = 'bold 22px Georgia, serif';
-            ctx.textAlign = 'center';
-            ctx.fillText(cert.title || 'Untitled', 300, 120);
+                // Artwork area (square, centred)
+                var artY = 180;
+                var artSize = 700;
+                var artX = (W - artSize) / 2;
 
-            // Artist
-            ctx.fillStyle = '#4a5568';
-            ctx.font = '14px sans-serif';
-            ctx.fillText('by ' + (currentArtist ? currentArtist.name : ''), 300, 145);
+                ctx.fillStyle = '#f7f5e6';
+                ctx.fillRect(artX, artY, artSize, artSize);
 
-            // Tier
-            ctx.fillStyle = tierColor;
-            ctx.font = 'bold 12px sans-serif';
-            ctx.fillText(tierLabel + ' CERTIFICATION', 300, 175);
+                // Draw artwork image if loaded
+                if (artworkImg && artworkImg.complete && artworkImg.naturalWidth > 0) {
+                    // Cover-fit the image
+                    var iw = artworkImg.naturalWidth;
+                    var ih = artworkImg.naturalHeight;
+                    var scale = Math.max(artSize / iw, artSize / ih);
+                    var sw = artSize / scale;
+                    var sh = artSize / scale;
+                    var sx = (iw - sw) / 2;
+                    var sy = (ih - sh) / 2;
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.rect(artX, artY, artSize, artSize);
+                    ctx.clip();
+                    ctx.drawImage(artworkImg, sx, sy, sw, sh, artX, artY, artSize, artSize);
+                    ctx.restore();
 
-            // Certificate ID
-            ctx.fillStyle = '#a0aec0';
-            ctx.font = '10px sans-serif';
-            ctx.textAlign = 'right';
-            ctx.fillText('CERTIFICATE ID', 550, 220);
-            ctx.fillStyle = '#1a365d';
-            ctx.font = 'bold 14px monospace';
-            ctx.fillText(cert.id, 550, 240);
+                    // Watermark overlay
+                    ctx.save();
+                    ctx.globalAlpha = 0.12;
+                    ctx.translate(artX + artSize / 2, artY + artSize / 2);
+                    ctx.rotate(-30 * Math.PI / 180);
+                    ctx.fillStyle = '#1a365d';
+                    ctx.font = 'bold 36px Georgia, serif';
+                    ctx.textAlign = 'center';
+                    for (var wy = -artSize; wy < artSize; wy += 120) {
+                        for (var wx = -artSize; wx < artSize; wx += 380) {
+                            ctx.fillText('Art-Official', wx, wy);
+                        }
+                    }
+                    ctx.restore();
+                } else {
+                    // Placeholder
+                    ctx.fillStyle = '#a0aec0';
+                    ctx.font = '48px Georgia, serif';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('AO', artX + artSize / 2, artY + artSize / 2 + 16);
+                }
 
-            // Verify URL
-            ctx.fillStyle = '#a0aec0';
-            ctx.font = '10px sans-serif';
-            ctx.fillText('VERIFY AT', 550, 270);
-            ctx.fillStyle = '#1a365d';
-            ctx.font = '12px sans-serif';
-            ctx.fillText(location.host + '/verify.html?code=' + cert.id, 550, 290);
+                // Border around artwork
+                ctx.strokeStyle = 'rgba(26,54,93,0.1)';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(artX, artY, artSize, artSize);
 
-            // QR Code
-            var qrImg = $('card-qr');
-            if (qrImg && qrImg.src && qrImg.complete) {
-                try { ctx.drawImage(qrImg, 50, 195, 120, 120); } catch(e) {}
+                // Details section below artwork
+                var detailsY = artY + artSize + 50;
+
+                // Title
+                ctx.fillStyle = '#1a365d';
+                ctx.font = 'bold 42px Georgia, serif';
+                ctx.textAlign = 'center';
+                // Truncate long titles
+                var title = cert.title || 'Untitled';
+                if (ctx.measureText(title).width > W - 120) {
+                    while (ctx.measureText(title + '...').width > W - 120 && title.length > 0) {
+                        title = title.slice(0, -1);
+                    }
+                    title += '...';
+                }
+                ctx.fillText(title, W / 2, detailsY);
+
+                // Artist
+                ctx.fillStyle = '#4a5568';
+                ctx.font = '24px sans-serif';
+                ctx.fillText('by ' + (currentArtist ? currentArtist.name : ''), W / 2, detailsY + 40);
+
+                // Medium
+                if (cert.medium) {
+                    ctx.fillStyle = '#718096';
+                    ctx.font = '20px sans-serif';
+                    ctx.fillText(cert.medium, W / 2, detailsY + 72);
+                }
+
+                // Tier badge
+                var badgeY = detailsY + 110;
+                var badgeText = tierLabel + ' CERTIFICATION';
+                ctx.font = 'bold 18px sans-serif';
+                var badgeW = ctx.measureText(badgeText).width + 40;
+                // Badge background
+                ctx.fillStyle = tierBg;
+                ctx.beginPath();
+                var bx = (W - badgeW) / 2;
+                ctx.roundRect(bx, badgeY - 20, badgeW, 36, 18);
+                ctx.fill();
+                ctx.fillStyle = tierColor;
+                ctx.textAlign = 'center';
+                ctx.fillText(badgeText, W / 2, badgeY + 2);
+
+                // Bottom section — QR + cert ID
+                var bottomY = H - 220;
+
+                // Divider line
+                ctx.strokeStyle = 'rgba(26,54,93,0.08)';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(100, bottomY);
+                ctx.lineTo(W - 100, bottomY);
+                ctx.stroke();
+
+                // QR code (left)
+                var qrImg = $('card-qr');
+                if (qrImg && qrImg.src && qrImg.complete) {
+                    try { ctx.drawImage(qrImg, 100, bottomY + 20, 160, 160); } catch(e) {}
+                }
+
+                // Cert ID (right of QR)
+                ctx.textAlign = 'left';
+                ctx.fillStyle = '#a0aec0';
+                ctx.font = '14px sans-serif';
+                ctx.fillText('CERTIFICATE ID', 300, bottomY + 50);
+                ctx.fillStyle = '#1a365d';
+                ctx.font = 'bold 26px monospace';
+                ctx.fillText(cert.id, 300, bottomY + 82);
+
+                ctx.fillStyle = '#a0aec0';
+                ctx.font = '14px sans-serif';
+                ctx.fillText('VERIFY AT', 300, bottomY + 120);
+                ctx.fillStyle = '#1a365d';
+                ctx.font = '18px sans-serif';
+                ctx.fillText(location.host + '/verify', 300, bottomY + 146);
+
+                // Footer bar
+                ctx.fillStyle = '#f7f5e6';
+                ctx.fillRect(0, H - 50, W, 50);
+                ctx.fillStyle = '#a0aec0';
+                ctx.font = '14px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('Verified Human Creation  \u00b7  art-official.com', W / 2, H - 20);
+
+                // Download
+                var link = document.createElement('a');
+                link.download = cert.id + '-certificate.png';
+                link.href = canvas.toDataURL('image/png');
+                link.click();
             }
 
-            // Footer
-            ctx.fillStyle = '#f7f5e6';
-            ctx.fillRect(0, 360, 600, 40);
-            ctx.fillStyle = '#a0aec0';
-            ctx.font = '10px sans-serif';
-            ctx.textAlign = 'center';
-            ctx.fillText('Verified Human Creation', 300, 385);
-
-            var link = document.createElement('a');
-            link.download = cert.id + '-certificate.png';
-            link.href = canvas.toDataURL('image/png');
-            link.click();
+            // Load artwork image then draw
+            var artworkImg = new Image();
+            artworkImg.crossOrigin = 'anonymous';
+            if (cert.artworkImage) {
+                artworkImg.onload = drawCard;
+                artworkImg.onerror = drawCard;
+                artworkImg.src = '/uploads/' + cert.artworkImage;
+            } else {
+                drawCard();
+            }
         }
 
         // ---- Load Certificates ----
@@ -2350,6 +2489,56 @@
             .finally(function() {
                 btn.disabled = false;
                 btn.textContent = 'Save Changes';
+            });
+        });
+
+        // ---- Delete Account ----
+        $('delete-account-btn').addEventListener('click', function() {
+            $('delete-account-password').value = '';
+            var alert = $('delete-account-alert');
+            if (alert) alert.style.display = 'none';
+            $('delete-account-modal').classList.add('show');
+        });
+
+        $('delete-account-modal-close').addEventListener('click', function() { $('delete-account-modal').classList.remove('show'); });
+        $('delete-account-cancel-btn').addEventListener('click', function() { $('delete-account-modal').classList.remove('show'); });
+
+        $('delete-account-confirm-btn').addEventListener('click', function() {
+            if (!currentArtist) return;
+            var password = $('delete-account-password').value;
+            if (!password) {
+                $('delete-account-alert-msg').textContent = 'Please enter your password.';
+                $('delete-account-alert').style.display = 'flex';
+                return;
+            }
+
+            var btn = this;
+            btn.disabled = true;
+            btn.textContent = 'Deleting...';
+
+            fetch('/api/artist/' + encodeURIComponent(currentArtist.id), {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ password: password })
+            })
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+                if (data.success) {
+                    $('delete-account-modal').classList.remove('show');
+                    signOut();
+                    showAlert('signin-alert', 'Your account has been deleted.');
+                } else {
+                    $('delete-account-alert-msg').textContent = data.message || 'Failed to delete account.';
+                    $('delete-account-alert').style.display = 'flex';
+                }
+            })
+            .catch(function() {
+                $('delete-account-alert-msg').textContent = 'Connection error. Please try again.';
+                $('delete-account-alert').style.display = 'flex';
+            })
+            .finally(function() {
+                btn.disabled = false;
+                btn.textContent = 'Delete My Account';
             });
         });
 

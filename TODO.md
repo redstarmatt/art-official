@@ -31,6 +31,7 @@
 - [x] Public browse/explore page with filters and pagination
 - [x] Password reset flow (forgot password + email reset link)
 - [x] Rate limiting on login, registration, and password reset endpoints
+- [x] Account deletion on demand (password-confirmed, deletes all data + files + Stripe sub)
 
 ## Pending
 - [ ] Review "Date of Creation" label — consider "Date Created" or "Date Completed"

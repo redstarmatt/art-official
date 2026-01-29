@@ -1063,6 +1063,70 @@ app.get('/api/stats', (req, res) => {
     res.json({ success: true, artists, certificates, tiers });
 });
 
+// Delete account
+app.delete('/api/artist/:artistId', async (req, res) => {
+    const { artistId } = req.params;
+    const { password } = req.body;
+
+    if (!password) {
+        return res.status(400).json({ success: false, message: 'Password is required to delete your account.' });
+    }
+
+    const db = loadDB();
+    const artist = db.artists[artistId];
+
+    if (!artist) {
+        return res.status(404).json({ success: false, message: 'Account not found.' });
+    }
+
+    // Verify password
+    if (artist.passwordHash) {
+        const match = await bcrypt.compare(password, artist.passwordHash);
+        if (!match) {
+            return res.status(403).json({ success: false, message: 'Incorrect password.' });
+        }
+    }
+
+    // Cancel Stripe subscription if active
+    if (stripe && artist.stripeSubscriptionId) {
+        try {
+            await stripe.subscriptions.cancel(artist.stripeSubscriptionId);
+        } catch (err) {
+            console.error('Stripe cancel on account delete:', err.message);
+        }
+    }
+
+    // Delete all certificates and their files
+    const artistCerts = Object.values(db.certificates).filter(c => c.artistId === artistId);
+    artistCerts.forEach(cert => {
+        if (cert.artworkImage) {
+            const artPath = path.join(UPLOADS_DIR, cert.artworkImage);
+            if (fs.existsSync(artPath)) fs.unlinkSync(artPath);
+        }
+        if (cert.evidenceFiles && cert.evidenceFiles.length > 0) {
+            cert.evidenceFiles.forEach(ef => {
+                const filename = typeof ef === 'string' ? ef : ef.filename;
+                const fPath = path.join(UPLOADS_DIR, filename);
+                if (fs.existsSync(fPath)) fs.unlinkSync(fPath);
+            });
+        }
+        delete db.certificates[cert.id];
+    });
+
+    // Delete associated reports
+    Object.keys(db.reports).forEach(reportId => {
+        if (artistCerts.some(c => c.id === db.reports[reportId].certificateId)) {
+            delete db.reports[reportId];
+        }
+    });
+
+    // Delete artist
+    delete db.artists[artistId];
+    saveDB(db);
+
+    res.json({ success: true, message: 'Account and all associated data have been permanently deleted.' });
+});
+
 app.listen(PORT, () => {
     console.log(`Art-Official server running at http://localhost:${PORT}`);
 });
