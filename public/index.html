@@ -650,6 +650,29 @@
             color: var(--navy);
         }
 
+        /* Our Story */
+        .our-story { padding: 7rem 0; background: white; }
+        .story-content {
+            max-width: 720px;
+            margin: 0 auto;
+            font-size: 1.05rem;
+            line-height: 1.85;
+            color: var(--ink-light);
+        }
+        .story-content p { margin-bottom: 1.25rem; }
+        .story-content p:last-child { margin-bottom: 0; }
+        .story-pullquote {
+            font-family: 'Cormorant Garamond', Georgia, serif;
+            font-size: 1.5rem;
+            line-height: 1.5;
+            color: var(--navy);
+            font-weight: 500;
+            font-style: italic;
+            border-left: 3px solid var(--gold);
+            padding: 0.5rem 0 0.5rem 1.5rem;
+            margin: 2rem 0;
+        }
+
         /* Pricing */
         .pricing { padding: 7rem 0; }
 
@@ -796,7 +819,7 @@
             .hero-actions { flex-direction: column; align-items: center; }
             .hero-actions .btn { width: 100%; max-width: 320px; justify-content: center; }
             .cert-preview-wrapper { max-width: 340px; }
-            .how-it-works, .tiers-section, .use-cases, .compare-section, .pricing, .cta { padding: 5rem 0; }
+            .how-it-works, .tiers-section, .use-cases, .our-story, .compare-section, .pricing, .cta { padding: 5rem 0; }
         }
 
         @media (max-width: 480px) {
@@ -814,6 +837,7 @@
                 <div class="nav-links">
                     <a href="#how-it-works">How It Works</a>
                     <a href="#use-cases">Who It's For</a>
+                    <a href="#our-story">Our Story</a>
                     <a href="#pricing">Pricing</a>
                     <a href="verify.html">Verify</a>
                 </div>
@@ -831,6 +855,7 @@
     <div class="mobile-menu" id="mobile-menu">
         <a href="#how-it-works" class="mobile-nav-link">How It Works</a>
         <a href="#use-cases" class="mobile-nav-link">Who It's For</a>
+        <a href="#our-story" class="mobile-nav-link">Our Story</a>
         <a href="#pricing" class="mobile-nav-link">Pricing</a>
         <a href="verify.html">Verify a Certificate</a>
         <a href="register.html">Register Your Work</a>
@@ -925,6 +950,20 @@
                         <h3>Musicians & Composers</h3>
                         <p>Songs, scores, sound design &mdash; show your audience that the music is authentically yours.</p>
                     </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="our-story" id="our-story">
+            <div class="container">
+                <span class="section-eyebrow fade-up">Our Story</span>
+                <h2 class="section-title fade-up">Why we built this</h2>
+                <div class="story-content fade-up">
+                    <p>Something is shifting in the creative world. AI tools can now produce images, text, and music that look and sound like the real thing. For many people, that's exciting. But for the people who actually make things by hand, by heart, by years of practice, it's raised an uncomfortable question: how do you prove your work is yours?</p>
+                    <p>We started Art-Official because we believe the creative community shouldn't have to fight that battle alone. Painters, writers, photographers, musicians, sculptors, illustrators &mdash; these are people who pour real time and real skill into their work. They deserve a way to say, clearly and publicly: <em>I made this. A human made this.</em></p>
+                    <div class="story-pullquote">We're not anti-technology. We're pro-creator. The two aren't the same thing.</div>
+                    <p>Art-Official is a self-declaration registry. It doesn't use AI detection (which is unreliable) or require expensive legal processes. Instead, creators submit evidence of their process &mdash; sketches, drafts, work-in-progress images, notes &mdash; and sign a declaration that the work is authentically human-made. The more evidence, the stronger the certification.</p>
+                    <p>We believe that transparency builds trust, that creators should own their narrative, and that the creative community is stronger when it stands together. That's what this is for.</p>
                 </div>
             </div>
         </section>
