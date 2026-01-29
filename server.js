@@ -186,7 +186,7 @@ app.post('/api/artist/register', async (req, res) => {
         id: artistId,
         name,
         email,
-        portfolio,
+        portfolio: portfolio && portfolio.trim() && !/^https?:\/\//i.test(portfolio.trim()) ? 'https://' + portfolio.trim() : (portfolio || '').trim(),
         bio: bio || '',
         location: location || '',
         slug,
