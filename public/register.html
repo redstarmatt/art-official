@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Artist Portal — Art-Official</title>
+    <title>Creator Portal — Art-Official</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -970,8 +970,8 @@
 
     <main class="container">
         <div class="page-header">
-            <h1>Artist <em>Portal</em></h1>
-            <p>Register your art. Prove it's art-official.</p>
+            <h1>Creator <em>Portal</em></h1>
+            <p>Register your work. Prove it's art-official.</p>
         </div>
 
         <!-- User bar -->
@@ -1010,7 +1010,7 @@
         <!-- CREATE ACCOUNT TAB -->
         <div class="tab-panel" id="panel-register">
             <div class="card">
-                <h2 class="card-title">Create Your Artist Account</h2>
+                <h2 class="card-title">Create Your Account</h2>
                 <p class="card-subtitle">Set up your profile to start certifying your work.</p>
                 <div id="register-alert" class="alert alert-error">
                     <span class="alert-icon">!</span>
@@ -1029,7 +1029,7 @@
                     </div>
                     <div class="form-group">
                         <label for="reg-bio">Bio <span class="optional">(optional)</span></label>
-                        <textarea id="reg-bio" name="bio" rows="3" placeholder="Tell us about your art practice..."></textarea>
+                        <textarea id="reg-bio" name="bio" rows="3" placeholder="Tell us about your creative practice..."></textarea>
                     </div>
                     <div class="form-row">
                         <div class="form-group">
@@ -1049,7 +1049,7 @@
         <!-- SUBMIT ARTWORK TAB -->
         <div class="tab-panel" id="panel-submit">
             <div class="card">
-                <h2 class="card-title">Submit Your Artwork</h2>
+                <h2 class="card-title">Submit Your Work</h2>
                 <p class="card-subtitle">Provide details and evidence to certify your work as authentically human-made.</p>
                 <div id="submit-alert" class="alert alert-error">
                     <span class="alert-icon">!</span>
@@ -1058,27 +1058,50 @@
                 <form id="submit-form">
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="art-title">Artwork Title <span class="required">*</span></label>
-                            <input type="text" id="art-title" name="title" placeholder="Twilight Over Florence" required>
+                            <label for="art-title">Title <span class="required">*</span></label>
+                            <input type="text" id="art-title" name="title" placeholder="e.g. Twilight Over Florence" required>
                         </div>
                         <div class="form-group">
-                            <label for="art-medium">Medium <span class="required">*</span></label>
+                            <label for="art-medium">Medium / Category <span class="required">*</span></label>
                             <select id="art-medium" name="medium" required>
                                 <option value="">Select medium...</option>
-                                <option value="Oil Painting">Oil Painting</option>
-                                <option value="Acrylic Painting">Acrylic Painting</option>
-                                <option value="Watercolor">Watercolor</option>
-                                <option value="Digital Art (hand-drawn)">Digital Art (hand-drawn)</option>
-                                <option value="Photography">Photography</option>
-                                <option value="Sculpture">Sculpture</option>
-                                <option value="Drawing">Drawing</option>
-                                <option value="Mixed Media">Mixed Media</option>
-                                <option value="Textile/Fiber Art">Textile/Fiber Art</option>
-                                <option value="Ceramics">Ceramics</option>
-                                <option value="Printmaking">Printmaking</option>
-                                <option value="Music Composition">Music Composition</option>
-                                <option value="Writing/Literature">Writing/Literature</option>
-                                <option value="Other">Other</option>
+                                <optgroup label="Visual Art">
+                                    <option value="Oil Painting">Oil Painting</option>
+                                    <option value="Acrylic Painting">Acrylic Painting</option>
+                                    <option value="Watercolor">Watercolor</option>
+                                    <option value="Drawing">Drawing</option>
+                                    <option value="Digital Art (hand-drawn)">Digital Art (hand-drawn)</option>
+                                    <option value="Photography">Photography</option>
+                                    <option value="Sculpture">Sculpture</option>
+                                    <option value="Mixed Media">Mixed Media</option>
+                                    <option value="Printmaking">Printmaking</option>
+                                    <option value="Textile/Fiber Art">Textile/Fiber Art</option>
+                                    <option value="Ceramics">Ceramics</option>
+                                    <option value="Illustration">Illustration</option>
+                                </optgroup>
+                                <optgroup label="Writing">
+                                    <option value="Novel/Fiction">Novel / Fiction</option>
+                                    <option value="Non-Fiction">Non-Fiction</option>
+                                    <option value="Screenplay/Script">Screenplay / Script</option>
+                                    <option value="Poetry">Poetry</option>
+                                    <option value="Journalism/Article">Journalism / Article</option>
+                                    <option value="Short Story">Short Story</option>
+                                    <option value="Essay">Essay</option>
+                                </optgroup>
+                                <optgroup label="Music & Audio">
+                                    <option value="Music Composition">Music Composition</option>
+                                    <option value="Song/Lyrics">Song / Lyrics</option>
+                                    <option value="Sound Design">Sound Design</option>
+                                </optgroup>
+                                <optgroup label="Other Creative Works">
+                                    <option value="Film/Video">Film / Video</option>
+                                    <option value="Animation">Animation</option>
+                                    <option value="Game Design">Game Design</option>
+                                    <option value="Graphic Design">Graphic Design</option>
+                                    <option value="Fashion Design">Fashion Design</option>
+                                    <option value="Architecture">Architecture</option>
+                                    <option value="Other">Other</option>
+                                </optgroup>
                             </select>
                         </div>
                     </div>
@@ -1088,7 +1111,7 @@
                     </div>
                     <div class="form-group">
                         <label for="art-description">Description <span class="required">*</span></label>
-                        <textarea id="art-description" name="description" rows="4" placeholder="Describe your artwork, its inspiration, and what makes it uniquely human..." required></textarea>
+                        <textarea id="art-description" name="description" rows="4" placeholder="Describe your work, its inspiration, and what makes it uniquely human..." required></textarea>
                         <div class="char-count"><span id="desc-count">0</span> characters</div>
                     </div>
                     <div class="form-group">
@@ -1127,15 +1150,15 @@
                     <div class="declaration" style="margin-top:1.5rem;">
                         <h4>Declaration of Human Creation</h4>
                         <div class="declaration-text">
-                            I hereby declare that the artwork submitted above was created entirely by me as a human artist,
-                            without the use of generative artificial intelligence tools for the creation of the primary artistic
+                            I hereby declare that the work submitted above was created entirely by me as a human creator,
+                            without the use of generative artificial intelligence tools for the creation of the primary creative
                             content. I understand that this declaration is made in good faith, and that providing false information
                             may result in the revocation of any certificate issued and the removal of my work from the Art-Official registry.
                             I grant Art-Official permission to display my certificate publicly for verification purposes.
                         </div>
                         <div class="checkbox-group">
                             <input type="checkbox" id="declaration-check" required>
-                            <label for="declaration-check">I confirm that this artwork is authentically human-made and I agree to the declaration above.</label>
+                            <label for="declaration-check">I confirm that this work is authentically human-made and I agree to the declaration above.</label>
                         </div>
                     </div>
 

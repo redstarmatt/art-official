@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Art-Official — Certify Your Art as Authentically Human</title>
+    <title>Art-Official — Certify Your Work as Authentically Human</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -33,6 +33,7 @@
             color: var(--ink);
             line-height: 1.6;
             -webkit-font-smoothing: antialiased;
+            overflow-x: hidden;
         }
 
         body::before {
@@ -48,15 +49,32 @@
 
         .container { max-width: 1200px; margin: 0 auto; padding: 0 2rem; position: relative; z-index: 1; }
 
+        /* Scroll animations */
+        .fade-up {
+            opacity: 0;
+            transform: translateY(32px);
+            transition: opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1), transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        .fade-up.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .stagger-1 { transition-delay: 0.05s; }
+        .stagger-2 { transition-delay: 0.1s; }
+        .stagger-3 { transition-delay: 0.15s; }
+        .stagger-4 { transition-delay: 0.2s; }
+
         /* Header */
         header {
-            padding: 1.25rem 0;
+            padding: 1rem 0;
             position: sticky;
             top: 0;
             background: rgba(255, 254, 240, 0.92);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border-bottom: 1px solid rgba(26, 54, 93, 0.08);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-bottom: 1px solid rgba(26, 54, 93, 0.06);
             z-index: 100;
         }
 
@@ -75,6 +93,12 @@
 
         nav { display: flex; gap: 2rem; align-items: center; }
 
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+
         nav a {
             color: var(--ink-light);
             text-decoration: none;
@@ -84,6 +108,64 @@
         }
 
         nav a:hover { color: var(--navy); }
+
+        /* Hamburger */
+        .hamburger {
+            display: none;
+            flex-direction: column;
+            gap: 5px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 4px;
+            z-index: 110;
+        }
+
+        .hamburger span {
+            display: block;
+            width: 22px;
+            height: 2px;
+            background: var(--navy);
+            border-radius: 2px;
+            transition: all 0.3s ease;
+        }
+
+        .hamburger.active span:nth-child(1) { transform: rotate(45deg) translate(5px, 5px); }
+        .hamburger.active span:nth-child(2) { opacity: 0; }
+        .hamburger.active span:nth-child(3) { transform: rotate(-45deg) translate(5px, -5px); }
+
+        /* Mobile menu overlay */
+        .mobile-menu {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(255, 254, 240, 0.98);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            z-index: 99;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 2rem;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .mobile-menu.open {
+            display: flex;
+            opacity: 1;
+        }
+
+        .mobile-menu a {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.75rem;
+            color: var(--navy);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        .mobile-menu a:hover { color: var(--gold); }
 
         .btn {
             display: inline-flex;
@@ -96,26 +178,38 @@
             font-family: inherit;
             font-size: 0.9rem;
             font-weight: 600;
-            border-radius: 6px;
+            border-radius: 8px;
             border: none;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all 0.25s cubic-bezier(0.22, 1, 0.36, 1);
         }
 
-        .btn:hover { background: var(--navy-light); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(26, 54, 93, 0.2); }
+        .btn:hover { background: var(--navy-light); transform: translateY(-2px); box-shadow: 0 6px 20px rgba(26, 54, 93, 0.2); }
         .btn-outline { background: transparent; border: 1.5px solid var(--navy); color: var(--navy); }
         .btn-outline:hover { background: var(--navy); color: var(--cream); }
         .btn-gold { background: var(--gold); }
-        .btn-gold:hover { background: var(--gold-light); }
-        .btn-lg { padding: 1rem 2rem; font-size: 1rem; }
+        .btn-gold:hover { background: var(--gold-light); box-shadow: 0 6px 20px rgba(183, 150, 11, 0.25); }
+        .btn-lg { padding: 1rem 2.25rem; font-size: 1rem; border-radius: 10px; }
         .btn-sm { padding: 0.5rem 1rem; font-size: 0.8rem; }
 
         /* Hero */
         .hero {
-            padding: 5rem 0 4rem;
+            padding: 6rem 0 5rem;
             text-align: center;
             position: relative;
             overflow: hidden;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: -40%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 800px;
+            height: 800px;
+            background: radial-gradient(ellipse, rgba(183, 150, 11, 0.06) 0%, transparent 70%);
+            pointer-events: none;
         }
 
         .hero::after {
@@ -124,7 +218,7 @@
             bottom: 0;
             left: 50%;
             transform: translateX(-50%);
-            width: 200px;
+            width: 240px;
             height: 1px;
             background: linear-gradient(90deg, transparent, var(--gold), transparent);
         }
@@ -134,58 +228,72 @@
             align-items: center;
             gap: 0.5rem;
             padding: 0.5rem 1.25rem;
-            background: rgba(26, 54, 93, 0.06);
-            border: 1px solid rgba(26, 54, 93, 0.1);
+            background: rgba(26, 54, 93, 0.05);
+            border: 1px solid rgba(26, 54, 93, 0.08);
             border-radius: 100px;
-            font-size: 0.8rem;
+            font-size: 0.78rem;
             font-weight: 600;
             color: var(--navy);
             margin-bottom: 2rem;
-            letter-spacing: 0.04em;
+            letter-spacing: 0.05em;
             text-transform: uppercase;
         }
 
-        .hero-badge .dot { width: 6px; height: 6px; background: var(--success); border-radius: 50%; }
+        .hero-badge .dot { width: 6px; height: 6px; background: var(--success); border-radius: 50%; animation: pulse 2s ease-in-out infinite; }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.6; transform: scale(1.4); }
+        }
 
         h1 {
             font-family: 'Cormorant Garamond', serif;
-            font-size: clamp(2.5rem, 5vw, 4.5rem);
+            font-size: clamp(2.75rem, 5.5vw, 4.75rem);
             font-weight: 500;
             color: var(--navy);
-            line-height: 1.08;
-            margin-bottom: 1.5rem;
-            letter-spacing: -0.02em;
+            line-height: 1.06;
+            margin-bottom: 1.75rem;
+            letter-spacing: -0.025em;
         }
 
         h1 em { font-style: italic; color: var(--gold); }
 
         .hero-subtitle {
-            font-size: 1.2rem;
+            font-size: 1.15rem;
             color: var(--ink-light);
-            max-width: 560px;
-            margin: 0 auto 2.5rem;
-            line-height: 1.7;
+            max-width: 580px;
+            margin: 0 auto 2.75rem;
+            line-height: 1.75;
         }
 
-        .hero-actions { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; margin-bottom: 4rem; }
+        .hero-actions { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; margin-bottom: 4.5rem; }
 
         /* Certificate preview */
         .cert-preview-wrapper {
             max-width: 460px;
             margin: 0 auto;
-            perspective: 1000px;
+            perspective: 1200px;
         }
 
         .cert-preview {
             background: white;
-            border-radius: 12px;
+            border-radius: 14px;
             overflow: hidden;
-            box-shadow: 0 25px 80px rgba(26, 54, 93, 0.12), 0 0 0 1px rgba(26, 54, 93, 0.06);
+            box-shadow:
+                0 2px 4px rgba(26, 54, 93, 0.04),
+                0 12px 40px rgba(26, 54, 93, 0.08),
+                0 32px 80px rgba(26, 54, 93, 0.1);
             transform: rotateX(2deg);
-            transition: transform 0.4s ease;
+            transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.5s ease;
         }
 
-        .cert-preview:hover { transform: rotateX(0deg); }
+        .cert-preview:hover {
+            transform: rotateX(0deg);
+            box-shadow:
+                0 2px 4px rgba(26, 54, 93, 0.04),
+                0 16px 48px rgba(26, 54, 93, 0.12),
+                0 40px 100px rgba(26, 54, 93, 0.14);
+        }
 
         .cert-preview-header {
             background: var(--navy);
@@ -198,20 +306,20 @@
             content: '';
             position: absolute;
             top: 0.5rem; left: 0.5rem; right: 0.5rem; bottom: 0.5rem;
-            border: 1px solid rgba(255, 254, 240, 0.15);
+            border: 1px solid rgba(255, 254, 240, 0.12);
             pointer-events: none;
         }
 
         .cert-seal {
             width: 56px; height: 56px;
             margin: 0 auto 0.75rem;
-            background: var(--gold);
+            background: radial-gradient(circle at 35% 35%, var(--gold-light), var(--gold));
             border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
             font-family: 'Cormorant Garamond', serif;
             font-size: 1.5rem; font-weight: 700;
             color: var(--navy);
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2), inset 0 1px 2px rgba(255,255,255,0.3);
         }
 
         .cert-preview-header h3 {
@@ -246,7 +354,7 @@
             grid-template-columns: 1fr 1fr 1fr;
             gap: 1rem;
             padding-top: 1rem;
-            border-top: 1px solid rgba(26, 54, 93, 0.08);
+            border-top: 1px solid rgba(26, 54, 93, 0.06);
         }
 
         .cert-preview-meta dt { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink-faint); }
@@ -268,51 +376,16 @@
         .tier-silver { background: #e8edf2; color: var(--silver); }
         .tier-bronze { background: #f0e6d8; color: var(--bronze); }
 
-        /* Trust bar */
-        .trust-bar {
-            padding: 3rem 0;
-            background: var(--cream-dark);
-            border-top: 1px solid rgba(26, 54, 93, 0.06);
-            border-bottom: 1px solid rgba(26, 54, 93, 0.06);
-        }
-
-        .trust-items {
-            display: flex;
-            justify-content: center;
-            gap: 3rem;
-            flex-wrap: wrap;
-        }
-
-        .trust-item {
-            text-align: center;
-        }
-
-        .trust-number {
-            font-family: 'Cormorant Garamond', serif;
-            font-size: 2.5rem;
-            font-weight: 700;
-            color: var(--navy);
-            line-height: 1;
-        }
-
-        .trust-label {
-            font-size: 0.8rem;
-            color: var(--ink-faint);
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            margin-top: 0.25rem;
-        }
-
         /* How it works */
-        .how-it-works { padding: 6rem 0; }
+        .how-it-works { padding: 7rem 0; }
 
         .section-eyebrow {
             display: block;
             text-align: center;
-            font-size: 0.75rem;
+            font-size: 0.72rem;
             font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: 0.15em;
+            letter-spacing: 0.18em;
             color: var(--gold);
             margin-bottom: 0.75rem;
         }
@@ -356,31 +429,32 @@
 
         .step-card {
             background: white;
-            padding: 2rem 1.5rem;
-            border-radius: 10px;
-            border: 1px solid rgba(26, 54, 93, 0.06);
+            padding: 2.25rem 1.5rem;
+            border-radius: 12px;
+            border: 1px solid rgba(26, 54, 93, 0.05);
             text-align: center;
             position: relative;
             z-index: 1;
-            transition: transform 0.3s, box-shadow 0.3s;
+            transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.35s ease;
         }
 
-        .step-card:hover { transform: translateY(-4px); box-shadow: 0 12px 32px rgba(26, 54, 93, 0.08); }
+        .step-card:hover { transform: translateY(-6px); box-shadow: 0 16px 40px rgba(26, 54, 93, 0.1); }
 
         .step-number {
-            width: 40px; height: 40px;
+            width: 42px; height: 42px;
             margin: 0 auto 1.25rem;
             background: var(--navy);
             border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
             color: var(--gold);
             font-family: 'Cormorant Garamond', serif;
-            font-size: 1.1rem; font-weight: 700;
+            font-size: 1.15rem; font-weight: 700;
+            box-shadow: 0 2px 8px rgba(26, 54, 93, 0.15);
         }
 
         .step-card h3 {
             font-family: 'Cormorant Garamond', serif;
-            font-size: 1.2rem;
+            font-size: 1.25rem;
             color: var(--navy);
             margin-bottom: 0.75rem;
         }
@@ -389,7 +463,7 @@
 
         /* Tiers section */
         .tiers-section {
-            padding: 6rem 0;
+            padding: 7rem 0;
             background: var(--navy);
             color: var(--cream);
             position: relative;
@@ -407,7 +481,7 @@
 
         .tiers-section .section-eyebrow { color: var(--gold-light); }
         .tiers-section .section-title { color: var(--cream); }
-        .tiers-section .section-subtitle { color: rgba(255, 254, 240, 0.7); }
+        .tiers-section .section-subtitle { color: rgba(255, 254, 240, 0.65); }
 
         .tiers-grid {
             display: grid;
@@ -421,15 +495,15 @@
 
         .tier-card {
             background: rgba(255, 254, 240, 0.04);
-            border: 1px solid rgba(255, 254, 240, 0.1);
-            border-radius: 12px;
+            border: 1px solid rgba(255, 254, 240, 0.08);
+            border-radius: 14px;
             padding: 2.5rem 2rem;
             text-align: center;
-            transition: all 0.3s;
+            transition: all 0.35s cubic-bezier(0.22, 1, 0.36, 1);
             position: relative;
         }
 
-        .tier-card:hover { transform: translateY(-4px); background: rgba(255, 254, 240, 0.06); }
+        .tier-card:hover { transform: translateY(-6px); background: rgba(255, 254, 240, 0.06); }
 
         .tier-card.featured { border-color: var(--gold); background: rgba(183, 150, 11, 0.08); }
 
@@ -450,11 +524,11 @@
         }
 
         .tier-icon {
-            width: 56px; height: 56px;
+            width: 60px; height: 60px;
             margin: 0 auto 1.25rem;
             border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
-            font-size: 1.5rem;
+            font-size: 1.6rem;
         }
 
         .tier-icon-bronze { background: rgba(156, 107, 48, 0.15); color: var(--bronze); }
@@ -467,7 +541,7 @@
             margin-bottom: 0.5rem;
         }
 
-        .tier-card .tier-desc { font-size: 0.9rem; color: rgba(255, 254, 240, 0.6); margin-bottom: 1.5rem; }
+        .tier-card .tier-desc { font-size: 0.9rem; color: rgba(255, 254, 240, 0.55); margin-bottom: 1.5rem; }
 
         .tier-requirements {
             list-style: none;
@@ -476,13 +550,13 @@
         }
 
         .tier-requirements li {
-            padding: 0.5rem 0;
+            padding: 0.55rem 0;
             font-size: 0.85rem;
             color: rgba(255, 254, 240, 0.8);
-            border-bottom: 1px solid rgba(255, 254, 240, 0.06);
+            border-bottom: 1px solid rgba(255, 254, 240, 0.05);
             display: flex;
             align-items: center;
-            gap: 0.5rem;
+            gap: 0.6rem;
         }
 
         .tier-requirements li::before {
@@ -493,10 +567,55 @@
             flex-shrink: 0;
         }
 
-        /* Comparison with competitors */
-        .compare-section { padding: 6rem 0; }
+        /* Use cases section */
+        .use-cases { padding: 7rem 0; }
 
-        .compare-table-wrapper { max-width: 800px; margin: 0 auto; overflow-x: auto; }
+        .use-cases-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .use-case-card {
+            background: white;
+            border: 1px solid rgba(26, 54, 93, 0.05);
+            border-radius: 14px;
+            padding: 2.25rem 1.75rem;
+            text-align: center;
+            transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.35s ease;
+        }
+
+        .use-case-card:hover { transform: translateY(-6px); box-shadow: 0 16px 40px rgba(26, 54, 93, 0.1); }
+
+        .use-case-icon {
+            width: 56px; height: 56px;
+            margin: 0 auto 1.25rem;
+            background: rgba(26, 54, 93, 0.05);
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+
+        .use-case-card h3 {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.3rem;
+            color: var(--navy);
+            margin-bottom: 0.6rem;
+        }
+
+        .use-case-card p { color: var(--ink-light); font-size: 0.9rem; line-height: 1.6; }
+
+        /* Comparison with competitors */
+        .compare-section {
+            padding: 7rem 0;
+            background: var(--cream-dark);
+        }
+
+        .compare-table-wrapper { max-width: 800px; margin: 0 auto; overflow-x: auto; -webkit-overflow-scrolling: touch; }
 
         .compare-table {
             width: 100%;
@@ -516,7 +635,7 @@
 
         .compare-table td {
             padding: 0.85rem 1rem;
-            border-bottom: 1px solid rgba(26, 54, 93, 0.08);
+            border-bottom: 1px solid rgba(26, 54, 93, 0.06);
             color: var(--ink-light);
         }
 
@@ -532,7 +651,7 @@
         }
 
         /* Pricing */
-        .pricing { padding: 6rem 0; background: var(--cream-dark); }
+        .pricing { padding: 7rem 0; }
 
         .pricing-grid {
             display: grid;
@@ -545,14 +664,14 @@
         .pricing-card {
             background: white;
             padding: 2.5rem 2rem;
-            border-radius: 12px;
-            border: 1px solid rgba(26, 54, 93, 0.08);
+            border-radius: 14px;
+            border: 1px solid rgba(26, 54, 93, 0.06);
             text-align: center;
-            transition: all 0.3s;
+            transition: all 0.35s cubic-bezier(0.22, 1, 0.36, 1);
             position: relative;
         }
 
-        .pricing-card:hover { transform: translateY(-4px); box-shadow: 0 20px 50px rgba(26, 54, 93, 0.1); }
+        .pricing-card:hover { transform: translateY(-6px); box-shadow: 0 20px 50px rgba(26, 54, 93, 0.1); }
         .pricing-card.featured { border-color: var(--gold); box-shadow: 0 8px 30px rgba(183, 150, 11, 0.12); }
 
         .pricing-card.featured::before {
@@ -607,28 +726,43 @@
 
         /* CTA */
         .cta {
-            padding: 6rem 0;
+            padding: 7rem 0;
             text-align: center;
+            background: var(--cream-dark);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cta::before {
+            content: '';
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 600px; height: 600px;
+            background: radial-gradient(ellipse, rgba(183, 150, 11, 0.06) 0%, transparent 70%);
+            pointer-events: none;
         }
 
         .cta-inner {
             max-width: 600px;
             margin: 0 auto;
+            position: relative;
         }
 
         .cta h2 {
             font-family: 'Cormorant Garamond', serif;
-            font-size: clamp(2rem, 3.5vw, 2.5rem);
+            font-size: clamp(2rem, 3.5vw, 2.75rem);
             color: var(--navy);
             margin-bottom: 1rem;
+            line-height: 1.15;
         }
 
-        .cta p { color: var(--ink-light); font-size: 1.05rem; margin-bottom: 2rem; }
+        .cta p { color: var(--ink-light); font-size: 1.1rem; margin-bottom: 2.5rem; line-height: 1.7; }
 
         /* Footer */
         footer {
             padding: 3rem 0;
-            border-top: 1px solid rgba(26, 54, 93, 0.08);
+            border-top: 1px solid rgba(26, 54, 93, 0.06);
         }
 
         .footer-inner {
@@ -647,19 +781,28 @@
 
         /* Mobile */
         @media (max-width: 768px) {
-            nav .nav-links { display: none; }
+            .hamburger { display: flex; }
+            .nav-links { display: none; }
             .steps-grid { grid-template-columns: 1fr 1fr; }
             .steps-grid::before { display: none; }
-            .tiers-grid { grid-template-columns: 1fr; max-width: 400px; }
-            .pricing-grid { grid-template-columns: 1fr; max-width: 400px; margin: 0 auto; }
-            .trust-items { gap: 2rem; }
+            .tiers-grid { grid-template-columns: 1fr; max-width: 420px; }
+            .pricing-grid { grid-template-columns: 1fr; max-width: 420px; margin: 0 auto; }
+            .use-cases-grid { grid-template-columns: 1fr; max-width: 420px; margin: 0 auto; }
             .compare-table-wrapper { margin: 0 -1rem; }
             .footer-inner { flex-direction: column; text-align: center; }
+            .hero { padding: 4rem 0 3.5rem; }
+            h1 { font-size: clamp(2.25rem, 8vw, 3.5rem); }
+            .hero-subtitle { font-size: 1.05rem; }
+            .hero-actions { flex-direction: column; align-items: center; }
+            .hero-actions .btn { width: 100%; max-width: 320px; justify-content: center; }
+            .cert-preview-wrapper { max-width: 340px; }
+            .how-it-works, .tiers-section, .use-cases, .compare-section, .pricing, .cta { padding: 5rem 0; }
         }
 
         @media (max-width: 480px) {
             .steps-grid { grid-template-columns: 1fr; max-width: 360px; margin: 0 auto; }
             .cert-preview-meta { grid-template-columns: 1fr; }
+            .container { padding: 0 1.25rem; }
         }
     </style>
 </head>
@@ -668,32 +811,46 @@
         <div class="container header-inner">
             <a href="/" class="logo">Art-<span>Official</span></a>
             <nav>
-                <div class="nav-links" style="display:flex;gap:2rem;align-items:center;">
+                <div class="nav-links">
                     <a href="#how-it-works">How It Works</a>
-                    <a href="#tiers">Certification Tiers</a>
+                    <a href="#use-cases">Who It's For</a>
                     <a href="#pricing">Pricing</a>
-                    <a href="verify.html">Verify Art</a>
+                    <a href="verify.html">Verify</a>
                 </div>
                 <a href="register.html" class="btn btn-sm">Register Your Work</a>
+                <button class="hamburger" id="hamburger" aria-label="Menu">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
             </nav>
         </div>
     </header>
 
+    <!-- Mobile menu -->
+    <div class="mobile-menu" id="mobile-menu">
+        <a href="#how-it-works" class="mobile-nav-link">How It Works</a>
+        <a href="#use-cases" class="mobile-nav-link">Who It's For</a>
+        <a href="#pricing" class="mobile-nav-link">Pricing</a>
+        <a href="verify.html">Verify a Certificate</a>
+        <a href="register.html">Register Your Work</a>
+    </div>
+
     <main>
         <section class="hero">
             <div class="container">
-                <span class="hero-badge"><span class="dot"></span> Protecting authentic creativity</span>
-                <h1>Prove Your Art is<br><em>Authentically Human</em></h1>
-                <p class="hero-subtitle">
-                    In an age of AI-generated content, give collectors and buyers a verifiable
-                    certificate of human creation. Backed by evidence, not just a promise.
+                <span class="hero-badge fade-up"><span class="dot"></span> Protecting authentic creativity</span>
+                <h1 class="fade-up stagger-1">Prove Your Work is<br><em>Authentically Human</em></h1>
+                <p class="hero-subtitle fade-up stagger-2">
+                    In an age of AI-generated content, give your fans, audience, collectors, and
+                    buyers a verifiable certificate of human creation. Backed by evidence, not just a promise.
                 </p>
-                <div class="hero-actions">
+                <div class="hero-actions fade-up stagger-3">
                     <a href="register.html" class="btn btn-gold btn-lg">Certify Your Work</a>
                     <a href="verify.html" class="btn btn-outline btn-lg">Verify a Certificate</a>
                 </div>
 
-                <div class="cert-preview-wrapper">
+                <div class="cert-preview-wrapper fade-up stagger-4">
                     <div class="cert-preview">
                         <div class="cert-preview-header">
                             <div class="cert-seal">AO</div>
@@ -714,55 +871,59 @@
             </div>
         </section>
 
-        <section class="trust-bar">
+
+        <section class="how-it-works" id="how-it-works">
             <div class="container">
-                <div class="trust-items" id="trust-stats">
-                    <div class="trust-item">
-                        <div class="trust-number" id="stat-artists">0</div>
-                        <div class="trust-label">Verified Artists</div>
+                <span class="section-eyebrow fade-up">How It Works</span>
+                <h2 class="section-title fade-up">Four steps to a verified certificate</h2>
+                <p class="section-subtitle fade-up">A simple process that builds trust through evidence, not just declarations.</p>
+
+                <div class="steps-grid">
+                    <div class="step-card fade-up">
+                        <div class="step-number">1</div>
+                        <h3>Create Account</h3>
+                        <p>Sign up with your details. Build a verified profile that your audience and buyers can trust.</p>
                     </div>
-                    <div class="trust-item">
-                        <div class="trust-number" id="stat-certs">0</div>
-                        <div class="trust-label">Certificates Issued</div>
+                    <div class="step-card fade-up stagger-1">
+                        <div class="step-number">2</div>
+                        <h3>Submit Evidence</h3>
+                        <p>Upload process photos, drafts, notes, sketches, or timelapses. More evidence = higher certification tier.</p>
                     </div>
-                    <div class="trust-item">
-                        <div class="trust-number">100%</div>
-                        <div class="trust-label">Publicly Verifiable</div>
+                    <div class="step-card fade-up stagger-2">
+                        <div class="step-number">3</div>
+                        <h3>Sign Declaration</h3>
+                        <p>Formally declare your work was made without generative AI. Your reputation stands behind your certification.</p>
                     </div>
-                    <div class="trust-item">
-                        <div class="trust-number">Free</div>
-                        <div class="trust-label">First Certificate</div>
+                    <div class="step-card fade-up stagger-3">
+                        <div class="step-number">4</div>
+                        <h3>Share & Embed</h3>
+                        <p>Get a unique certificate with QR code, embeddable badges for your site, and a shareable verification link.</p>
                     </div>
                 </div>
             </div>
         </section>
 
-        <section class="how-it-works" id="how-it-works">
+        <section class="use-cases" id="use-cases">
             <div class="container">
-                <span class="section-eyebrow">How It Works</span>
-                <h2 class="section-title">Four steps to a verified certificate</h2>
-                <p class="section-subtitle">A simple process that builds trust through evidence, not just declarations.</p>
+                <span class="section-eyebrow fade-up">Who It's For</span>
+                <h2 class="section-title fade-up">For every kind of human creator</h2>
+                <p class="section-subtitle fade-up">Art-Official isn't just for painters. If you made it, you can certify it.</p>
 
-                <div class="steps-grid">
-                    <div class="step-card">
-                        <div class="step-number">1</div>
-                        <h3>Create Account</h3>
-                        <p>Sign up with your artist details. Build your verified public profile that collectors can trust.</p>
+                <div class="use-cases-grid">
+                    <div class="use-case-card fade-up">
+                        <div class="use-case-icon">&#127912;</div>
+                        <h3>Visual Artists</h3>
+                        <p>Painters, illustrators, photographers, sculptors &mdash; prove your work is handmade, not machine-made.</p>
                     </div>
-                    <div class="step-card">
-                        <div class="step-number">2</div>
-                        <h3>Submit Evidence</h3>
-                        <p>Upload process photos, WIP shots, sketches, or timelapse videos. More evidence = higher certification tier.</p>
+                    <div class="use-case-card fade-up stagger-1">
+                        <div class="use-case-icon">&#9997;</div>
+                        <h3>Writers & Authors</h3>
+                        <p>Novels, screenplays, poetry, journalism &mdash; certify that every word was written by a human mind.</p>
                     </div>
-                    <div class="step-card">
-                        <div class="step-number">3</div>
-                        <h3>Sign Declaration</h3>
-                        <p>Formally declare your work was made without AI. Your reputation stands behind your certification.</p>
-                    </div>
-                    <div class="step-card">
-                        <div class="step-number">4</div>
-                        <h3>Share & Embed</h3>
-                        <p>Get a unique certificate with QR code, embeddable badges for your shop, and a shareable verification link.</p>
+                    <div class="use-case-card fade-up stagger-2">
+                        <div class="use-case-icon">&#127925;</div>
+                        <h3>Musicians & Composers</h3>
+                        <p>Songs, scores, sound design &mdash; show your audience that the music is authentically yours.</p>
                     </div>
                 </div>
             </div>
@@ -770,34 +931,34 @@
 
         <section class="tiers-section" id="tiers">
             <div class="container">
-                <span class="section-eyebrow">Certification Tiers</span>
-                <h2 class="section-title">More evidence. Stronger trust.</h2>
-                <p class="section-subtitle">Your certification tier is automatically calculated based on how much evidence you provide.</p>
+                <span class="section-eyebrow fade-up">Certification Tiers</span>
+                <h2 class="section-title fade-up">More evidence. Stronger trust.</h2>
+                <p class="section-subtitle fade-up">Your certification tier is automatically calculated based on how much evidence you provide.</p>
 
                 <div class="tiers-grid">
-                    <div class="tier-card">
+                    <div class="tier-card fade-up">
                         <div class="tier-icon tier-icon-bronze">&#9671;</div>
                         <h3>Bronze</h3>
                         <p class="tier-desc">Declaration-based certification</p>
                         <ul class="tier-requirements">
                             <li>Signed declaration of human creation</li>
-                            <li>Basic artwork details</li>
+                            <li>Basic work details</li>
                             <li>Unique certificate ID & QR code</li>
                             <li>Public verification page</li>
                         </ul>
                     </div>
-                    <div class="tier-card featured">
+                    <div class="tier-card featured fade-up stagger-1">
                         <div class="tier-icon tier-icon-silver">&#9670;</div>
                         <h3>Silver</h3>
                         <p class="tier-desc">Evidence-supported certification</p>
                         <ul class="tier-requirements">
                             <li>Everything in Bronze</li>
-                            <li>Detailed work description (200+ chars)</li>
+                            <li>Detailed description (200+ chars)</li>
                             <li>1-2 process evidence uploads</li>
-                            <li>Process notes from the artist</li>
+                            <li>Process notes from the creator</li>
                         </ul>
                     </div>
-                    <div class="tier-card">
+                    <div class="tier-card fade-up stagger-2">
                         <div class="tier-icon tier-icon-gold">&#9733;</div>
                         <h3>Gold</h3>
                         <p class="tier-desc">Comprehensive evidence package</p>
@@ -814,11 +975,11 @@
 
         <section class="compare-section">
             <div class="container">
-                <span class="section-eyebrow">Why Art-Official</span>
-                <h2 class="section-title">Built different from the rest</h2>
-                <p class="section-subtitle">We combine the best ideas from across the market into one focused tool.</p>
+                <span class="section-eyebrow fade-up">Why Art-Official</span>
+                <h2 class="section-title fade-up">Built different from the rest</h2>
+                <p class="section-subtitle fade-up">We combine the best ideas from across the market into one focused tool.</p>
 
-                <div class="compare-table-wrapper">
+                <div class="compare-table-wrapper fade-up">
                     <table class="compare-table">
                         <thead>
                             <tr>
@@ -839,12 +1000,17 @@
                                 <td class="cross">Sometimes</td>
                             </tr>
                             <tr>
-                                <td>Embeddable badges for shops</td>
+                                <td>Works for all creative mediums</td>
+                                <td class="col-hm check">Yes</td>
+                                <td class="cross">Usually art only</td>
+                            </tr>
+                            <tr>
+                                <td>Embeddable badges for sites</td>
                                 <td class="col-hm check">Yes</td>
                                 <td class="cross">Limited</td>
                             </tr>
                             <tr>
-                                <td>Public artist profiles</td>
+                                <td>Public creator profiles</td>
                                 <td class="col-hm check">Yes</td>
                                 <td class="cross">Rare</td>
                             </tr>
@@ -858,11 +1024,6 @@
                                 <td class="col-hm check">Yes</td>
                                 <td class="cross">Usually 1 file</td>
                             </tr>
-                            <tr>
-                                <td>Process notes documentation</td>
-                                <td class="col-hm check">Yes</td>
-                                <td class="cross">No</td>
-                            </tr>
                         </tbody>
                     </table>
                 </div>
@@ -871,12 +1032,12 @@
 
         <section class="pricing" id="pricing">
             <div class="container">
-                <span class="section-eyebrow">Pricing</span>
-                <h2 class="section-title">Start free. Scale as you grow.</h2>
-                <p class="section-subtitle">Your first certificate is always free. No credit card required.</p>
+                <span class="section-eyebrow fade-up">Pricing</span>
+                <h2 class="section-title fade-up">Start free. Scale as you grow.</h2>
+                <p class="section-subtitle fade-up">Your first certificate is always free. No credit card required.</p>
 
                 <div class="pricing-grid">
-                    <div class="pricing-card">
+                    <div class="pricing-card fade-up">
                         <div class="pricing-name">Starter</div>
                         <div class="pricing-price">Free</div>
                         <p class="pricing-desc">Try it out with your first piece</p>
@@ -888,25 +1049,25 @@
                         </ul>
                         <a href="register.html" class="btn btn-outline">Get Started</a>
                     </div>
-                    <div class="pricing-card featured">
+                    <div class="pricing-card featured fade-up stagger-1">
                         <div class="pricing-name">Portfolio</div>
                         <div class="pricing-price">&pound;49 <span>/ 10 works</span></div>
-                        <p class="pricing-desc">For working artists building a collection</p>
+                        <p class="pricing-desc">For working creators building a collection</p>
                         <ul class="pricing-features">
                             <li>10 certificates</li>
-                            <li>Public artist profile</li>
+                            <li>Public creator profile</li>
                             <li>Priority evidence review</li>
                             <li>All embed formats</li>
                         </ul>
                         <a href="register.html" class="btn btn-gold">Get Started</a>
                     </div>
-                    <div class="pricing-card">
+                    <div class="pricing-card fade-up stagger-2">
                         <div class="pricing-name">Unlimited</div>
                         <div class="pricing-price">&pound;149 <span>/ year</span></div>
                         <p class="pricing-desc">For prolific creators and studios</p>
                         <ul class="pricing-features">
                             <li>Unlimited certificates</li>
-                            <li>Featured artist profile</li>
+                            <li>Featured creator profile</li>
                             <li>API access</li>
                             <li>Custom badge styling</li>
                         </ul>
@@ -918,9 +1079,9 @@
 
         <section class="cta">
             <div class="container">
-                <div class="cta-inner">
-                    <h2>Your art is art-official.<br>Now you can prove it.</h2>
-                    <p>Join artists who are building verifiable trust with collectors, galleries, and buyers.</p>
+                <div class="cta-inner fade-up">
+                    <h2>Your work is art-official.<br>Now you can prove it.</h2>
+                    <p>Join creators who are building verifiable trust with their fans, collectors, galleries, and buyers.</p>
                     <a href="register.html" class="btn btn-gold btn-lg">Certify Your First Work Free</a>
                 </div>
             </div>
@@ -933,7 +1094,7 @@
                 <a href="/" class="logo" style="font-size:1.25rem;">Art-<span>Official</span></a>
                 <div class="footer-links">
                     <a href="#how-it-works">How It Works</a>
-                    <a href="register.html">For Artists</a>
+                    <a href="register.html">For Creators</a>
                     <a href="verify.html">Verify</a>
                 </div>
                 <p>&copy; 2026 Art-Official</p>
@@ -942,12 +1103,38 @@
     </footer>
 
     <script>
-        fetch('/api/stats').then(r => r.json()).then(data => {
-            if (data.success) {
-                document.getElementById('stat-artists').textContent = data.artists || 0;
-                document.getElementById('stat-certs').textContent = data.certificates || 0;
-            }
-        }).catch(() => {});
+        // Hamburger menu
+        var hamburger = document.getElementById('hamburger');
+        var mobileMenu = document.getElementById('mobile-menu');
+
+        hamburger.addEventListener('click', function() {
+            hamburger.classList.toggle('active');
+            mobileMenu.classList.toggle('open');
+            document.body.style.overflow = mobileMenu.classList.contains('open') ? 'hidden' : '';
+        });
+
+        // Close mobile menu on link click
+        document.querySelectorAll('.mobile-nav-link').forEach(function(link) {
+            link.addEventListener('click', function() {
+                hamburger.classList.remove('active');
+                mobileMenu.classList.remove('open');
+                document.body.style.overflow = '';
+            });
+        });
+
+        // Scroll animations (Intersection Observer)
+        var observer = new IntersectionObserver(function(entries) {
+            entries.forEach(function(entry) {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+
+        document.querySelectorAll('.fade-up').forEach(function(el) {
+            observer.observe(el);
+        });
     </script>
 </body>
 </html>
