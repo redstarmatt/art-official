@@ -2,6 +2,8 @@ const express = require('express');
 const { v4: uuidv4 } = require('uuid');
 const QRCode = require('qrcode');
 const multer = require('multer');
+const bcrypt = require('bcryptjs');
+const nodemailer = require('nodemailer');
 const path = require('path');
 const fs = require('fs');
 
@@ -81,20 +83,105 @@ function getCertThumbnail(cert) {
     return cert.evidenceFiles[0].filename;
 }
 
+// Email config (set SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS env vars to enable)
+let mailTransporter = null;
+if (process.env.SMTP_HOST) {
+    mailTransporter = nodemailer.createTransport({
+        host: process.env.SMTP_HOST,
+        port: parseInt(process.env.SMTP_PORT) || 587,
+        secure: (process.env.SMTP_PORT === '465'),
+        auth: {
+            user: process.env.SMTP_USER,
+            pass: process.env.SMTP_PASS
+        }
+    });
+    console.log('Email enabled via ' + process.env.SMTP_HOST);
+}
+
+async function sendCertificateEmail(artist, certificate, host) {
+    if (!mailTransporter) return;
+
+    const verifyUrl = `${host}/verify.html?code=${certificate.id}`;
+    const tierColors = { gold: '#b7960b', silver: '#718096', bronze: '#9c6b30' };
+    const tierColor = tierColors[certificate.tier] || tierColors.bronze;
+    const tierLabel = certificate.tierLabel || certificate.tier || 'Bronze';
+
+    let qrDataUrl = '';
+    try {
+        qrDataUrl = await QRCode.toDataURL(verifyUrl, {
+            width: 200, margin: 2,
+            color: { dark: '#1a365d', light: '#fffef0' }
+        });
+    } catch (e) { /* skip QR if it fails */ }
+
+    const html = `
+    <div style="font-family:'Helvetica Neue',Arial,sans-serif;max-width:600px;margin:0 auto;background:#fffef0;">
+        <div style="background:#1a365d;color:#fffef0;padding:2rem;text-align:center;">
+            <div style="font-family:Georgia,serif;font-size:1.75rem;font-weight:bold;">Art-<span style="color:#d4af37;">Official</span></div>
+            <div style="font-size:0.8rem;text-transform:uppercase;letter-spacing:0.12em;opacity:0.8;margin-top:0.25rem;">Certificate of Human Creation</div>
+        </div>
+        <div style="padding:2rem;">
+            <p style="color:#4a5568;margin-bottom:1.5rem;">Hi ${artist.name},</p>
+            <p style="color:#4a5568;margin-bottom:1.5rem;">Your work has been certified as authentically human-made. Here are your certificate details:</p>
+            <div style="background:#fff;border:1px solid rgba(26,54,93,0.1);border-radius:12px;padding:1.5rem;margin-bottom:1.5rem;">
+                <h2 style="font-family:Georgia,serif;color:#1a365d;margin:0 0 0.5rem;font-size:1.4rem;">${certificate.title}</h2>
+                <p style="color:#718096;margin:0 0 1rem;font-size:0.9rem;">${certificate.medium}</p>
+                <div style="display:inline-block;padding:0.3rem 1rem;border-radius:100px;font-size:0.75rem;font-weight:bold;text-transform:uppercase;letter-spacing:0.06em;color:#fff;background:${tierColor};">${tierLabel} Certification</div>
+                <div style="margin-top:1.25rem;padding-top:1rem;border-top:1px solid rgba(26,54,93,0.08);">
+                    <p style="color:#a0aec0;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.1em;margin:0 0 0.2rem;">Certificate ID</p>
+                    <p style="font-family:monospace;color:#1a365d;font-size:1.1rem;font-weight:600;margin:0;letter-spacing:0.08em;">${certificate.id}</p>
+                </div>
+                ${qrDataUrl ? `<div style="margin-top:1.25rem;text-align:center;"><img src="${qrDataUrl}" alt="QR Code" style="width:150px;height:150px;border-radius:8px;"></div>` : ''}
+            </div>
+            <div style="text-align:center;margin-bottom:1.5rem;">
+                <a href="${verifyUrl}" style="display:inline-block;padding:0.75rem 2rem;background:#1a365d;color:#fffef0;text-decoration:none;border-radius:6px;font-weight:600;font-size:0.9rem;">View Your Certificate</a>
+            </div>
+            <p style="color:#718096;font-size:0.82rem;">You can share your certificate by sending the verification link or using the embed code on your website.</p>
+        </div>
+        <div style="background:#f7f5e6;padding:1.25rem;text-align:center;font-size:0.75rem;color:#a0aec0;border-top:1px solid rgba(26,54,93,0.06);">
+            <p style="margin:0;">All rights reserved by the original creator. Registration does not transfer copyright.</p>
+            <p style="margin:0.5rem 0 0;">&copy; 2026 Art-Official</p>
+        </div>
+    </div>`;
+
+    try {
+        await mailTransporter.sendMail({
+            from: process.env.SMTP_FROM || process.env.SMTP_USER,
+            to: artist.email,
+            subject: `Your Art-Official Certificate: ${certificate.title} (${certificate.id})`,
+            html
+        });
+    } catch (err) {
+        console.error('Failed to send certificate email:', err.message);
+    }
+}
+
 // API Routes
 
+// Sanitise artist for client (strip password hash)
+function safeArtist(artist) {
+    const { passwordHash, ...safe } = artist;
+    return safe;
+}
+
 // Register artist
-app.post('/api/artist/register', (req, res) => {
-    const { name, email, portfolio, bio, location } = req.body;
+app.post('/api/artist/register', async (req, res) => {
+    const { name, email, password, portfolio, bio, location } = req.body;
+
+    if (!password || password.length < 6) {
+        return res.status(400).json({ success: false, message: 'Password must be at least 6 characters' });
+    }
+
     const db = loadDB();
 
     const existingArtist = Object.values(db.artists).find(a => a.email === email);
     if (existingArtist) {
-        return res.json({ success: true, artist: existingArtist });
+        return res.status(409).json({ success: false, message: 'An account with this email already exists. Please sign in.' });
     }
 
     const artistId = uuidv4();
     const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    const passwordHash = await bcrypt.hash(password, 10);
     const artist = {
         id: artistId,
         name,
@@ -103,23 +190,35 @@ app.post('/api/artist/register', (req, res) => {
         bio: bio || '',
         location: location || '',
         slug,
+        passwordHash,
         createdAt: new Date().toISOString()
     };
     db.artists[artistId] = artist;
     saveDB(db);
-    res.json({ success: true, artist });
+    res.json({ success: true, artist: safeArtist(artist) });
 });
 
-// Get artist by email
-app.get('/api/artist/lookup', (req, res) => {
-    const { email } = req.query;
+// Sign in artist
+app.post('/api/artist/login', async (req, res) => {
+    const { email, password } = req.body;
     const db = loadDB();
     const artist = Object.values(db.artists).find(a => a.email === email);
-    if (artist) {
-        res.json({ success: true, artist });
-    } else {
-        res.json({ success: false, message: 'Artist not found' });
+
+    if (!artist) {
+        return res.json({ success: false, message: 'No account found with that email.' });
     }
+
+    // Backward compat: old accounts without passwords
+    if (!artist.passwordHash) {
+        return res.json({ success: true, artist: safeArtist(artist) });
+    }
+
+    const match = await bcrypt.compare(password, artist.passwordHash);
+    if (!match) {
+        return res.json({ success: false, message: 'Incorrect password.' });
+    }
+
+    res.json({ success: true, artist: safeArtist(artist) });
 });
 
 // Get artist public profile by slug
@@ -214,6 +313,10 @@ app.post('/api/artwork/submit', artworkUpload, async (req, res) => {
 
     db.certificates[certificateId] = certificate;
     saveDB(db);
+
+    // Send certificate email (non-blocking)
+    const host = `${req.protocol}://${req.get('host')}`;
+    sendCertificateEmail(artist, certificate, host);
 
     res.json({ success: true, certificate });
 });
@@ -313,19 +416,93 @@ app.get('/api/badge/:certificateId', (req, res) => {
     res.send(svg);
 });
 
+// Embeddable widget — serves a self-contained HTML card
+app.get('/api/widget/:certificateId', (req, res) => {
+    const { certificateId } = req.params;
+    const db = loadDB();
+    const cert = db.certificates[certificateId.toUpperCase()];
+
+    if (!cert) {
+        res.setHeader('Content-Type', 'text/html');
+        return res.send('<html><body style="margin:0;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100%;color:#718096;font-size:14px;">Certificate not found</body></html>');
+    }
+
+    const host = `${req.protocol}://${req.get('host')}`;
+    const verifyUrl = `${host}/verify.html?code=${cert.id}`;
+    const tierColors = { gold: '#b7960b', silver: '#718096', bronze: '#9c6b30' };
+    const tierBgs = { gold: '#f5efd0', silver: '#e8edf2', bronze: '#f0e6d8' };
+    const tc = tierColors[cert.tier] || tierColors.bronze;
+    const tb = tierBgs[cert.tier] || tierBgs.bronze;
+    const tierLabel = cert.tierLabel || cert.tier || 'Bronze';
+    const thumbnail = cert.artworkImage ? `${host}/uploads/${cert.artworkImage}` : null;
+
+    const html = `<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:transparent}
+a{text-decoration:none;color:inherit}
+.card{border:1px solid rgba(26,54,93,0.12);border-radius:10px;overflow:hidden;background:#fff;max-width:340px;box-shadow:0 1px 4px rgba(0,0,0,0.06)}
+.card:hover{box-shadow:0 2px 8px rgba(0,0,0,0.1)}
+.header{background:#1a365d;color:#fffef0;padding:0.6rem 1rem;display:flex;align-items:center;justify-content:space-between}
+.logo{font-family:Georgia,serif;font-weight:700;font-size:0.95rem}
+.logo span{color:#d4af37}
+.check{background:rgba(255,254,240,0.15);border-radius:100px;padding:0.15rem 0.6rem;font-size:0.65rem;letter-spacing:0.04em}
+.body{padding:1rem;display:flex;gap:0.85rem;align-items:flex-start}
+.thumb{width:64px;height:64px;border-radius:6px;object-fit:cover;background:#f7f5e6;flex-shrink:0}
+.thumb-placeholder{width:64px;height:64px;border-radius:6px;background:#f7f5e6;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#a0aec0;font-family:Georgia,serif;font-size:1.2rem;font-weight:700}
+.info{flex:1;min-width:0}
+.title{font-weight:600;color:#1a365d;font-size:0.88rem;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.artist{color:#718096;font-size:0.78rem;margin-top:0.15rem}
+.meta{display:flex;align-items:center;gap:0.5rem;margin-top:0.5rem}
+.tier{padding:0.15rem 0.55rem;border-radius:100px;font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.04em}
+.cert-id{font-family:monospace;font-size:0.68rem;color:#a0aec0;letter-spacing:0.04em}
+.footer{border-top:1px solid rgba(26,54,93,0.06);padding:0.5rem 1rem;text-align:center;font-size:0.65rem;color:#a0aec0}
+</style></head>
+<body><a href="${verifyUrl}" target="_blank" rel="noopener">
+<div class="card">
+  <div class="header">
+    <div class="logo">Art-<span>Official</span></div>
+    <div class="check">&#10003; Verified</div>
+  </div>
+  <div class="body">
+    ${thumbnail
+      ? `<img class="thumb" src="${thumbnail}" alt="">`
+      : `<div class="thumb-placeholder">AO</div>`}
+    <div class="info">
+      <div class="title">${cert.title || 'Untitled'}</div>
+      <div class="artist">by ${cert.artistName || 'Unknown'}</div>
+      <div class="meta">
+        <span class="tier" style="background:${tb};color:${tc}">${tierLabel}</span>
+        <span class="cert-id">${cert.id}</span>
+      </div>
+    </div>
+  </div>
+  <div class="footer">Click to verify &middot; Certified Human Creation</div>
+</div>
+</a></body></html>`;
+
+    res.setHeader('Content-Type', 'text/html');
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+    res.send(html);
+});
+
 // Embed code endpoint
 app.get('/api/embed/:certificateId', (req, res) => {
     const { certificateId } = req.params;
     const host = `${req.protocol}://${req.get('host')}`;
     const badgeUrl = `${host}/api/badge/${certificateId}`;
     const verifyUrl = `${host}/verify.html?code=${certificateId}`;
+    const widgetUrl = `${host}/api/widget/${certificateId}`;
 
     res.json({
         success: true,
         html: `<a href="${verifyUrl}" target="_blank" rel="noopener"><img src="${badgeUrl}" alt="Verified Art-Official" style="height:36px"></a>`,
         markdown: `[![Verified Art-Official](${badgeUrl})](${verifyUrl})`,
+        widget: `<iframe src="${widgetUrl}" width="340" height="160" style="border:none;border-radius:10px;" loading="lazy"></iframe>`,
         badgeUrl,
-        verifyUrl
+        verifyUrl,
+        widgetUrl
     });
 });
 

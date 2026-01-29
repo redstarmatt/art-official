@@ -992,7 +992,7 @@
         <div class="tab-panel active" id="panel-signin">
             <div class="card">
                 <h2 class="card-title">Welcome Back</h2>
-                <p class="card-subtitle">Enter your email to access your artist portal.</p>
+                <p class="card-subtitle">Sign in to access your artist portal.</p>
                 <div id="signin-alert" class="alert alert-error">
                     <span class="alert-icon">!</span>
                     <span id="signin-alert-msg"></span>
@@ -1001,6 +1001,10 @@
                     <div class="form-group">
                         <label for="signin-email">Email Address <span class="required">*</span></label>
                         <input type="email" id="signin-email" name="email" placeholder="you@example.com" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="signin-password">Password <span class="required">*</span></label>
+                        <input type="password" id="signin-password" name="password" placeholder="Your password" required>
                     </div>
                     <button type="submit" class="btn btn-lg btn-full" id="signin-btn">Sign In</button>
                 </form>
@@ -1026,6 +1030,10 @@
                             <label for="reg-email">Email Address <span class="required">*</span></label>
                             <input type="email" id="reg-email" name="email" placeholder="you@example.com" required>
                         </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="reg-password">Password <span class="required">*</span></label>
+                        <input type="password" id="reg-password" name="password" placeholder="At least 6 characters" required minlength="6">
                     </div>
                     <div class="form-group">
                         <label for="reg-bio">Bio <span class="optional">(optional)</span></label>
@@ -1321,19 +1329,24 @@
         $('signin-form').addEventListener('submit', function(e) {
             e.preventDefault();
             var email = $('signin-email').value.trim();
-            if (!email) return;
+            var password = $('signin-password').value;
+            if (!email || !password) return;
             var btn = $('signin-btn');
             btn.disabled = true;
             btn.innerHTML = '<span class="spinner"></span> Signing in...';
             hideAlert('signin-alert');
 
-            fetch('/api/artist/lookup?email=' + encodeURIComponent(email))
+            fetch('/api/artist/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: email, password: password })
+            })
                 .then(function(res) { return res.json(); })
                 .then(function(data) {
                     if (data.success && data.artist) {
                         setLoggedIn(data.artist);
                     } else {
-                        showAlert('signin-alert', data.error || 'No account found with that email. Please create an account first.');
+                        showAlert('signin-alert', data.message || 'Sign in failed. Please check your credentials.');
                     }
                 })
                 .catch(function() {
@@ -1355,8 +1368,15 @@
 
             var body = {
                 name: $('reg-name').value.trim(),
-                email: $('reg-email').value.trim()
+                email: $('reg-email').value.trim(),
+                password: $('reg-password').value
             };
+            if (!body.password || body.password.length < 6) {
+                showAlert('register-alert', 'Password must be at least 6 characters.');
+                btn.disabled = false;
+                btn.textContent = 'Create Account';
+                return;
+            }
             var bio = $('reg-bio').value.trim();
             var loc = $('reg-location').value.trim();
             var port = $('reg-portfolio').value.trim();

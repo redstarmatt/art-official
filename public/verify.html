@@ -1033,14 +1033,22 @@
                             <div class="embed-panel" id="embed-panel">
                                 <div class="embed-panel-title">Embed Code</div>
                                 <div class="embed-section">
-                                    <span class="embed-section-label">HTML</span>
+                                    <span class="embed-section-label">Widget (recommended)</span>
+                                    <p style="font-size:0.78rem;color:#718096;margin:0.25rem 0 0.5rem;">A card showing the artwork title, artist, tier, and thumbnail. Paste into your website HTML.</p>
+                                    <div class="embed-code-box">
+                                        <code id="embed-widget-code"></code>
+                                        <button type="button" class="copy-btn" data-target="embed-widget-code">Copy</button>
+                                    </div>
+                                </div>
+                                <div class="embed-section">
+                                    <span class="embed-section-label">Badge (HTML)</span>
                                     <div class="embed-code-box">
                                         <code id="embed-html-code"></code>
                                         <button type="button" class="copy-btn" data-target="embed-html-code">Copy</button>
                                     </div>
                                 </div>
                                 <div class="embed-section">
-                                    <span class="embed-section-label">Markdown</span>
+                                    <span class="embed-section-label">Badge (Markdown)</span>
                                     <div class="embed-code-box">
                                         <code id="embed-md-code"></code>
                                         <button type="button" class="copy-btn" data-target="embed-md-code">Copy</button>
@@ -1350,11 +1358,13 @@
                 .then(function(res) { return res.json(); })
                 .then(function(data) {
                     if (data.success) {
+                        $('embed-widget-code').textContent = data.widget || '';
                         $('embed-html-code').textContent = data.html || '';
                         $('embed-md-code').textContent = data.markdown || '';
                     } else {
                         // Fallback: generate embed code locally
                         var origin = location.origin;
+                        $('embed-widget-code').textContent = '<iframe src="' + origin + '/api/widget/' + currentCertId + '" width="340" height="160" style="border:none;border-radius:10px;" loading="lazy"></iframe>';
                         $('embed-html-code').textContent = '<a href="' + origin + '/verify.html?code=' + currentCertId + '"><img src="' + origin + '/api/badge/' + currentCertId + '" alt="Art-Official Certified" /></a>';
                         $('embed-md-code').textContent = '[![Art-Official Certified](' + origin + '/api/badge/' + currentCertId + ')](' + origin + '/verify.html?code=' + currentCertId + ')';
                     }
@@ -1363,6 +1373,7 @@
                 .catch(function() {
                     // Fallback on error
                     var origin = location.origin;
+                    $('embed-widget-code').textContent = '<iframe src="' + origin + '/api/widget/' + currentCertId + '" width="340" height="160" style="border:none;border-radius:10px;" loading="lazy"></iframe>';
                     $('embed-html-code').textContent = '<a href="' + origin + '/verify.html?code=' + currentCertId + '"><img src="' + origin + '/api/badge/' + currentCertId + '" alt="Art-Official Certified" /></a>';
                     $('embed-md-code').textContent = '[![Art-Official Certified](' + origin + '/api/badge/' + currentCertId + ')](' + origin + '/verify.html?code=' + currentCertId + ')';
                     panel.classList.add('show');
