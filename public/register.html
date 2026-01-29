@@ -976,7 +976,7 @@
 
         <!-- User bar -->
         <div class="user-bar" id="user-bar">
-            <span>Signed in as <strong id="user-name"></strong></span>
+            <span>Signed in as <strong id="user-name"></strong> <span id="plan-badge"></span></span>
             <button type="button" id="signout-btn">Sign out</button>
         </div>
 
@@ -1056,7 +1056,19 @@
 
         <!-- SUBMIT ARTWORK TAB -->
         <div class="tab-panel" id="panel-submit">
-            <div class="card">
+            <div id="work-counter" style="display:none;text-align:center;font-size:0.85rem;color:var(--ink-faint);margin-bottom:1rem;"></div>
+
+            <!-- Limit blocker (shown when Free tier at 3 works) -->
+            <div id="limit-blocker" style="display:none;">
+                <div class="card" style="text-align:center;padding:3rem 2rem;">
+                    <div style="font-size:2.5rem;margin-bottom:1rem;opacity:0.4;">&#9670;</div>
+                    <h2 class="card-title">Work Limit Reached</h2>
+                    <p class="card-subtitle">Your Free plan allows up to 3 certified works. Upgrade to Creator for unlimited certificates, QR codes, and a full dashboard.</p>
+                    <button type="button" class="btn btn-gold btn-lg" id="upgrade-from-blocker" style="margin-top:1rem;">Upgrade to Creator &mdash; &pound;5/month</button>
+                </div>
+            </div>
+
+            <div class="card" id="submit-card">
                 <h2 class="card-title">Submit Your Work</h2>
                 <p class="card-subtitle">Provide details and evidence to certify your work as authentically human-made.</p>
                 <div id="submit-alert" class="alert alert-error">
@@ -1208,6 +1220,28 @@
 
         <!-- MY CERTIFICATES TAB -->
         <div class="tab-panel" id="panel-dashboard">
+            <!-- Upgrade prompt (Free tier) -->
+            <div id="upgrade-section" style="display:none;">
+                <div class="card" style="text-align:center;padding:2rem;margin-bottom:1.5rem;border-color:var(--gold);background:linear-gradient(135deg, rgba(245,239,208,0.3), rgba(255,254,240,1));">
+                    <h3 class="card-title" style="color:var(--gold);font-size:1.25rem;">Upgrade to Creator</h3>
+                    <p style="color:var(--ink-light);font-size:0.9rem;margin-bottom:1.25rem;">Unlimited works, downloadable certificate cards, embed codes &mdash; &pound;5/month</p>
+                    <button type="button" class="btn btn-gold" id="upgrade-btn">Upgrade Now</button>
+                </div>
+            </div>
+
+            <!-- Plan management (Creator tier) -->
+            <div id="manage-plan-section" style="display:none;">
+                <div class="card" style="padding:1.5rem;margin-bottom:1.5rem;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;">
+                        <div>
+                            <span style="display:inline-flex;align-items:center;gap:0.35rem;padding:0.25rem 0.75rem;background:var(--gold-pale);color:var(--gold);border-radius:100px;font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;">Creator Plan</span>
+                            <p id="plan-status-text" style="font-size:0.85rem;color:var(--ink-light);margin-top:0.5rem;">Your Creator plan is active.</p>
+                        </div>
+                        <button type="button" class="btn btn-sm" id="cancel-plan-btn" style="color:var(--error);border:1px solid var(--error);background:transparent;">Cancel Plan</button>
+                    </div>
+                </div>
+            </div>
+
             <!-- Success card -->
             <div class="success-card" id="success-card">
                 <div class="success-card-header">
@@ -1234,6 +1268,30 @@
         </div>
     </main>
 
+    <!-- Stripe Payment Modal -->
+    <div id="payment-modal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:200;align-items:center;justify-content:center;">
+        <div style="background:white;border-radius:14px;max-width:480px;width:90%;padding:2.5rem;position:relative;box-shadow:0 24px 72px rgba(26,54,93,0.2);">
+            <button type="button" id="payment-modal-close" style="position:absolute;top:1rem;right:1rem;background:none;border:none;font-size:1.5rem;color:var(--ink-faint);cursor:pointer;">&times;</button>
+            <h2 class="card-title" style="margin-bottom:0.25rem;">Upgrade to Creator</h2>
+            <p class="card-subtitle" style="margin-bottom:1.5rem;">&pound;5/month &mdash; unlimited certificates, QR codes, embed codes</p>
+
+            <div id="payment-alert" class="alert alert-error" style="display:none;">
+                <span class="alert-icon">!</span>
+                <span id="payment-alert-msg"></span>
+            </div>
+
+            <div id="stripe-card-element" style="padding:0.875rem 1rem;border:1.5px solid rgba(26,54,93,0.18);border-radius:6px;background:var(--cream);margin-bottom:1.5rem;"></div>
+
+            <button type="button" class="btn btn-gold btn-lg btn-full" id="payment-submit-btn">
+                Subscribe &mdash; &pound;5/month
+            </button>
+
+            <p style="text-align:center;font-size:0.75rem;color:var(--ink-faint);margin-top:1rem;">
+                Secure payment via Stripe. Cancel anytime.
+            </p>
+        </div>
+    </div>
+
     <footer>
         <div class="footer-inner">
             <a href="/" class="logo" style="font-size:1.25rem;">Art-<span>Official</span></a>
@@ -1246,6 +1304,7 @@
         </div>
     </footer>
 
+    <script src="https://js.stripe.com/v3/"></script>
     <script>
     (function() {
         'use strict';
@@ -1255,6 +1314,9 @@
         var artworkFile = null;
         var selectedFiles = [];
         var evidenceVisibility = [];
+        var currentPlan = null;
+        var stripeInstance = null;
+        var stripeElements = null;
 
         // ---- DOM Helpers ----
         function $(id) { return document.getElementById(id); }
@@ -1293,6 +1355,7 @@
             $('tab-register').classList.add('hidden');
             var slug = artist.slug || artist.id;
             $('profile-link').href = '/profile.html?artist=' + encodeURIComponent(slug);
+            loadPlanInfo(artist.id);
             switchTab('submit');
         }
 
@@ -1666,7 +1729,7 @@
                 method: 'POST',
                 body: formData
             })
-            .then(function(res) { return res.json(); })
+            .then(function(res) { return res.json().then(function(d) { d._status = res.status; return d; }); })
             .then(function(data) {
                 if (data.success && data.certificate) {
                     showSuccessCard(data.certificate);
@@ -1679,9 +1742,14 @@
                     updateStrength();
                     $('desc-count').textContent = '0';
                     $('submit-btn').disabled = true;
+                    if (currentArtist) loadPlanInfo(currentArtist.id);
                     switchTab('dashboard');
+                } else if (data.limitReached) {
+                    showAlert('submit-alert', data.message);
+                    if (currentArtist) loadPlanInfo(currentArtist.id);
+                    btn.disabled = !$('declaration-check').checked;
                 } else {
-                    showAlert('submit-alert', data.error || 'Submission failed. Please try again.');
+                    showAlert('submit-alert', data.message || data.error || 'Submission failed. Please try again.');
                     btn.disabled = !$('declaration-check').checked;
                 }
             })
@@ -2022,6 +2090,191 @@
                     d.classList.remove('show');
                 });
             }
+        });
+
+        // ---- Plan Management ----
+        function loadPlanInfo(artistId) {
+            fetch('/api/artist/plan/' + encodeURIComponent(artistId))
+                .then(function(res) { return res.json(); })
+                .then(function(data) {
+                    if (data.success) {
+                        currentPlan = data;
+                        updatePlanUI();
+                    }
+                });
+        }
+
+        function updatePlanUI() {
+            if (!currentPlan) return;
+
+            var badge = $('plan-badge');
+            if (badge) {
+                if (currentPlan.plan === 'creator') {
+                    badge.innerHTML = '<span style="display:inline-flex;align-items:center;padding:0.2rem 0.6rem;background:var(--gold-pale);color:var(--gold);border-radius:100px;font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;">Creator</span>';
+                } else {
+                    badge.innerHTML = '<span style="display:inline-flex;align-items:center;padding:0.2rem 0.6rem;background:rgba(26,54,93,0.06);color:var(--ink-faint);border-radius:100px;font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;">Free</span>';
+                }
+            }
+
+            var counter = $('work-counter');
+            if (counter) {
+                counter.style.display = 'block';
+                if (currentPlan.plan === 'free') {
+                    counter.textContent = currentPlan.certificateCount + ' of ' + currentPlan.certificateLimit + ' works used';
+                    counter.style.color = currentPlan.certificateCount >= currentPlan.certificateLimit ? 'var(--error)' : 'var(--ink-faint)';
+                } else {
+                    counter.textContent = currentPlan.certificateCount + ' work' + (currentPlan.certificateCount !== 1 ? 's' : '') + ' certified (unlimited)';
+                    counter.style.color = 'var(--success)';
+                }
+            }
+
+            var upgradeSection = $('upgrade-section');
+            var managePlan = $('manage-plan-section');
+            if (upgradeSection) upgradeSection.style.display = currentPlan.plan === 'free' ? 'block' : 'none';
+            if (managePlan) {
+                managePlan.style.display = currentPlan.plan === 'creator' ? 'block' : 'none';
+                if (currentPlan.planStatus === 'canceling' && currentPlan.planExpiresAt) {
+                    var d = new Date(currentPlan.planExpiresAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+                    $('plan-status-text').textContent = 'Your Creator plan is active until ' + d + '. After that, you\'ll be on the Free plan.';
+                } else {
+                    $('plan-status-text').textContent = 'Your Creator plan is active.';
+                }
+            }
+
+            // Show/hide submit form vs limit blocker
+            var blocker = $('limit-blocker');
+            var submitCard = $('submit-card');
+            if (blocker && submitCard) {
+                if (currentPlan.plan === 'free' && currentPlan.certificateCount >= currentPlan.certificateLimit) {
+                    blocker.style.display = 'block';
+                    submitCard.style.display = 'none';
+                } else {
+                    blocker.style.display = 'none';
+                    submitCard.style.display = '';
+                }
+            }
+        }
+
+        // ---- Stripe Payment Flow ----
+        // Init Stripe
+        fetch('/api/config')
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+                if (data.stripePublishableKey) {
+                    stripeInstance = Stripe(data.stripePublishableKey);
+                }
+            });
+
+        function openPaymentModal() {
+            var modal = $('payment-modal');
+            modal.style.display = 'flex';
+            $('payment-alert').style.display = 'none';
+
+            if (stripeInstance && !stripeElements) {
+                stripeElements = stripeInstance.elements();
+                var cardElement = stripeElements.create('card', {
+                    style: {
+                        base: {
+                            fontFamily: "'DM Sans', sans-serif",
+                            fontSize: '16px',
+                            color: '#2d3748',
+                            '::placeholder': { color: '#a0aec0' }
+                        },
+                        invalid: { color: '#c53030' }
+                    }
+                });
+                cardElement.mount('#stripe-card-element');
+            }
+        }
+
+        function closePaymentModal() {
+            $('payment-modal').style.display = 'none';
+            $('payment-alert').style.display = 'none';
+        }
+
+        // Upgrade buttons
+        $('upgrade-btn').addEventListener('click', openPaymentModal);
+        $('upgrade-from-blocker').addEventListener('click', openPaymentModal);
+        $('payment-modal-close').addEventListener('click', closePaymentModal);
+
+        // Payment submit
+        $('payment-submit-btn').addEventListener('click', function() {
+            if (!currentArtist || !stripeInstance || !stripeElements) return;
+
+            var btn = $('payment-submit-btn');
+            btn.disabled = true;
+            btn.textContent = 'Processing...';
+            $('payment-alert').style.display = 'none';
+
+            fetch('/api/stripe/create-subscription', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ artistId: currentArtist.id })
+            })
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+                if (!data.success || !data.clientSecret) {
+                    throw new Error(data.message || 'Failed to create subscription');
+                }
+                return stripeInstance.confirmCardPayment(data.clientSecret, {
+                    payment_method: {
+                        card: stripeElements.getElement('card'),
+                        billing_details: { name: currentArtist.name, email: currentArtist.email }
+                    }
+                });
+            })
+            .then(function(result) {
+                if (result.error) {
+                    throw new Error(result.error.message);
+                }
+                if (result.paymentIntent.status === 'succeeded') {
+                    closePaymentModal();
+                    currentPlan.plan = 'creator';
+                    currentPlan.planStatus = 'active';
+                    currentPlan.certificateLimit = null;
+                    updatePlanUI();
+                    loadPlanInfo(currentArtist.id);
+                }
+            })
+            .catch(function(err) {
+                $('payment-alert').style.display = 'flex';
+                $('payment-alert-msg').textContent = err.message || 'Payment failed. Please try again.';
+            })
+            .finally(function() {
+                btn.disabled = false;
+                btn.textContent = 'Subscribe \u2014 \u00A35/month';
+            });
+        });
+
+        // Cancel plan
+        $('cancel-plan-btn').addEventListener('click', function() {
+            if (!currentArtist) return;
+            if (!confirm('Are you sure you want to cancel your Creator plan? You\'ll keep access until the end of your billing period.')) return;
+
+            var btn = $('cancel-plan-btn');
+            btn.disabled = true;
+            btn.textContent = 'Canceling...';
+
+            fetch('/api/stripe/cancel-subscription', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ artistId: currentArtist.id })
+            })
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+                if (data.success) {
+                    loadPlanInfo(currentArtist.id);
+                } else {
+                    alert(data.message || 'Failed to cancel subscription.');
+                }
+            })
+            .catch(function() {
+                alert('Connection error. Please try again.');
+            })
+            .finally(function() {
+                btn.disabled = false;
+                btn.textContent = 'Cancel Plan';
+            });
         });
 
         // ---- Init ----

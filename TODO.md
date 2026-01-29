@@ -17,6 +17,7 @@
 - [x] Set up GitHub repo
 
 ## Pending
-- [ ] Configure SMTP for certificate emails
-  - Set env vars on Railway: SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM
-  - Options: Gmail (App Password), Resend, Mailgun, or Brevo
+- [ ] Configure Stripe for production (set STRIPE_SECRET_KEY, STRIPE_PUBLISHABLE_KEY, STRIPE_WEBHOOK_SECRET, STRIPE_CREATOR_PRICE_ID on Railway)
+  - Create Product + £5/month Price in Stripe dashboard, set up webhook endpoint
+- [ ] Add custom domain and verify in Resend so emails send from @art-official.com (or similar)
+  - Buy domain, add DNS records (SPF, DKIM), update SMTP_FROM env var on Railway

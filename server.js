@@ -4,11 +4,74 @@ const QRCode = require('qrcode');
 const multer = require('multer');
 const bcrypt = require('bcryptjs');
 const nodemailer = require('nodemailer');
+const Stripe = require('stripe');
 const path = require('path');
 const fs = require('fs');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Stripe setup
+const stripe = process.env.STRIPE_SECRET_KEY ? Stripe(process.env.STRIPE_SECRET_KEY) : null;
+if (stripe) console.log('Stripe payments enabled');
+
+// Stripe webhook — must be before express.json() for raw body signature verification
+app.post('/api/webhooks/stripe', express.raw({ type: 'application/json' }), async (req, res) => {
+    if (!stripe) return res.status(400).json({ error: 'Stripe not configured' });
+
+    const sig = req.headers['stripe-signature'];
+    let event;
+    try {
+        event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
+    } catch (err) {
+        console.error('Webhook signature verification failed:', err.message);
+        return res.status(400).send('Webhook Error: ' + err.message);
+    }
+
+    const db = loadDB();
+
+    switch (event.type) {
+        case 'invoice.paid': {
+            const invoice = event.data.object;
+            const artist = Object.values(db.artists).find(a => a.stripeCustomerId === invoice.customer);
+            if (artist) {
+                artist.plan = 'creator';
+                artist.planStatus = 'active';
+                artist.planExpiresAt = null;
+                saveDB(db);
+            }
+            break;
+        }
+        case 'customer.subscription.updated': {
+            const subscription = event.data.object;
+            const artist = Object.values(db.artists).find(a => a.stripeCustomerId === subscription.customer);
+            if (artist) {
+                if (subscription.cancel_at_period_end) {
+                    artist.planStatus = 'canceling';
+                    artist.planExpiresAt = new Date(subscription.current_period_end * 1000).toISOString();
+                } else {
+                    artist.planStatus = 'active';
+                    artist.planExpiresAt = null;
+                }
+                saveDB(db);
+            }
+            break;
+        }
+        case 'customer.subscription.deleted': {
+            const subscription = event.data.object;
+            const artist = Object.values(db.artists).find(a => a.stripeCustomerId === subscription.customer);
+            if (artist) {
+                artist.plan = 'free';
+                artist.planStatus = 'expired';
+                artist.stripeSubscriptionId = null;
+                saveDB(db);
+            }
+            break;
+        }
+    }
+
+    res.json({ received: true });
+});
 
 // Middleware
 app.use(express.json());
@@ -64,6 +127,23 @@ function calculateTier(fileCount, description, hasProcessNotes) {
     if (score >= 5) return { tier: 'gold', label: 'Gold', strength: 100 };
     if (score >= 3) return { tier: 'silver', label: 'Silver', strength: 70 };
     return { tier: 'bronze', label: 'Bronze', strength: 40 };
+}
+
+// Plan helpers — determine effective subscription tier
+function getEffectivePlan(artist) {
+    if (!artist.plan || artist.plan === 'free') return 'free';
+    if (artist.plan === 'creator') {
+        if (artist.planStatus === 'expired') return 'free';
+        if (artist.planStatus === 'canceling' && artist.planExpiresAt && new Date(artist.planExpiresAt) < new Date()) {
+            return 'free';
+        }
+        return 'creator';
+    }
+    return 'free';
+}
+
+function isCreator(artist) {
+    return getEffectivePlan(artist) === 'creator';
 }
 
 // Get public evidence files from a certificate (handles old and new format)
@@ -160,7 +240,7 @@ async function sendCertificateEmail(artist, certificate, host) {
 
 // Sanitise artist for client (strip password hash)
 function safeArtist(artist) {
-    const { passwordHash, ...safe } = artist;
+    const { passwordHash, stripeCustomerId, stripeSubscriptionId, ...safe } = artist;
     return safe;
 }
 
@@ -191,6 +271,11 @@ app.post('/api/artist/register', async (req, res) => {
         location: location || '',
         slug,
         passwordHash,
+        plan: 'free',
+        stripeCustomerId: null,
+        stripeSubscriptionId: null,
+        planStatus: 'active',
+        planExpiresAt: null,
         createdAt: new Date().toISOString()
     };
     db.artists[artistId] = artist;
@@ -270,6 +355,18 @@ app.post('/api/artwork/submit', artworkUpload, async (req, res) => {
 
     if (!artist) {
         return res.status(404).json({ success: false, message: 'Artist not found' });
+    }
+
+    // Check work limit for Free tier
+    if (!isCreator(artist)) {
+        const existingCerts = Object.values(db.certificates).filter(c => c.artistId === artistId);
+        if (existingCerts.length >= 3) {
+            return res.status(403).json({
+                success: false,
+                message: 'Free plan limited to 3 works. Upgrade to Creator for unlimited certificates.',
+                limitReached: true
+            });
+        }
     }
 
     // Artwork image (single file)
@@ -504,6 +601,108 @@ app.get('/api/embed/:certificateId', (req, res) => {
         verifyUrl,
         widgetUrl
     });
+});
+
+// Stripe config (publishable key for frontend)
+app.get('/api/config', (req, res) => {
+    res.json({
+        stripePublishableKey: process.env.STRIPE_PUBLISHABLE_KEY || null
+    });
+});
+
+// Get artist plan info
+app.get('/api/artist/plan/:artistId', (req, res) => {
+    const { artistId } = req.params;
+    const db = loadDB();
+    const artist = db.artists[artistId];
+    if (!artist) return res.status(404).json({ success: false, message: 'Artist not found' });
+
+    const certCount = Object.values(db.certificates).filter(c => c.artistId === artistId).length;
+    const plan = getEffectivePlan(artist);
+
+    res.json({
+        success: true,
+        plan,
+        planStatus: artist.planStatus || 'active',
+        planExpiresAt: artist.planExpiresAt || null,
+        certificateCount: certCount,
+        certificateLimit: plan === 'creator' ? null : 3
+    });
+});
+
+// Create Stripe subscription
+app.post('/api/stripe/create-subscription', async (req, res) => {
+    if (!stripe) return res.status(400).json({ success: false, message: 'Payments not configured' });
+
+    const { artistId } = req.body;
+    const db = loadDB();
+    const artist = db.artists[artistId];
+    if (!artist) return res.status(404).json({ success: false, message: 'Artist not found' });
+
+    try {
+        let customerId = artist.stripeCustomerId;
+        if (!customerId) {
+            const customer = await stripe.customers.create({
+                email: artist.email,
+                name: artist.name,
+                metadata: { artistId: artist.id }
+            });
+            customerId = customer.id;
+            artist.stripeCustomerId = customerId;
+            saveDB(db);
+        }
+
+        const subscription = await stripe.subscriptions.create({
+            customer: customerId,
+            items: [{ price: process.env.STRIPE_CREATOR_PRICE_ID }],
+            payment_behavior: 'default_incomplete',
+            payment_settings: { save_default_payment_method: 'on_subscription' },
+            expand: ['latest_invoice.payment_intent']
+        });
+
+        artist.stripeSubscriptionId = subscription.id;
+        saveDB(db);
+
+        res.json({
+            success: true,
+            subscriptionId: subscription.id,
+            clientSecret: subscription.latest_invoice.payment_intent.client_secret
+        });
+    } catch (err) {
+        console.error('Stripe create subscription error:', err.message);
+        res.status(500).json({ success: false, message: 'Failed to create subscription: ' + err.message });
+    }
+});
+
+// Cancel Stripe subscription
+app.post('/api/stripe/cancel-subscription', async (req, res) => {
+    if (!stripe) return res.status(400).json({ success: false, message: 'Payments not configured' });
+
+    const { artistId } = req.body;
+    const db = loadDB();
+    const artist = db.artists[artistId];
+    if (!artist || !artist.stripeSubscriptionId) {
+        return res.status(400).json({ success: false, message: 'No active subscription found' });
+    }
+
+    try {
+        const subscription = await stripe.subscriptions.update(artist.stripeSubscriptionId, {
+            cancel_at_period_end: true
+        });
+
+        artist.planStatus = 'canceling';
+        artist.planExpiresAt = new Date(subscription.current_period_end * 1000).toISOString();
+        saveDB(db);
+
+        res.json({
+            success: true,
+            message: 'Subscription will cancel at end of billing period',
+            planExpiresAt: artist.planExpiresAt
+        });
+    } catch (err) {
+        console.error('Stripe cancel error:', err.message);
+        res.status(500).json({ success: false, message: 'Failed to cancel subscription' });
+    }
 });
 
 // Stats endpoint
