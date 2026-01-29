@@ -1111,6 +1111,7 @@
                 <div class="cta-inner fade-up">
                     <h2>Your work is art-official.<br>Now you can prove it.</h2>
                     <p>Join creators who are building verifiable trust with their fans, collectors, galleries, and buyers.</p>
+                    <div id="community-stats" style="display:none;margin:1.5rem 0 0.5rem;font-size:0.9rem;color:rgba(255,254,240,0.7);letter-spacing:0.02em;"></div>
                     <a href="register.html" class="btn btn-gold btn-lg">Certify Your First Work Free</a>
                 </div>
             </div>
@@ -1165,6 +1166,19 @@
         document.querySelectorAll('.fade-up').forEach(function(el) {
             observer.observe(el);
         });
+
+        // Community stats
+        fetch('/api/stats')
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+                if (data.success && (data.certificates > 0 || data.artists > 0)) {
+                    var el = document.getElementById('community-stats');
+                    el.textContent = data.certificates + ' work' + (data.certificates !== 1 ? 's' : '') +
+                        ' certified by ' + data.artists + ' creator' + (data.artists !== 1 ? 's' : '');
+                    el.style.display = 'block';
+                }
+            })
+            .catch(function() {});
     </script>
 </body>
 </html>

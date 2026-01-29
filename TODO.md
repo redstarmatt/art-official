@@ -20,6 +20,10 @@
 - [x] Changed hero example to digital illustration (more relevant to AI risk)
 - [x] Evidence visibility prompting (explain public vs private WIP files)
 - [x] Increased watermark visibility on certificate images
+- [x] Delete/withdraw certificates from dashboard
+- [x] Edit certificate text (title, description, process notes)
+- [x] Open Graph meta tags on verify page for social sharing previews
+- [x] Live community stats counter on landing page
 
 ## Pending
 - [ ] Configure Stripe for production (set STRIPE_SECRET_KEY, STRIPE_PUBLISHABLE_KEY, STRIPE_WEBHOOK_SECRET, STRIPE_CREATOR_PRICE_ID on Railway)

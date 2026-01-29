@@ -76,6 +76,47 @@ app.post('/api/webhooks/stripe', express.raw({ type: 'application/json' }), asyn
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Verify page with Open Graph meta tags for social sharing
+app.get('/verify.html', (req, res, next) => {
+    const code = req.query.code;
+    if (!code) return next(); // no code, serve static file
+
+    const db = loadDB();
+    const cert = db.certificates[code.toUpperCase()];
+    if (!cert) return next(); // cert not found, let static page handle
+
+    const host = `${req.protocol}://${req.get('host')}`;
+    const verifyUrl = `${host}/verify.html?code=${encodeURIComponent(cert.id)}`;
+    const imageUrl = cert.artworkImage ? `${host}/uploads/${cert.artworkImage}` : null;
+
+    const escAttr = s => (s || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+
+    const ogTags = [
+        `<meta property="og:type" content="article">`,
+        `<meta property="og:title" content="${escAttr(cert.title)} — Art-Official Certificate">`,
+        `<meta property="og:description" content="Certified human-made work by ${escAttr(cert.artistName)}. ${escAttr(cert.tierLabel || cert.tier || 'Bronze')} tier certification.">`,
+        `<meta property="og:url" content="${escAttr(verifyUrl)}">`,
+        `<meta name="twitter:card" content="${imageUrl ? 'summary_large_image' : 'summary'}">`,
+        `<meta name="twitter:title" content="${escAttr(cert.title)} — Art-Official Certificate">`,
+        `<meta name="twitter:description" content="Certified human-made work by ${escAttr(cert.artistName)}.">`
+    ];
+    if (imageUrl) {
+        ogTags.push(`<meta property="og:image" content="${escAttr(imageUrl)}">`);
+        ogTags.push(`<meta name="twitter:image" content="${escAttr(imageUrl)}">`);
+    }
+
+    let html = fs.readFileSync(path.join(__dirname, 'public', 'verify.html'), 'utf8');
+    html = html.replace('</head>', ogTags.join('\n    ') + '\n</head>');
+    // Update page title
+    html = html.replace(
+        '<title>Verify Certificate — Art-Official</title>',
+        `<title>${escAttr(cert.title)} by ${escAttr(cert.artistName)} — Art-Official</title>`
+    );
+
+    res.send(html);
+});
+
 app.use(express.static('public'));
 app.use('/uploads', express.static('uploads'));
 
@@ -703,6 +744,85 @@ app.post('/api/stripe/cancel-subscription', async (req, res) => {
         console.error('Stripe cancel error:', err.message);
         res.status(500).json({ success: false, message: 'Failed to cancel subscription' });
     }
+});
+
+// Delete certificate
+app.delete('/api/artwork/:certificateId', (req, res) => {
+    const { certificateId } = req.params;
+    const { artistId } = req.body;
+
+    if (!artistId) {
+        return res.status(400).json({ success: false, message: 'Artist ID required' });
+    }
+
+    const db = loadDB();
+    const cert = db.certificates[certificateId.toUpperCase()];
+
+    if (!cert) {
+        return res.status(404).json({ success: false, message: 'Certificate not found' });
+    }
+
+    if (cert.artistId !== artistId) {
+        return res.status(403).json({ success: false, message: 'Not authorized' });
+    }
+
+    // Delete associated files
+    const uploadsDir = path.join(__dirname, 'uploads');
+    if (cert.artworkImage) {
+        const artPath = path.join(uploadsDir, cert.artworkImage);
+        if (fs.existsSync(artPath)) fs.unlinkSync(artPath);
+    }
+    if (cert.evidenceFiles && cert.evidenceFiles.length > 0) {
+        cert.evidenceFiles.forEach(ef => {
+            const fPath = path.join(uploadsDir, ef.filename);
+            if (fs.existsSync(fPath)) fs.unlinkSync(fPath);
+        });
+    }
+
+    delete db.certificates[certificateId.toUpperCase()];
+    saveDB(db);
+
+    res.json({ success: true, message: 'Certificate deleted' });
+});
+
+// Edit certificate (text fields only)
+app.put('/api/artwork/:certificateId', (req, res) => {
+    const { certificateId } = req.params;
+    const { artistId, title, description, processNotes } = req.body;
+
+    if (!artistId) {
+        return res.status(400).json({ success: false, message: 'Artist ID required' });
+    }
+
+    const db = loadDB();
+    const cert = db.certificates[certificateId.toUpperCase()];
+
+    if (!cert) {
+        return res.status(404).json({ success: false, message: 'Certificate not found' });
+    }
+
+    if (cert.artistId !== artistId) {
+        return res.status(403).json({ success: false, message: 'Not authorized' });
+    }
+
+    // Only update provided fields
+    if (title !== undefined && title.trim()) {
+        cert.title = title.trim();
+        cert.artistName = db.artists[artistId]?.name || cert.artistName;
+    }
+    if (description !== undefined) cert.description = description.trim();
+    if (processNotes !== undefined) cert.processNotes = processNotes.trim();
+
+    // Recalculate tier based on updated fields
+    const fileCount = (cert.artworkImage ? 1 : 0) + (cert.evidenceFiles ? cert.evidenceFiles.length : 0);
+    const tierResult = calculateTier(fileCount, cert.description, !!cert.processNotes);
+    cert.tier = tierResult.tier;
+    cert.tierLabel = tierResult.label;
+    cert.evidenceStrength = tierResult.strength;
+
+    saveDB(db);
+
+    res.json({ success: true, certificate: cert });
 });
 
 // Stats endpoint

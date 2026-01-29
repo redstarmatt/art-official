@@ -637,6 +637,70 @@
             display: flex;
             gap: 0.5rem;
             align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .cert-action-btn {
+            background: none;
+            border: 1px solid rgba(26, 54, 93, 0.15);
+            border-radius: 6px;
+            padding: 0.35rem 0.65rem;
+            font-size: 0.75rem;
+            font-family: 'DM Sans', sans-serif;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: var(--ink-faint);
+        }
+        .cert-action-btn:hover { border-color: var(--navy); color: var(--navy); }
+        .cert-action-btn.delete-btn:hover { border-color: var(--error); color: var(--error); }
+
+        /* Modal overlay */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 200;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-overlay.show { display: flex; }
+
+        .modal-box {
+            background: white;
+            border-radius: 14px;
+            max-width: 520px;
+            width: 90%;
+            padding: 2rem;
+            position: relative;
+            box-shadow: 0 24px 72px rgba(26, 54, 93, 0.2);
+            animation: slideUp 0.3s ease;
+        }
+
+        .modal-box h3 {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.35rem;
+            color: var(--navy);
+            margin-bottom: 0.75rem;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 1rem; right: 1rem;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: var(--ink-faint);
+            cursor: pointer;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 0.75rem;
+            margin-top: 1.5rem;
+            justify-content: flex-end;
         }
 
         .tier-badge {
@@ -1270,6 +1334,49 @@
             </div>
         </div>
     </main>
+
+    <!-- Delete Confirmation Modal -->
+    <div class="modal-overlay" id="delete-modal">
+        <div class="modal-box">
+            <button type="button" class="modal-close" id="delete-modal-close">&times;</button>
+            <h3>Withdraw Certificate</h3>
+            <p style="color:var(--ink-light);font-size:0.9rem;line-height:1.6;">
+                Are you sure you want to withdraw <strong id="delete-cert-title"></strong>? This will permanently remove the certificate from the registry. This action cannot be undone.
+            </p>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-sm btn-outline" id="delete-cancel-btn">Cancel</button>
+                <button type="button" class="btn btn-sm" id="delete-confirm-btn" style="background:var(--error);">Withdraw</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Certificate Modal -->
+    <div class="modal-overlay" id="edit-modal">
+        <div class="modal-box">
+            <button type="button" class="modal-close" id="edit-modal-close">&times;</button>
+            <h3>Edit Certificate</h3>
+            <div id="edit-alert" class="alert alert-error" style="display:none;">
+                <span class="alert-icon">!</span>
+                <span id="edit-alert-msg"></span>
+            </div>
+            <div class="form-group" style="margin-top:1rem;">
+                <label for="edit-title">Title</label>
+                <input type="text" id="edit-title" class="form-input" required>
+            </div>
+            <div class="form-group">
+                <label for="edit-description">Description</label>
+                <textarea id="edit-description" class="form-input" rows="3"></textarea>
+            </div>
+            <div class="form-group">
+                <label for="edit-process-notes">Process Notes</label>
+                <textarea id="edit-process-notes" class="form-input" rows="3"></textarea>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-sm btn-outline" id="edit-cancel-btn">Cancel</button>
+                <button type="button" class="btn btn-sm btn-gold" id="edit-save-btn">Save Changes</button>
+            </div>
+        </div>
+    </div>
 
     <!-- Stripe Payment Modal -->
     <div id="payment-modal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:200;align-items:center;justify-content:center;">
@@ -2000,6 +2107,8 @@
                 '</div>' +
                 '<div class="cert-item-actions">' +
                     '<span class="tier-badge tier-' + tierClass + '">' + escHtml(cert.tier || 'Bronze') + '</span>' +
+                    '<button type="button" class="cert-action-btn edit-cert-btn" data-cert-id="' + certId + '" data-cert-title="' + escHtml(cert.title) + '" data-cert-desc="' + escHtml(cert.description || '') + '" data-cert-notes="' + escHtml(cert.processNotes || '') + '">Edit</button>' +
+                    '<button type="button" class="cert-action-btn delete-btn delete-cert-btn" data-cert-id="' + certId + '" data-cert-title="' + escHtml(cert.title) + '">Withdraw</button>' +
                     '<div class="embed-wrap">' +
                         '<button type="button" class="btn btn-sm btn-outline embed-toggle-btn" data-cert-id="' + certId + '">Get Embed Code</button>' +
                         '<div class="embed-dropdown" id="embed-' + certId + '">' +
@@ -2097,6 +2206,111 @@
                     d.classList.remove('show');
                 });
             }
+        });
+
+        // ---- Delete Certificate ----
+        var deleteCertId = null;
+
+        document.addEventListener('click', function(e) {
+            var delBtn = e.target.closest('.delete-cert-btn');
+            if (delBtn) {
+                deleteCertId = delBtn.getAttribute('data-cert-id');
+                $('delete-cert-title').textContent = delBtn.getAttribute('data-cert-title');
+                $('delete-modal').classList.add('show');
+            }
+        });
+
+        $('delete-modal-close').addEventListener('click', function() { $('delete-modal').classList.remove('show'); });
+        $('delete-cancel-btn').addEventListener('click', function() { $('delete-modal').classList.remove('show'); });
+
+        $('delete-confirm-btn').addEventListener('click', function() {
+            if (!deleteCertId || !currentArtist) return;
+            var btn = this;
+            btn.disabled = true;
+            btn.textContent = 'Withdrawing...';
+
+            fetch('/api/artwork/' + encodeURIComponent(deleteCertId), {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ artistId: currentArtist.id })
+            })
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+                if (data.success) {
+                    $('delete-modal').classList.remove('show');
+                    loadCertificates();
+                    if (currentArtist) loadPlanInfo(currentArtist.id);
+                } else {
+                    alert(data.message || 'Failed to withdraw certificate.');
+                }
+            })
+            .catch(function() { alert('Connection error. Please try again.'); })
+            .finally(function() {
+                btn.disabled = false;
+                btn.textContent = 'Withdraw';
+            });
+        });
+
+        // ---- Edit Certificate ----
+        var editCertId = null;
+
+        document.addEventListener('click', function(e) {
+            var editBtn = e.target.closest('.edit-cert-btn');
+            if (editBtn) {
+                editCertId = editBtn.getAttribute('data-cert-id');
+                $('edit-title').value = editBtn.getAttribute('data-cert-title') || '';
+                $('edit-description').value = editBtn.getAttribute('data-cert-desc') || '';
+                $('edit-process-notes').value = editBtn.getAttribute('data-cert-notes') || '';
+                var editAlert = $('edit-alert');
+                if (editAlert) editAlert.style.display = 'none';
+                $('edit-modal').classList.add('show');
+            }
+        });
+
+        $('edit-modal-close').addEventListener('click', function() { $('edit-modal').classList.remove('show'); });
+        $('edit-cancel-btn').addEventListener('click', function() { $('edit-modal').classList.remove('show'); });
+
+        $('edit-save-btn').addEventListener('click', function() {
+            if (!editCertId || !currentArtist) return;
+            var title = $('edit-title').value.trim();
+            if (!title) {
+                $('edit-alert-msg').textContent = 'Title is required.';
+                $('edit-alert').style.display = 'flex';
+                return;
+            }
+
+            var btn = this;
+            btn.disabled = true;
+            btn.textContent = 'Saving...';
+
+            fetch('/api/artwork/' + encodeURIComponent(editCertId), {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    artistId: currentArtist.id,
+                    title: title,
+                    description: $('edit-description').value.trim(),
+                    processNotes: $('edit-process-notes').value.trim()
+                })
+            })
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+                if (data.success) {
+                    $('edit-modal').classList.remove('show');
+                    loadCertificates();
+                } else {
+                    $('edit-alert-msg').textContent = data.message || 'Failed to save changes.';
+                    $('edit-alert').style.display = 'flex';
+                }
+            })
+            .catch(function() {
+                $('edit-alert-msg').textContent = 'Connection error. Please try again.';
+                $('edit-alert').style.display = 'flex';
+            })
+            .finally(function() {
+                btn.disabled = false;
+                btn.textContent = 'Save Changes';
+            });
         });
 
         // ---- Plan Management ----
