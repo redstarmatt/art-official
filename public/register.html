@@ -1120,18 +1120,44 @@
                         <p class="form-hint">Including process notes strengthens your certification tier.</p>
                     </div>
 
-                    <!-- Evidence upload -->
+                    <!-- Artwork image upload -->
                     <div class="form-group">
-                        <label>Evidence Upload <span class="optional">(up to 10 files)</span></label>
+                        <label>Artwork Image <span class="optional">(recommended)</span></label>
+                        <div class="upload-area" id="artwork-upload-area">
+                            <div class="upload-icon">&#8686;</div>
+                            <h4>Upload the finished piece</h4>
+                            <p>or <strong id="artwork-browse-trigger">click to browse</strong></p>
+                            <p style="margin-top:0.5rem;font-size:0.78rem;">This image will be displayed on your certificate page</p>
+                        </div>
+                        <input type="file" id="artwork-input" class="file-input-hidden" accept="image/*">
+                        <div class="file-thumbnails" id="artwork-thumbnail"></div>
+                    </div>
+
+                    <!-- Process evidence / WIP upload -->
+                    <div class="form-group">
+                        <label>Process Evidence / WIPs <span class="optional">(optional, up to 10 files)</span></label>
                         <div class="upload-area" id="upload-area">
                             <div class="upload-icon">&#8686;</div>
-                            <h4>Drag and drop your evidence files here</h4>
+                            <h4>Upload work-in-progress evidence</h4>
                             <p>or <strong id="browse-trigger">click to browse</strong></p>
-                            <p style="margin-top:0.5rem;font-size:0.78rem;">Process photos, WIP shots, sketches, timelapses, source files</p>
+                            <p style="margin-top:0.5rem;font-size:0.78rem;">WIP images, drafts, sketches, source files, screenshots</p>
                         </div>
-                        <input type="file" id="evidence-input" class="file-input-hidden" multiple accept="image/*,video/*,.pdf,.psd,.ai,.svg,.sketch">
+                        <input type="file" id="evidence-input" class="file-input-hidden" multiple accept="image/*,video/*,.pdf,.psd,.ai,.svg,.sketch,.doc,.docx,.txt">
                         <div class="file-thumbnails" id="file-thumbnails"></div>
                         <div class="file-count" id="file-count"></div>
+                    </div>
+
+                    <!-- Writing-specific guidance -->
+                    <div id="writing-guidance" style="display:none;margin-top:-0.5rem;margin-bottom:1rem;padding:1rem 1.25rem;background:rgba(26,54,93,0.03);border-radius:8px;border:1px solid rgba(26,54,93,0.08);">
+                        <strong style="color:#1a365d;font-size:0.85rem;">Evidence suggestions for written works:</strong>
+                        <ul style="margin-top:0.5rem;padding-left:1.25rem;font-size:0.82rem;color:#718096;line-height:1.8;">
+                            <li>Early drafts or manuscript versions showing revisions</li>
+                            <li>Handwritten notes, outlines, or brainstorming pages</li>
+                            <li>Screenshots of your word processor with timestamps visible</li>
+                            <li>Revision history exports (e.g. Google Docs version history)</li>
+                            <li>Research notes or reference materials you gathered</li>
+                            <li>Editor feedback or tracked-changes documents</li>
+                        </ul>
                     </div>
 
                     <!-- Evidence Strength Meter -->
@@ -1156,6 +1182,11 @@
                             may result in the revocation of any certificate issued and the removal of my work from the Art-Official registry.
                             I grant Art-Official permission to display my certificate publicly for verification purposes.
                         </div>
+                        <p style="font-size:0.82rem;border-top:1px solid rgba(26,54,93,0.08);padding-top:0.75rem;margin-top:0.75rem;color:#4a5568;">
+                            <strong>Copyright Notice:</strong> All rights reserved by the original creator.
+                            Registration with Art-Official does not transfer, assign, or affect copyright
+                            ownership in any way. Your work remains yours.
+                        </p>
                         <div class="checkbox-group">
                             <input type="checkbox" id="declaration-check" required>
                             <label for="declaration-check">I confirm that this work is authentically human-made and I agree to the declaration above.</label>
@@ -1201,6 +1232,7 @@
             <div class="footer-links">
                 <a href="/">Home</a>
                 <a href="verify.html">Verify</a>
+                <a href="legal.html">Legal</a>
             </div>
             <p>&copy; 2026 Art-Official</p>
         </div>
@@ -1212,7 +1244,9 @@
 
         // ---- State ----
         var currentArtist = null;
+        var artworkFile = null;
         var selectedFiles = [];
+        var evidenceVisibility = [];
 
         // ---- DOM Helpers ----
         function $(id) { return document.getElementById(id); }
@@ -1328,7 +1362,7 @@
             var port = $('reg-portfolio').value.trim();
             if (bio) body.bio = bio;
             if (loc) body.location = loc;
-            if (port) body.portfolioUrl = port;
+            if (port) body.portfolio = port;
 
             fetch('/api/artist/register', {
                 method: 'POST',
@@ -1366,22 +1400,62 @@
             $('submit-btn').disabled = !this.checked;
         });
 
-        // File upload
+        // ---- Artwork image upload ----
+        var artworkArea = $('artwork-upload-area');
+        var artworkInput = $('artwork-input');
+
+        artworkArea.addEventListener('click', function() { artworkInput.click(); });
+        artworkArea.addEventListener('dragover', function(e) { e.preventDefault(); artworkArea.classList.add('dragover'); });
+        artworkArea.addEventListener('dragleave', function(e) { e.preventDefault(); artworkArea.classList.remove('dragover'); });
+        artworkArea.addEventListener('drop', function(e) {
+            e.preventDefault();
+            artworkArea.classList.remove('dragover');
+            if (e.dataTransfer.files.length > 0) setArtworkFile(e.dataTransfer.files[0]);
+        });
+        artworkInput.addEventListener('change', function() {
+            if (artworkInput.files.length > 0) setArtworkFile(artworkInput.files[0]);
+            artworkInput.value = '';
+        });
+
+        function setArtworkFile(file) {
+            if (!file.type || !file.type.startsWith('image/')) return;
+            artworkFile = file;
+            renderArtworkThumbnail();
+            updateStrength();
+        }
+
+        function renderArtworkThumbnail() {
+            var container = $('artwork-thumbnail');
+            container.innerHTML = '';
+            if (!artworkFile) return;
+
+            var thumb = document.createElement('div');
+            thumb.className = 'file-thumb';
+            var img = document.createElement('img');
+            img.src = URL.createObjectURL(artworkFile);
+            img.alt = artworkFile.name;
+            thumb.appendChild(img);
+
+            var removeBtn = document.createElement('button');
+            removeBtn.className = 'file-thumb-remove';
+            removeBtn.type = 'button';
+            removeBtn.innerHTML = '&#10005;';
+            removeBtn.addEventListener('click', function() {
+                artworkFile = null;
+                renderArtworkThumbnail();
+                updateStrength();
+            });
+            thumb.appendChild(removeBtn);
+            container.appendChild(thumb);
+        }
+
+        // ---- Evidence / WIP upload ----
         var uploadArea = $('upload-area');
         var evidenceInput = $('evidence-input');
 
         uploadArea.addEventListener('click', function() { evidenceInput.click(); });
-
-        uploadArea.addEventListener('dragover', function(e) {
-            e.preventDefault();
-            uploadArea.classList.add('dragover');
-        });
-
-        uploadArea.addEventListener('dragleave', function(e) {
-            e.preventDefault();
-            uploadArea.classList.remove('dragover');
-        });
-
+        uploadArea.addEventListener('dragover', function(e) { e.preventDefault(); uploadArea.classList.add('dragover'); });
+        uploadArea.addEventListener('dragleave', function(e) { e.preventDefault(); uploadArea.classList.remove('dragover'); });
         uploadArea.addEventListener('drop', function(e) {
             e.preventDefault();
             uploadArea.classList.remove('dragover');
@@ -1398,12 +1472,14 @@
             var remaining = 10 - selectedFiles.length;
             var toAdd = newFiles.slice(0, remaining);
             selectedFiles = selectedFiles.concat(toAdd);
+            for (var i = 0; i < toAdd.length; i++) evidenceVisibility.push(false);
             renderThumbnails();
             updateStrength();
         }
 
         function removeFile(index) {
             selectedFiles.splice(index, 1);
+            evidenceVisibility.splice(index, 1);
             renderThumbnails();
             updateStrength();
         }
@@ -1441,6 +1517,21 @@
                     removeFile(parseInt(this.getAttribute('data-index'), 10));
                 });
                 thumb.appendChild(removeBtn);
+
+                // Visibility toggle
+                var toggle = document.createElement('label');
+                toggle.style.cssText = 'display:flex;align-items:center;gap:0.3rem;font-size:0.7rem;color:#718096;margin-top:0.3rem;cursor:pointer;';
+                var cb = document.createElement('input');
+                cb.type = 'checkbox';
+                cb.checked = evidenceVisibility[i];
+                cb.setAttribute('data-index', i);
+                cb.addEventListener('change', function() {
+                    evidenceVisibility[parseInt(this.getAttribute('data-index'), 10)] = this.checked;
+                });
+                toggle.appendChild(cb);
+                toggle.appendChild(document.createTextNode(' Show on certificate'));
+                thumb.appendChild(toggle);
+
                 container.appendChild(thumb);
             });
 
@@ -1449,20 +1540,27 @@
                 : '';
         }
 
+        // ---- Writing guidance ----
+        var writingMediums = ['Novel/Fiction', 'Non-Fiction', 'Screenplay/Script', 'Poetry', 'Journalism/Article', 'Short Story', 'Essay'];
+        $('art-medium').addEventListener('change', function() {
+            var guidance = $('writing-guidance');
+            guidance.style.display = writingMediums.indexOf(this.value) !== -1 ? 'block' : 'none';
+        });
+
         // Evidence strength meter
         var strengthLabels = [
             'Description >50 chars',
             'Description >200 chars',
             'Process notes',
-            '1+ evidence files',
-            '3+ evidence files',
-            '5+ evidence files'
+            '1+ files uploaded',
+            '3+ files uploaded',
+            '5+ files uploaded'
         ];
 
         function updateStrength() {
             var descLen = ($('art-description').value || '').length;
             var processLen = ($('art-process').value || '').trim().length;
-            var fileCount = selectedFiles.length;
+            var fileCount = selectedFiles.length + (artworkFile ? 1 : 0);
 
             var score = 0;
             var checks = [];
@@ -1536,9 +1634,13 @@
             formData.append('processNotes', $('art-process').value.trim());
             formData.append('declaration', 'true');
 
+            if (artworkFile) {
+                formData.append('artworkImage', artworkFile);
+            }
             selectedFiles.forEach(function(file) {
                 formData.append('evidence', file);
             });
+            formData.append('evidenceVisibility', JSON.stringify(evidenceVisibility));
 
             fetch('/api/artwork/submit', {
                 method: 'POST',
@@ -1549,7 +1651,10 @@
                 if (data.success && data.certificate) {
                     showSuccessCard(data.certificate);
                     $('submit-form').reset();
+                    artworkFile = null;
                     selectedFiles = [];
+                    evidenceVisibility = [];
+                    renderArtworkThumbnail();
                     renderThumbnails();
                     updateStrength();
                     $('desc-count').textContent = '0';
@@ -1575,6 +1680,12 @@
             var details = $('success-details');
             var actions = $('success-actions');
             var tierClass = (cert.tier || 'bronze').toLowerCase();
+            var tierStyles = {
+                gold: { bg: '#f5efd0', color: '#b7960b' },
+                silver: { bg: '#e8edf2', color: '#718096' },
+                bronze: { bg: '#f0e6d8', color: '#9c6b30' }
+            };
+            var ts = tierStyles[tierClass] || tierStyles.bronze;
 
             details.innerHTML =
                 '<div class="success-detail-item">' +
@@ -1596,19 +1707,140 @@
                 '<div class="success-detail-item">' +
                     '<span class="success-detail-label">Tier</span>' +
                     '<span class="success-detail-value"><span class="tier-badge tier-' + tierClass + '">' + escHtml(cert.tier) + '</span></span>' +
+                '</div>' +
+                // Certificate card for download
+                '<div id="cert-card-wrap" style="margin-top:1.5rem;">' +
+                    '<p style="font-size:0.82rem;color:#718096;margin-bottom:0.75rem;">Share this certificate card:</p>' +
+                    '<div id="certificate-card" style="width:600px;max-width:100%;background:#fff;border:2px solid #1a365d;border-radius:12px;overflow:hidden;margin:0 auto;">' +
+                        '<div style="background:#1a365d;color:#fffef0;padding:1.25rem 1.5rem;text-align:center;">' +
+                            '<div style="font-family:Cormorant Garamond,Georgia,serif;font-size:1.5rem;font-weight:700;">Art-<span style="color:#d4a843;">Official</span></div>' +
+                            '<div style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.12em;opacity:0.8;margin-top:0.25rem;">Certificate of Human Creation</div>' +
+                        '</div>' +
+                        '<div style="padding:1.5rem;text-align:center;">' +
+                            '<div style="font-family:Cormorant Garamond,Georgia,serif;font-size:1.3rem;color:#1a365d;margin-bottom:0.25rem;">' + escHtml(cert.title) + '</div>' +
+                            '<div style="color:#718096;font-size:0.9rem;margin-bottom:1rem;">by ' + escHtml(currentArtist ? currentArtist.name : '') + '</div>' +
+                            '<div style="display:inline-block;padding:0.3rem 1rem;border-radius:100px;font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:1rem;background:' + ts.bg + ';color:' + ts.color + ';">' +
+                                escHtml(cert.tierLabel || cert.tier || 'Bronze') + ' Certification</div>' +
+                            '<div style="display:flex;align-items:center;justify-content:center;gap:1.5rem;margin-top:0.5rem;">' +
+                                '<img id="card-qr" alt="QR Code" style="width:120px;height:120px;border-radius:6px;background:#f7f5e6;">' +
+                                '<div style="text-align:left;">' +
+                                    '<div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.1em;color:#a0aec0;margin-bottom:0.2rem;">Certificate ID</div>' +
+                                    '<div style="font-family:monospace;font-size:1rem;letter-spacing:0.08em;color:#1a365d;font-weight:600;">' + escHtml(cert.id) + '</div>' +
+                                    '<div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.1em;color:#a0aec0;margin-top:0.75rem;margin-bottom:0.2rem;">Verify at</div>' +
+                                    '<div style="font-size:0.8rem;color:#1a365d;">' + escHtml(location.host) + '/verify</div>' +
+                                '</div>' +
+                            '</div>' +
+                        '</div>' +
+                        '<div style="background:#f7f5e6;padding:0.6rem;text-align:center;font-size:0.7rem;color:#a0aec0;border-top:1px solid rgba(26,54,93,0.06);">' +
+                            'Verified Human Creation' +
+                        '</div>' +
+                    '</div>' +
                 '</div>';
 
+            // Fetch QR code for the card
+            fetch('/api/qr/' + encodeURIComponent(cert.id))
+                .then(function(res) { return res.json(); })
+                .then(function(data) {
+                    if (data.success && data.qrCode) {
+                        var qrImg = $('card-qr');
+                        if (qrImg) qrImg.src = data.qrCode;
+                    }
+                });
+
             actions.innerHTML =
+                '<button type="button" class="btn btn-gold btn-sm" id="download-card-btn">Download Certificate Card</button>' +
                 '<a href="verify.html?code=' + encodeURIComponent(cert.id) + '" class="btn btn-sm" target="_blank">View Certificate</a>' +
                 '<button type="button" class="btn btn-sm btn-outline" id="submit-another-btn">Submit Another</button>';
 
             card.classList.add('show');
 
-            // Bind submit another after rendering
+            // Bind buttons after rendering
             setTimeout(function() {
                 var sa = $('submit-another-btn');
                 if (sa) sa.addEventListener('click', function() { switchTab('submit'); });
+
+                var dl = $('download-card-btn');
+                if (dl) dl.addEventListener('click', function() { downloadCertificateCard(cert); });
             }, 0);
+        }
+
+        function downloadCertificateCard(cert) {
+            var tierClass = (cert.tier || 'bronze').toLowerCase();
+            var tierLabel = (cert.tierLabel || cert.tier || 'Bronze').toUpperCase();
+            var tierColors = { gold: '#b7960b', silver: '#718096', bronze: '#9c6b30' };
+            var tierColor = tierColors[tierClass] || tierColors.bronze;
+
+            var canvas = document.createElement('canvas');
+            canvas.width = 600;
+            canvas.height = 400;
+            var ctx = canvas.getContext('2d');
+
+            // Navy header
+            ctx.fillStyle = '#1a365d';
+            ctx.fillRect(0, 0, 600, 80);
+            ctx.fillStyle = '#fffef0';
+            ctx.font = 'bold 28px Georgia, serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('Art-Official', 300, 45);
+            ctx.font = '11px sans-serif';
+            ctx.fillStyle = 'rgba(255,254,240,0.8)';
+            ctx.fillText('CERTIFICATE OF HUMAN CREATION', 300, 68);
+
+            // White body
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 80, 600, 280);
+
+            // Title
+            ctx.fillStyle = '#1a365d';
+            ctx.font = 'bold 22px Georgia, serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(cert.title || 'Untitled', 300, 120);
+
+            // Artist
+            ctx.fillStyle = '#4a5568';
+            ctx.font = '14px sans-serif';
+            ctx.fillText('by ' + (currentArtist ? currentArtist.name : ''), 300, 145);
+
+            // Tier
+            ctx.fillStyle = tierColor;
+            ctx.font = 'bold 12px sans-serif';
+            ctx.fillText(tierLabel + ' CERTIFICATION', 300, 175);
+
+            // Certificate ID
+            ctx.fillStyle = '#a0aec0';
+            ctx.font = '10px sans-serif';
+            ctx.textAlign = 'right';
+            ctx.fillText('CERTIFICATE ID', 550, 220);
+            ctx.fillStyle = '#1a365d';
+            ctx.font = 'bold 14px monospace';
+            ctx.fillText(cert.id, 550, 240);
+
+            // Verify URL
+            ctx.fillStyle = '#a0aec0';
+            ctx.font = '10px sans-serif';
+            ctx.fillText('VERIFY AT', 550, 270);
+            ctx.fillStyle = '#1a365d';
+            ctx.font = '12px sans-serif';
+            ctx.fillText(location.host + '/verify.html?code=' + cert.id, 550, 290);
+
+            // QR Code
+            var qrImg = $('card-qr');
+            if (qrImg && qrImg.src && qrImg.complete) {
+                try { ctx.drawImage(qrImg, 50, 195, 120, 120); } catch(e) {}
+            }
+
+            // Footer
+            ctx.fillStyle = '#f7f5e6';
+            ctx.fillRect(0, 360, 600, 40);
+            ctx.fillStyle = '#a0aec0';
+            ctx.font = '10px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('Verified Human Creation', 300, 385);
+
+            var link = document.createElement('a');
+            link.download = cert.id + '-certificate.png';
+            link.href = canvas.toDataURL('image/png');
+            link.click();
         }
 
         // ---- Load Certificates ----

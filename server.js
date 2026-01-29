@@ -31,12 +31,16 @@ function saveDB(db) {
     fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2));
 }
 
-// File upload config — allow multiple files
+// File upload config
 const storage = multer.diskStorage({
     destination: (req, file, cb) => cb(null, 'uploads/'),
     filename: (req, file, cb) => cb(null, Date.now() + '-' + file.originalname)
 });
 const upload = multer({ storage, limits: { fileSize: 20 * 1024 * 1024 } });
+const artworkUpload = upload.fields([
+    { name: 'artworkImage', maxCount: 1 },
+    { name: 'evidence', maxCount: 10 }
+]);
 
 // Generate certificate ID: AO-YYYY-XXXXXX
 function generateCertificateId() {
@@ -46,18 +50,35 @@ function generateCertificateId() {
 }
 
 // Calculate certification tier based on evidence
-function calculateTier(evidenceFiles, description, hasProcessNotes) {
+function calculateTier(fileCount, description, hasProcessNotes) {
     let score = 0;
     if (description && description.length > 50) score += 1;
     if (description && description.length > 200) score += 1;
     if (hasProcessNotes) score += 1;
-    if (evidenceFiles && evidenceFiles.length >= 1) score += 1;
-    if (evidenceFiles && evidenceFiles.length >= 3) score += 1;
-    if (evidenceFiles && evidenceFiles.length >= 5) score += 2;
+    if (fileCount >= 1) score += 1;
+    if (fileCount >= 3) score += 1;
+    if (fileCount >= 5) score += 2;
 
     if (score >= 5) return { tier: 'gold', label: 'Gold', strength: 100 };
     if (score >= 3) return { tier: 'silver', label: 'Silver', strength: 70 };
     return { tier: 'bronze', label: 'Bronze', strength: 40 };
+}
+
+// Get public evidence files from a certificate (handles old and new format)
+function getPublicEvidence(cert) {
+    if (!cert.evidenceFiles || cert.evidenceFiles.length === 0) return [];
+    if (typeof cert.evidenceFiles[0] === 'string') {
+        return cert.evidenceFiles; // old format: treat all as public
+    }
+    return cert.evidenceFiles.filter(f => f.public).map(f => f.filename);
+}
+
+// Get thumbnail file for a certificate (handles old and new format)
+function getCertThumbnail(cert) {
+    if (cert.artworkImage) return cert.artworkImage;
+    if (!cert.evidenceFiles || cert.evidenceFiles.length === 0) return null;
+    if (typeof cert.evidenceFiles[0] === 'string') return cert.evidenceFiles[0];
+    return cert.evidenceFiles[0].filename;
 }
 
 // API Routes
@@ -132,13 +153,13 @@ app.get('/api/artist/profile/:slug', (req, res) => {
             tier: c.tier,
             creationDate: c.creationDate,
             registeredAt: c.registeredAt,
-            thumbnailFile: c.evidenceFiles && c.evidenceFiles.length > 0 ? c.evidenceFiles[0] : null
+            thumbnailFile: getCertThumbnail(c)
         }))
     });
 });
 
-// Submit artwork for certification — multiple evidence files
-app.post('/api/artwork/submit', upload.array('evidence', 10), async (req, res) => {
+// Submit artwork for certification
+app.post('/api/artwork/submit', artworkUpload, async (req, res) => {
     const { artistId, title, description, medium, creationDate, declaration, processNotes } = req.body;
 
     if (declaration !== 'true') {
@@ -152,8 +173,24 @@ app.post('/api/artwork/submit', upload.array('evidence', 10), async (req, res) =
         return res.status(404).json({ success: false, message: 'Artist not found' });
     }
 
-    const evidenceFiles = req.files ? req.files.map(f => f.filename) : [];
-    const tierResult = calculateTier(evidenceFiles, description, !!processNotes);
+    // Artwork image (single file)
+    const artworkImage = req.files && req.files['artworkImage'] && req.files['artworkImage'][0]
+        ? req.files['artworkImage'][0].filename : null;
+
+    // Evidence files with per-file visibility
+    const rawEvidence = req.files && req.files['evidence'] ? req.files['evidence'] : [];
+    let visibility = [];
+    try {
+        visibility = JSON.parse(req.body.evidenceVisibility || '[]');
+    } catch (e) { /* default to empty */ }
+
+    const evidenceFiles = rawEvidence.map((f, i) => ({
+        filename: f.filename,
+        public: visibility[i] === true
+    }));
+
+    const fileCount = (artworkImage ? 1 : 0) + rawEvidence.length;
+    const tierResult = calculateTier(fileCount, description, !!processNotes);
     const certificateId = generateCertificateId();
 
     const certificate = {
@@ -166,6 +203,7 @@ app.post('/api/artwork/submit', upload.array('evidence', 10), async (req, res) =
         medium,
         creationDate,
         processNotes: processNotes || '',
+        artworkImage,
         evidenceFiles,
         tier: tierResult.tier,
         tierLabel: tierResult.label,
@@ -216,7 +254,10 @@ app.get('/api/verify/:certificateId', (req, res) => {
                 tierLabel: certificate.tierLabel,
                 evidenceStrength: certificate.evidenceStrength,
                 evidenceCount: certificate.evidenceFiles ? certificate.evidenceFiles.length : 0,
-                hasProcessNotes: !!certificate.processNotes
+                hasProcessNotes: !!certificate.processNotes,
+                artworkImage: certificate.artworkImage || null,
+                publicEvidenceFiles: getPublicEvidence(certificate),
+                processNotes: certificate.processNotes || ''
             }
         });
     } else {
