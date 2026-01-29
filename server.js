@@ -117,15 +117,20 @@ app.get('/verify.html', (req, res, next) => {
     res.send(html);
 });
 
+// Persistent storage — use /app/persist on Railway, local dirs for dev
+const PERSIST_DIR = fs.existsSync('/app/persist') ? '/app/persist' : '.';
+const DATA_DIR = path.join(PERSIST_DIR, 'data');
+const UPLOADS_DIR = path.join(PERSIST_DIR, 'uploads');
+
 app.use(express.static('public'));
-app.use('/uploads', express.static('uploads'));
+app.use('/uploads', express.static(UPLOADS_DIR));
 
 // Ensure directories exist
-if (!fs.existsSync('uploads')) fs.mkdirSync('uploads');
-if (!fs.existsSync('data')) fs.mkdirSync('data');
+if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 
 // Simple JSON file database
-const DB_FILE = 'data/db.json';
+const DB_FILE = path.join(DATA_DIR, 'db.json');
 function loadDB() {
     if (!fs.existsSync(DB_FILE)) {
         return { artists: {}, certificates: {} };
@@ -139,7 +144,7 @@ function saveDB(db) {
 
 // File upload config
 const storage = multer.diskStorage({
-    destination: (req, file, cb) => cb(null, 'uploads/'),
+    destination: (req, file, cb) => cb(null, UPLOADS_DIR),
     filename: (req, file, cb) => cb(null, Date.now() + '-' + file.originalname)
 });
 const upload = multer({ storage, limits: { fileSize: 20 * 1024 * 1024 } });
@@ -767,14 +772,13 @@ app.delete('/api/artwork/:certificateId', (req, res) => {
     }
 
     // Delete associated files
-    const uploadsDir = path.join(__dirname, 'uploads');
     if (cert.artworkImage) {
-        const artPath = path.join(uploadsDir, cert.artworkImage);
+        const artPath = path.join(UPLOADS_DIR, cert.artworkImage);
         if (fs.existsSync(artPath)) fs.unlinkSync(artPath);
     }
     if (cert.evidenceFiles && cert.evidenceFiles.length > 0) {
         cert.evidenceFiles.forEach(ef => {
-            const fPath = path.join(uploadsDir, ef.filename);
+            const fPath = path.join(UPLOADS_DIR, ef.filename);
             if (fs.existsSync(fPath)) fs.unlinkSync(fPath);
         });
     }

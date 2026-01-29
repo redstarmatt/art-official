@@ -2500,6 +2500,11 @@
 
         // ---- Init ----
         updateStrength();
+
+        // Handle #login hash — ensure Sign In tab is shown
+        if (window.location.hash === '#login') {
+            switchTab('signin');
+        }
     })();
     </script>
 </body>
