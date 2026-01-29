@@ -1010,9 +1010,36 @@
                             <p id="display-process-notes"></p>
                         </div>
 
+                        <!-- Certificate Timeline -->
+                        <div id="timeline-section" style="display:none;padding:1.25rem 1.5rem;background:var(--cream);border-radius:10px;border:1px solid rgba(26,54,93,0.04);margin-bottom:1.75rem;">
+                            <span class="cert-description-label">Certificate History</span>
+                            <div id="timeline-list" style="margin-top:0.75rem;"></div>
+                        </div>
+
                         <!-- Copyright Notice -->
                         <div style="text-align:center;padding:1rem 1.5rem;margin-bottom:1rem;font-size:0.78rem;color:#a0aec0;border-top:1px solid rgba(26,54,93,0.06);padding-top:1.25rem;">
                             All rights reserved by the original creator. Registration with Art-Official does not transfer copyright.
+                        </div>
+
+                        <!-- Report / Dispute -->
+                        <div style="text-align:center;margin-bottom:1.5rem;">
+                            <button type="button" class="share-btn" id="report-btn" style="font-size:0.78rem;color:var(--ink-faint);">
+                                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
+                                Report this certificate
+                            </button>
+                        </div>
+
+                        <!-- Report Modal (inline, hidden) -->
+                        <div id="report-panel" style="display:none;padding:1.5rem;background:var(--cream);border-radius:10px;border:1px solid rgba(197,48,48,0.12);margin-bottom:1.75rem;animation:fadeIn 0.3s ease;">
+                            <h4 style="font-family:'Cormorant Garamond',serif;font-size:1.1rem;color:var(--navy);margin-bottom:0.75rem;">Report This Certificate</h4>
+                            <p style="font-size:0.82rem;color:var(--ink-light);margin-bottom:1rem;line-height:1.6;">If you believe this certificate is fraudulent or the work was not authentically human-made, please describe your concern below.</p>
+                            <div id="report-alert" style="display:none;padding:0.75rem 1rem;border-radius:6px;font-size:0.85rem;margin-bottom:1rem;"></div>
+                            <textarea id="report-reason" rows="3" placeholder="Describe why you believe this certificate should be reviewed..." style="width:100%;padding:0.75rem 1rem;border:1.5px solid rgba(26,54,93,0.18);border-radius:6px;font-family:'DM Sans',sans-serif;font-size:0.9rem;background:white;color:var(--ink);resize:vertical;"></textarea>
+                            <input type="email" id="report-email" placeholder="Your email (optional, for follow-up)" style="width:100%;padding:0.75rem 1rem;border:1.5px solid rgba(26,54,93,0.18);border-radius:6px;font-family:'DM Sans',sans-serif;font-size:0.9rem;background:white;color:var(--ink);margin-top:0.5rem;">
+                            <div style="display:flex;gap:0.75rem;margin-top:1rem;justify-content:flex-end;">
+                                <button type="button" id="report-cancel" style="padding:0.5rem 1rem;background:transparent;border:1.5px solid rgba(26,54,93,0.15);border-radius:6px;font-family:'DM Sans',sans-serif;font-size:0.82rem;cursor:pointer;color:var(--ink-light);">Cancel</button>
+                                <button type="button" id="report-submit" style="padding:0.5rem 1rem;background:var(--error);border:none;border-radius:6px;font-family:'DM Sans',sans-serif;font-size:0.82rem;font-weight:600;cursor:pointer;color:white;">Submit Report</button>
+                            </div>
                         </div>
 
                         <!-- Share Section -->
@@ -1321,8 +1348,12 @@
                 notesSection.style.display = 'none';
             }
 
-            // Reset embed panel
+            // Reset embed panel and report panel
             $('embed-panel').classList.remove('show');
+            $('report-panel').style.display = 'none';
+
+            // Load timeline
+            loadTimeline(cert.id);
 
             // Reset evidence bar width (for animation)
             fill.style.width = '0%';
@@ -1399,6 +1430,116 @@
             if (code) {
                 verifyCode(code);
             }
+        });
+
+        // ---- Timeline ----
+        function loadTimeline(certId) {
+            var section = $('timeline-section');
+            var list = $('timeline-list');
+            section.style.display = 'none';
+
+            fetch('/api/artwork/' + encodeURIComponent(certId) + '/history')
+                .then(function(res) { return res.json(); })
+                .then(function(data) {
+                    if (!data.success || !data.timeline || data.timeline.length === 0) return;
+                    list.innerHTML = '';
+                    data.timeline.forEach(function(event) {
+                        var item = document.createElement('div');
+                        item.style.cssText = 'display:flex;align-items:flex-start;gap:0.75rem;padding:0.5rem 0;font-size:0.82rem;';
+
+                        var icon = '&#9679;';
+                        var color = 'var(--ink-faint)';
+                        var label = '';
+                        if (event.type === 'issued') {
+                            icon = '&#10003;'; color = 'var(--success)';
+                            label = 'Certificate issued';
+                        } else if (event.type === 'edited') {
+                            icon = '&#9998;'; color = 'var(--navy)';
+                            label = 'Edited: ' + (event.fields ? event.fields.join(', ') : 'details updated');
+                        } else if (event.type === 'reported') {
+                            icon = '&#9873;'; color = 'var(--error)';
+                            label = 'Dispute reported';
+                        }
+
+                        var dateStr = '';
+                        if (event.at) {
+                            try {
+                                dateStr = new Date(event.at).toLocaleDateString('en-GB', {
+                                    day: 'numeric', month: 'short', year: 'numeric'
+                                });
+                            } catch(e) {}
+                        }
+
+                        item.innerHTML =
+                            '<span style="color:' + color + ';font-size:0.9rem;line-height:1.4;flex-shrink:0;">' + icon + '</span>' +
+                            '<span style="color:var(--ink-light);flex:1;">' + escHtml(label) + '</span>' +
+                            '<span style="color:var(--ink-faint);font-size:0.75rem;white-space:nowrap;">' + escHtml(dateStr) + '</span>';
+                        list.appendChild(item);
+                    });
+                    if (list.children.length > 0) section.style.display = 'block';
+                })
+                .catch(function() {});
+        }
+
+        // ---- Report Certificate ----
+        $('report-btn').addEventListener('click', function() {
+            var panel = $('report-panel');
+            panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+        });
+
+        $('report-cancel').addEventListener('click', function() {
+            $('report-panel').style.display = 'none';
+        });
+
+        $('report-submit').addEventListener('click', function() {
+            if (!currentCertId) return;
+            var reason = $('report-reason').value.trim();
+            var email = $('report-email').value.trim();
+            var alert = $('report-alert');
+
+            if (reason.length < 10) {
+                alert.textContent = 'Please provide more detail (at least 10 characters).';
+                alert.style.display = 'block';
+                alert.style.background = 'rgba(197,48,48,0.08)';
+                alert.style.color = 'var(--error)';
+                return;
+            }
+
+            var btn = $('report-submit');
+            btn.disabled = true;
+            btn.textContent = 'Submitting...';
+
+            fetch('/api/report/' + encodeURIComponent(currentCertId), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ reason: reason, email: email })
+            })
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+                alert.textContent = data.message || 'Report submitted.';
+                alert.style.display = 'block';
+                if (data.success) {
+                    alert.style.background = 'rgba(39,103,73,0.08)';
+                    alert.style.color = 'var(--success)';
+                    $('report-reason').value = '';
+                    $('report-email').value = '';
+                    // Reload timeline to show the report
+                    loadTimeline(currentCertId);
+                } else {
+                    alert.style.background = 'rgba(197,48,48,0.08)';
+                    alert.style.color = 'var(--error)';
+                }
+            })
+            .catch(function() {
+                alert.textContent = 'Connection error. Please try again.';
+                alert.style.display = 'block';
+                alert.style.background = 'rgba(197,48,48,0.08)';
+                alert.style.color = 'var(--error)';
+            })
+            .finally(function() {
+                btn.disabled = false;
+                btn.textContent = 'Submit Report';
+            });
         });
 
         // ---- On page load: check URL params ----

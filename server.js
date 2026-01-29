@@ -133,9 +133,11 @@ if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 const DB_FILE = path.join(DATA_DIR, 'db.json');
 function loadDB() {
     if (!fs.existsSync(DB_FILE)) {
-        return { artists: {}, certificates: {} };
+        return { artists: {}, certificates: {}, reports: {} };
     }
-    return JSON.parse(fs.readFileSync(DB_FILE, 'utf8'));
+    const db = JSON.parse(fs.readFileSync(DB_FILE, 'utf8'));
+    if (!db.reports) db.reports = {};
+    return db;
 }
 
 function saveDB(db) {
@@ -282,6 +284,17 @@ async function sendCertificateEmail(artist, certificate, host) {
     }
 }
 
+// Simple rate limiting (in-memory)
+const rateLimits = {};
+function rateLimit(key, maxAttempts, windowMs) {
+    const now = Date.now();
+    if (!rateLimits[key]) rateLimits[key] = [];
+    rateLimits[key] = rateLimits[key].filter(t => t > now - windowMs);
+    if (rateLimits[key].length >= maxAttempts) return false;
+    rateLimits[key].push(now);
+    return true;
+}
+
 // API Routes
 
 // Sanitise artist for client (strip password hash)
@@ -293,6 +306,11 @@ function safeArtist(artist) {
 // Register artist
 app.post('/api/artist/register', async (req, res) => {
     const { name, email, password, portfolio, bio, location } = req.body;
+
+    const ip = req.ip || req.connection.remoteAddress;
+    if (!rateLimit('register:' + ip, 5, 3600000)) {
+        return res.status(429).json({ success: false, message: 'Too many registration attempts. Please try again later.' });
+    }
 
     if (!password || password.length < 6) {
         return res.status(400).json({ success: false, message: 'Password must be at least 6 characters' });
@@ -332,6 +350,12 @@ app.post('/api/artist/register', async (req, res) => {
 // Sign in artist
 app.post('/api/artist/login', async (req, res) => {
     const { email, password } = req.body;
+
+    const ip = req.ip || req.connection.remoteAddress;
+    if (!rateLimit('login:' + ip, 10, 900000)) {
+        return res.status(429).json({ success: false, message: 'Too many login attempts. Please wait 15 minutes.' });
+    }
+
     const db = loadDB();
     const artist = Object.values(db.artists).find(a => a.email === email);
 
@@ -809,6 +833,16 @@ app.put('/api/artwork/:certificateId', (req, res) => {
         return res.status(403).json({ success: false, message: 'Not authorized' });
     }
 
+    // Track history
+    if (!cert.history) cert.history = [];
+    const changes = [];
+    if (title !== undefined && title.trim() && title.trim() !== cert.title) changes.push('title');
+    if (description !== undefined && description.trim() !== (cert.description || '')) changes.push('description');
+    if (processNotes !== undefined && processNotes.trim() !== (cert.processNotes || '')) changes.push('process notes');
+    if (changes.length > 0) {
+        cert.history.push({ type: 'edited', fields: changes, at: new Date().toISOString() });
+    }
+
     // Only update provided fields
     if (title !== undefined && title.trim()) {
         cert.title = title.trim();
@@ -827,6 +861,194 @@ app.put('/api/artwork/:certificateId', (req, res) => {
     saveDB(db);
 
     res.json({ success: true, certificate: cert });
+});
+
+// Report/dispute a certificate
+app.post('/api/report/:certificateId', (req, res) => {
+    const { certificateId } = req.params;
+    const { reason, email } = req.body;
+
+    if (!reason || reason.trim().length < 10) {
+        return res.status(400).json({ success: false, message: 'Please provide a reason (at least 10 characters).' });
+    }
+
+    const db = loadDB();
+    const cert = db.certificates[certificateId.toUpperCase()];
+    if (!cert) {
+        return res.status(404).json({ success: false, message: 'Certificate not found' });
+    }
+
+    const reportId = uuidv4();
+    db.reports[reportId] = {
+        id: reportId,
+        certificateId: certificateId.toUpperCase(),
+        reason: reason.trim(),
+        reporterEmail: email || null,
+        status: 'pending',
+        createdAt: new Date().toISOString()
+    };
+
+    // Add to certificate history
+    if (!cert.history) cert.history = [];
+    cert.history.push({ type: 'reported', at: new Date().toISOString() });
+    cert.reportCount = (cert.reportCount || 0) + 1;
+
+    saveDB(db);
+    res.json({ success: true, message: 'Report submitted. We will review this certificate.' });
+});
+
+// Get certificate history/timeline
+app.get('/api/artwork/:certificateId/history', (req, res) => {
+    const { certificateId } = req.params;
+    const db = loadDB();
+    const cert = db.certificates[certificateId.toUpperCase()];
+    if (!cert) {
+        return res.status(404).json({ success: false, message: 'Certificate not found' });
+    }
+
+    const timeline = [{ type: 'issued', at: cert.registeredAt }];
+    if (cert.history) {
+        cert.history.forEach(h => timeline.push(h));
+    }
+    timeline.sort((a, b) => new Date(a.at) - new Date(b.at));
+
+    res.json({ success: true, timeline });
+});
+
+// Browse all certificates (public)
+app.get('/api/browse', (req, res) => {
+    const db = loadDB();
+    const { medium, tier, page } = req.query;
+    const pageNum = parseInt(page) || 1;
+    const perPage = 24;
+
+    let certs = Object.values(db.certificates)
+        .filter(c => c.status === 'verified')
+        .sort((a, b) => new Date(b.registeredAt) - new Date(a.registeredAt));
+
+    // Filter by medium
+    if (medium && medium !== 'all') {
+        certs = certs.filter(c => c.medium === medium);
+    }
+    // Filter by tier
+    if (tier && tier !== 'all') {
+        certs = certs.filter(c => c.tier === tier);
+    }
+
+    const total = certs.length;
+    const totalPages = Math.ceil(total / perPage);
+    const paginated = certs.slice((pageNum - 1) * perPage, pageNum * perPage);
+
+    // Get unique mediums for filter dropdown
+    const mediums = [...new Set(Object.values(db.certificates).map(c => c.medium).filter(Boolean))].sort();
+
+    res.json({
+        success: true,
+        certificates: paginated.map(c => ({
+            id: c.id,
+            title: c.title,
+            artistName: c.artistName,
+            artistSlug: c.artistSlug,
+            medium: c.medium,
+            tier: c.tier,
+            registeredAt: c.registeredAt,
+            artworkImage: c.artworkImage || null
+        })),
+        mediums,
+        page: pageNum,
+        totalPages,
+        total
+    });
+});
+
+// Password reset — request token
+app.post('/api/artist/forgot-password', async (req, res) => {
+    const { email } = req.body;
+
+    const ip = req.ip || req.connection.remoteAddress;
+    if (!rateLimit('forgot:' + ip, 3, 3600000)) {
+        return res.status(429).json({ success: false, message: 'Too many reset requests. Please try again later.' });
+    }
+
+    if (!email) {
+        return res.status(400).json({ success: false, message: 'Email is required.' });
+    }
+
+    const db = loadDB();
+    const artist = Object.values(db.artists).find(a => a.email === email);
+
+    // Always return success to prevent email enumeration
+    if (!artist) {
+        return res.json({ success: true, message: 'If an account exists with that email, a reset link has been sent.' });
+    }
+
+    // Generate reset token (valid for 1 hour)
+    const token = uuidv4();
+    artist.resetToken = token;
+    artist.resetTokenExpires = new Date(Date.now() + 3600000).toISOString();
+    saveDB(db);
+
+    // Send reset email
+    if (mailTransporter) {
+        const host = `${req.protocol}://${req.get('host')}`;
+        const resetUrl = `${host}/register.html#reset=${token}`;
+        try {
+            await mailTransporter.sendMail({
+                from: process.env.SMTP_FROM || process.env.SMTP_USER,
+                to: artist.email,
+                subject: 'Art-Official — Password Reset',
+                html: `
+                <div style="font-family:'Helvetica Neue',Arial,sans-serif;max-width:600px;margin:0 auto;background:#fffef0;">
+                    <div style="background:#1a365d;color:#fffef0;padding:2rem;text-align:center;">
+                        <div style="font-family:Georgia,serif;font-size:1.75rem;font-weight:bold;">Art-<span style="color:#d4af37;">Official</span></div>
+                    </div>
+                    <div style="padding:2rem;">
+                        <p style="color:#4a5568;margin-bottom:1.5rem;">Hi ${artist.name},</p>
+                        <p style="color:#4a5568;margin-bottom:1.5rem;">We received a request to reset your password. Click the button below to choose a new password:</p>
+                        <div style="text-align:center;margin-bottom:1.5rem;">
+                            <a href="${resetUrl}" style="display:inline-block;padding:0.75rem 2rem;background:#1a365d;color:#fffef0;text-decoration:none;border-radius:6px;font-weight:600;font-size:0.9rem;">Reset Password</a>
+                        </div>
+                        <p style="color:#718096;font-size:0.82rem;">This link expires in 1 hour. If you didn't request a password reset, you can safely ignore this email.</p>
+                    </div>
+                    <div style="background:#f7f5e6;padding:1.25rem;text-align:center;font-size:0.75rem;color:#a0aec0;border-top:1px solid rgba(26,54,93,0.06);">
+                        <p style="margin:0;">&copy; 2026 Art-Official</p>
+                    </div>
+                </div>`
+            });
+        } catch (err) {
+            console.error('Failed to send reset email:', err.message);
+        }
+    }
+
+    res.json({ success: true, message: 'If an account exists with that email, a reset link has been sent.' });
+});
+
+// Password reset — set new password
+app.post('/api/artist/reset-password', async (req, res) => {
+    const { token, password } = req.body;
+
+    if (!token || !password) {
+        return res.status(400).json({ success: false, message: 'Token and password are required.' });
+    }
+    if (password.length < 6) {
+        return res.status(400).json({ success: false, message: 'Password must be at least 6 characters.' });
+    }
+
+    const db = loadDB();
+    const artist = Object.values(db.artists).find(a =>
+        a.resetToken === token && a.resetTokenExpires && new Date(a.resetTokenExpires) > new Date()
+    );
+
+    if (!artist) {
+        return res.status(400).json({ success: false, message: 'Invalid or expired reset link. Please request a new one.' });
+    }
+
+    artist.passwordHash = await bcrypt.hash(password, 10);
+    delete artist.resetToken;
+    delete artist.resetTokenExpires;
+    saveDB(db);
+
+    res.json({ success: true, message: 'Password updated successfully. You can now sign in.' });
 });
 
 // Stats endpoint

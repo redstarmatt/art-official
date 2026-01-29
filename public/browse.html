@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Browse Certified Works — Art-Official</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --navy: #1a365d;
+            --navy-light: #2c5282;
+            --cream: #fffef0;
+            --cream-dark: #f7f5e6;
+            --gold: #b7960b;
+            --gold-light: #d4af37;
+            --gold-pale: #f5efd0;
+            --ink: #2d3748;
+            --ink-light: #4a5568;
+            --ink-faint: #718096;
+            --success: #276749;
+            --error: #c53030;
+            --bronze: #9c6b30;
+            --silver: #718096;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: var(--cream);
+            color: var(--ink);
+            line-height: 1.6;
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+            opacity: 0.03;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        header {
+            padding: 1.25rem 0;
+            position: sticky;
+            top: 0;
+            background: rgba(255, 254, 240, 0.92);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(26, 54, 93, 0.08);
+            z-index: 100;
+        }
+
+        .header-inner {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--navy);
+            text-decoration: none;
+            letter-spacing: -0.02em;
+        }
+
+        .logo span { color: var(--gold); }
+
+        nav { display: flex; gap: 1.5rem; align-items: center; }
+
+        nav a {
+            color: var(--ink-light);
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        nav a:hover { color: var(--navy); }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .page-header {
+            padding: 3rem 0 2rem;
+            text-align: center;
+        }
+
+        .section-eyebrow {
+            display: block;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            color: var(--gold);
+            margin-bottom: 0.75rem;
+        }
+
+        .section-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: clamp(1.75rem, 4vw, 2.5rem);
+            color: var(--navy);
+            margin-bottom: 0.5rem;
+            line-height: 1.15;
+        }
+
+        .page-subtitle {
+            color: var(--ink-light);
+            font-size: 1rem;
+            max-width: 550px;
+            margin: 0 auto;
+        }
+
+        .filters {
+            display: flex;
+            gap: 0.75rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .filter-select {
+            padding: 0.5rem 1rem;
+            border: 1.5px solid rgba(26, 54, 93, 0.15);
+            border-radius: 6px;
+            background: white;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.85rem;
+            color: var(--ink);
+            cursor: pointer;
+        }
+
+        .filter-select:focus {
+            outline: none;
+            border-color: var(--navy);
+        }
+
+        .results-count {
+            text-align: center;
+            font-size: 0.85rem;
+            color: var(--ink-faint);
+            margin-bottom: 1.5rem;
+        }
+
+        .works-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
+        }
+
+        .work-card {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid rgba(26, 54, 93, 0.06);
+            box-shadow: 0 2px 12px rgba(26, 54, 93, 0.04);
+            transition: transform 0.3s, box-shadow 0.3s;
+            text-decoration: none;
+            color: inherit;
+            display: block;
+        }
+
+        .work-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 32px rgba(26, 54, 93, 0.1);
+        }
+
+        .work-thumb {
+            width: 100%;
+            aspect-ratio: 4 / 3;
+            overflow: hidden;
+            background: var(--cream-dark);
+            position: relative;
+        }
+
+        .work-thumb img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .work-thumb-placeholder {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, var(--cream-dark), #eeeadb);
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--ink-faint);
+        }
+
+        .work-body { padding: 1.25rem 1.5rem 1.5rem; }
+
+        .work-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.15rem;
+            font-weight: 600;
+            color: var(--navy);
+            margin-bottom: 0.2rem;
+            line-height: 1.3;
+        }
+
+        .work-artist {
+            font-size: 0.85rem;
+            color: var(--ink-light);
+            margin-bottom: 0.6rem;
+        }
+
+        .work-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.5rem;
+        }
+
+        .tier-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.2rem 0.65rem;
+            border-radius: 100px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+
+        .tier-badge.tier-gold { background: var(--gold-pale); color: var(--gold); }
+        .tier-badge.tier-silver { background: #e8edf2; color: var(--silver); }
+        .tier-badge.tier-bronze { background: #f0e6d8; color: var(--bronze); }
+
+        .work-medium {
+            font-size: 0.78rem;
+            color: var(--ink-faint);
+        }
+
+        .pagination {
+            display: flex;
+            gap: 0.5rem;
+            justify-content: center;
+            margin: 2.5rem 0 1rem;
+        }
+
+        .page-btn {
+            padding: 0.5rem 0.9rem;
+            border: 1.5px solid rgba(26, 54, 93, 0.15);
+            border-radius: 6px;
+            background: white;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.85rem;
+            color: var(--ink-light);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .page-btn:hover { border-color: var(--navy); color: var(--navy); }
+        .page-btn.active { background: var(--navy); color: var(--cream); border-color: var(--navy); }
+        .page-btn:disabled { opacity: 0.4; cursor: default; }
+
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            background: white;
+            border-radius: 12px;
+            border: 1px solid rgba(26, 54, 93, 0.06);
+        }
+
+        .empty-state h3 {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.3rem;
+            color: var(--ink-light);
+            margin-bottom: 0.5rem;
+        }
+
+        .empty-state p { color: var(--ink-faint); font-size: 0.9rem; }
+
+        .spinner {
+            display: inline-block;
+            width: 28px; height: 28px;
+            border: 3px solid rgba(26, 54, 93, 0.12);
+            border-top-color: var(--navy);
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        footer {
+            padding: 3rem 0;
+            border-top: 1px solid rgba(26, 54, 93, 0.08);
+            margin-top: 2rem;
+        }
+
+        .footer-inner {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .footer-links { display: flex; gap: 1.5rem; }
+        .footer-links a { color: var(--ink-faint); text-decoration: none; font-size: 0.85rem; }
+        .footer-links a:hover { color: var(--navy); }
+        footer p { color: var(--ink-faint); font-size: 0.85rem; }
+
+        @media (max-width: 900px) {
+            .works-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+
+        @media (max-width: 600px) {
+            .works-grid { grid-template-columns: 1fr; max-width: 420px; margin: 0 auto; }
+            .footer-inner { flex-direction: column; text-align: center; }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-inner">
+            <a href="/" class="logo">Art-<span>Official</span></a>
+            <nav>
+                <a href="verify.html">Verify</a>
+                <a href="register.html">For Artists</a>
+                <a href="/">Home</a>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <div class="container">
+            <div class="page-header">
+                <span class="section-eyebrow">Registry</span>
+                <h1 class="section-title">Browse Certified Works</h1>
+                <p class="page-subtitle">Explore the growing registry of human-made creative works.</p>
+            </div>
+
+            <div class="filters">
+                <select class="filter-select" id="filter-medium">
+                    <option value="all">All Mediums</option>
+                </select>
+                <select class="filter-select" id="filter-tier">
+                    <option value="all">All Tiers</option>
+                    <option value="gold">Gold</option>
+                    <option value="silver">Silver</option>
+                    <option value="bronze">Bronze</option>
+                </select>
+            </div>
+
+            <div class="results-count" id="results-count"></div>
+
+            <div id="works-container">
+                <div style="text-align:center;padding:3rem;"><span class="spinner"></span></div>
+            </div>
+
+            <div class="pagination" id="pagination"></div>
+        </div>
+    </main>
+
+    <footer>
+        <div class="footer-inner">
+            <a href="/" class="logo" style="font-size:1.25rem;">Art-<span>Official</span></a>
+            <div class="footer-links">
+                <a href="/">Home</a>
+                <a href="register.html">For Artists</a>
+                <a href="verify.html">Verify</a>
+                <a href="legal.html">Legal</a>
+            </div>
+            <p>&copy; 2026 Art-Official</p>
+        </div>
+    </footer>
+
+    <script>
+    (function() {
+        'use strict';
+
+        function $(id) { return document.getElementById(id); }
+
+        function escHtml(s) {
+            var d = document.createElement('div');
+            d.textContent = s || '';
+            return d.innerHTML;
+        }
+
+        var currentPage = 1;
+
+        function loadBrowse() {
+            var medium = $('filter-medium').value;
+            var tier = $('filter-tier').value;
+
+            var url = '/api/browse?page=' + currentPage;
+            if (medium !== 'all') url += '&medium=' + encodeURIComponent(medium);
+            if (tier !== 'all') url += '&tier=' + encodeURIComponent(tier);
+
+            $('works-container').innerHTML = '<div style="text-align:center;padding:3rem;"><span class="spinner"></span></div>';
+
+            fetch(url)
+                .then(function(res) { return res.json(); })
+                .then(function(data) {
+                    if (!data.success) {
+                        $('works-container').innerHTML = '<div class="empty-state"><h3>Something went wrong</h3><p>Please try again.</p></div>';
+                        return;
+                    }
+
+                    // Populate medium filter (first load)
+                    var mediumSelect = $('filter-medium');
+                    if (mediumSelect.options.length <= 1 && data.mediums && data.mediums.length > 0) {
+                        data.mediums.forEach(function(m) {
+                            var opt = document.createElement('option');
+                            opt.value = m;
+                            opt.textContent = m;
+                            mediumSelect.appendChild(opt);
+                        });
+                    }
+
+                    $('results-count').textContent = data.total + ' certified work' + (data.total !== 1 ? 's' : '');
+
+                    if (data.certificates.length === 0) {
+                        $('works-container').innerHTML = '<div class="empty-state"><h3>No works found</h3><p>Try adjusting your filters or check back later.</p></div>';
+                        $('pagination').innerHTML = '';
+                        return;
+                    }
+
+                    var grid = document.createElement('div');
+                    grid.className = 'works-grid';
+
+                    data.certificates.forEach(function(cert) {
+                        var tierClass = (cert.tier || 'bronze').toLowerCase();
+                        var card = document.createElement('a');
+                        card.className = 'work-card';
+                        card.href = 'verify.html?code=' + encodeURIComponent(cert.id);
+
+                        var thumbHtml;
+                        if (cert.artworkImage) {
+                            thumbHtml = '<div class="work-thumb"><img src="/uploads/' + escHtml(cert.artworkImage) + '" alt="' + escHtml(cert.title) + '" loading="lazy" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\';"><div class="work-thumb-placeholder" style="display:none;">AO</div></div>';
+                        } else {
+                            thumbHtml = '<div class="work-thumb"><div class="work-thumb-placeholder">AO</div></div>';
+                        }
+
+                        card.innerHTML =
+                            thumbHtml +
+                            '<div class="work-body">' +
+                                '<div class="work-title">' + escHtml(cert.title) + '</div>' +
+                                '<div class="work-artist">by ' + escHtml(cert.artistName) + '</div>' +
+                                '<div class="work-footer">' +
+                                    '<span class="tier-badge tier-' + tierClass + '">' + escHtml(cert.tier || 'Bronze') + '</span>' +
+                                    '<span class="work-medium">' + escHtml(cert.medium || '') + '</span>' +
+                                '</div>' +
+                            '</div>';
+
+                        grid.appendChild(card);
+                    });
+
+                    $('works-container').innerHTML = '';
+                    $('works-container').appendChild(grid);
+
+                    // Pagination
+                    renderPagination(data.page, data.totalPages);
+                })
+                .catch(function() {
+                    $('works-container').innerHTML = '<div class="empty-state"><h3>Connection error</h3><p>Please try again.</p></div>';
+                });
+        }
+
+        function renderPagination(page, totalPages) {
+            var container = $('pagination');
+            container.innerHTML = '';
+            if (totalPages <= 1) return;
+
+            if (page > 1) {
+                var prev = document.createElement('button');
+                prev.className = 'page-btn';
+                prev.textContent = 'Previous';
+                prev.addEventListener('click', function() { currentPage = page - 1; loadBrowse(); window.scrollTo(0, 0); });
+                container.appendChild(prev);
+            }
+
+            for (var i = 1; i <= totalPages; i++) {
+                if (totalPages > 7 && i > 2 && i < totalPages - 1 && Math.abs(i - page) > 1) {
+                    if (i === 3 || i === totalPages - 2) {
+                        var dots = document.createElement('span');
+                        dots.textContent = '...';
+                        dots.style.cssText = 'padding:0.5rem 0.3rem;color:var(--ink-faint);';
+                        container.appendChild(dots);
+                    }
+                    continue;
+                }
+                var btn = document.createElement('button');
+                btn.className = 'page-btn' + (i === page ? ' active' : '');
+                btn.textContent = i;
+                (function(num) {
+                    btn.addEventListener('click', function() { currentPage = num; loadBrowse(); window.scrollTo(0, 0); });
+                })(i);
+                container.appendChild(btn);
+            }
+
+            if (page < totalPages) {
+                var next = document.createElement('button');
+                next.className = 'page-btn';
+                next.textContent = 'Next';
+                next.addEventListener('click', function() { currentPage = page + 1; loadBrowse(); window.scrollTo(0, 0); });
+                container.appendChild(next);
+            }
+        }
+
+        $('filter-medium').addEventListener('change', function() { currentPage = 1; loadBrowse(); });
+        $('filter-tier').addEventListener('change', function() { currentPage = 1; loadBrowse(); });
+
+        loadBrowse();
+    })();
+    </script>
+</body>
+</html>

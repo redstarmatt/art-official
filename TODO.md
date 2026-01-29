@@ -24,8 +24,16 @@
 - [x] Edit certificate text (title, description, process notes)
 - [x] Open Graph meta tags on verify page for social sharing previews
 - [x] Live community stats counter on landing page
+- [x] Log In button on homepage nav
+- [x] Persistent storage (Railway volume) for data and uploads
+- [x] Dispute/report button on certificate verify pages
+- [x] Certificate timeline (issued, edited, reported history)
+- [x] Public browse/explore page with filters and pagination
+- [x] Password reset flow (forgot password + email reset link)
+- [x] Rate limiting on login, registration, and password reset endpoints
 
 ## Pending
+- [ ] Review "Date of Creation" label — consider "Date Created" or "Date Completed"
 - [ ] Configure Stripe for production (set STRIPE_SECRET_KEY, STRIPE_PUBLISHABLE_KEY, STRIPE_WEBHOOK_SECRET, STRIPE_CREATOR_PRICE_ID on Railway)
   - Create Product + £5/month Price in Stripe dashboard, set up webhook endpoint
 - [ ] Add custom domain and verify in Resend so emails send from @art-official.com (or similar)
