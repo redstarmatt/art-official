@@ -1,0 +1,1357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify Certificate — Art-Official</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --navy: #1a365d;
+            --navy-light: #2c5282;
+            --navy-dark: #12284a;
+            --cream: #fffef0;
+            --cream-dark: #f7f5e6;
+            --gold: #b7960b;
+            --gold-light: #d4af37;
+            --gold-pale: #f5efd0;
+            --ink: #2d3748;
+            --ink-light: #4a5568;
+            --ink-faint: #718096;
+            --success: #276749;
+            --error: #c53030;
+            --bronze: #9c6b30;
+            --silver: #718096;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: var(--cream);
+            color: var(--ink);
+            line-height: 1.6;
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+            opacity: 0.03;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* Header */
+        header {
+            padding: 1.25rem 0;
+            position: sticky;
+            top: 0;
+            background: rgba(255, 254, 240, 0.92);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(26, 54, 93, 0.08);
+            z-index: 100;
+        }
+
+        .header-inner {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--navy);
+            text-decoration: none;
+            letter-spacing: -0.02em;
+        }
+
+        .logo span { color: var(--gold); }
+
+        nav { display: flex; gap: 1.5rem; align-items: center; }
+
+        nav a {
+            color: var(--ink-light);
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        nav a:hover { color: var(--navy); }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Page Header */
+        .page-header {
+            text-align: center;
+            padding: 3.5rem 0 1rem;
+        }
+
+        .page-header h1 {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: clamp(2rem, 4vw, 2.75rem);
+            font-weight: 500;
+            color: var(--navy);
+            line-height: 1.15;
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.02em;
+        }
+
+        .page-header h1 em { font-style: italic; color: var(--gold); }
+
+        .page-header p {
+            color: var(--ink-light);
+            font-size: 1.05rem;
+        }
+
+        /* Search Section */
+        .search-section {
+            padding: 1.5rem 0 2.5rem;
+        }
+
+        .search-box {
+            max-width: 580px;
+            margin: 0 auto;
+            background: white;
+            border: 1px solid rgba(26, 54, 93, 0.1);
+            border-radius: 12px;
+            padding: 1.75rem 2rem;
+            box-shadow: 0 4px 20px rgba(26, 54, 93, 0.04);
+        }
+
+        .search-form {
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        .search-input {
+            flex: 1;
+            padding: 0.875rem 1rem;
+            font-family: 'DM Mono', 'SF Mono', 'Fira Code', monospace;
+            font-size: 1rem;
+            letter-spacing: 0.06em;
+            color: var(--ink);
+            border: 1.5px solid rgba(26, 54, 93, 0.18);
+            border-radius: 6px;
+            background: var(--cream);
+            text-transform: uppercase;
+            transition: all 0.2s;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--navy);
+            box-shadow: 0 0 0 3px rgba(26, 54, 93, 0.08);
+        }
+
+        .search-input::placeholder {
+            text-transform: none;
+            letter-spacing: normal;
+            font-family: 'DM Sans', sans-serif;
+            color: var(--ink-faint);
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.875rem 1.75rem;
+            background: var(--navy);
+            color: var(--cream);
+            text-decoration: none;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.95rem;
+            font-weight: 600;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .btn:hover { background: var(--navy-light); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(26, 54, 93, 0.2); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+        .btn-sm { padding: 0.5rem 1rem; font-size: 0.8rem; }
+        .btn-outline { background: transparent; border: 1.5px solid var(--navy); color: var(--navy); }
+        .btn-outline:hover { background: var(--navy); color: var(--cream); }
+        .btn-gold { background: var(--gold); }
+        .btn-gold:hover { background: var(--gold-light); }
+
+        /* Loading state */
+        .search-loading {
+            display: none;
+            text-align: center;
+            padding: 3rem 0;
+        }
+
+        .search-loading.show { display: block; }
+
+        .spinner {
+            display: inline-block;
+            width: 28px; height: 28px;
+            border: 3px solid rgba(26, 54, 93, 0.12);
+            border-top-color: var(--navy);
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+        }
+
+        .spinner-sm {
+            width: 16px; height: 16px;
+            border-width: 2px;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .search-loading p {
+            color: var(--ink-faint);
+            font-size: 0.9rem;
+            margin-top: 0.75rem;
+        }
+
+        /* Animation */
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(24px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* ==============================
+           CERTIFICATE CARD - PREMIUM
+           ============================== */
+
+        .certificate {
+            display: none;
+            animation: slideUp 0.5s ease;
+            margin-bottom: 2rem;
+        }
+
+        .certificate.show { display: block; }
+
+        .cert-card {
+            background: white;
+            border-radius: 14px;
+            overflow: hidden;
+            box-shadow:
+                0 1px 3px rgba(26, 54, 93, 0.04),
+                0 8px 24px rgba(26, 54, 93, 0.08),
+                0 24px 72px rgba(26, 54, 93, 0.12);
+            border: 1px solid rgba(26, 54, 93, 0.06);
+        }
+
+        /* Gold decorative top border */
+        .cert-card::before {
+            content: '';
+            display: block;
+            height: 3px;
+            background: linear-gradient(90deg, var(--gold), var(--gold-light), var(--gold));
+        }
+
+        /* Certificate Header */
+        .cert-header {
+            background: var(--navy);
+            color: var(--cream);
+            padding: 2.5rem 2.5rem 2rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Subtle texture on header */
+        .cert-header::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+            opacity: 0.04;
+            pointer-events: none;
+        }
+
+        /* Inner border frame */
+        .cert-header::after {
+            content: '';
+            position: absolute;
+            top: 0.6rem; left: 0.6rem; right: 0.6rem; bottom: 0.6rem;
+            border: 1px solid rgba(255, 254, 240, 0.12);
+            pointer-events: none;
+        }
+
+        .cert-header-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        .cert-seal {
+            width: 72px; height: 72px;
+            margin: 0 auto 1rem;
+            background: radial-gradient(circle at 35% 35%, var(--gold-light), var(--gold));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: var(--navy);
+            box-shadow:
+                0 2px 8px rgba(0, 0, 0, 0.25),
+                0 0 0 3px rgba(212, 175, 55, 0.2),
+                inset 0 1px 2px rgba(255, 255, 255, 0.3);
+            letter-spacing: 0.02em;
+        }
+
+        .cert-verified-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.3rem 1rem;
+            background: rgba(39, 103, 73, 0.2);
+            border: 1px solid rgba(39, 103, 73, 0.3);
+            border-radius: 100px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: #68d391;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 0.75rem;
+        }
+
+        .cert-verified-badge .checkmark {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 16px; height: 16px;
+            background: #68d391;
+            color: var(--navy);
+            border-radius: 50%;
+            font-size: 0.6rem;
+            font-weight: 800;
+        }
+
+        .cert-title-main {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.6rem;
+            font-weight: 500;
+            color: var(--cream);
+            margin-bottom: 0.6rem;
+            letter-spacing: 0.02em;
+        }
+
+        .cert-id-display {
+            font-family: 'DM Mono', 'SF Mono', 'Fira Code', monospace;
+            font-size: 0.95rem;
+            letter-spacing: 0.15em;
+            color: var(--gold-light);
+            opacity: 0.9;
+        }
+
+        /* Certificate Body */
+        .cert-body {
+            padding: 2.5rem;
+        }
+
+        .cert-artwork-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: clamp(1.75rem, 3.5vw, 2.25rem);
+            font-weight: 600;
+            color: var(--navy);
+            text-align: center;
+            margin-bottom: 0.35rem;
+            line-height: 1.2;
+        }
+
+        .cert-artist {
+            text-align: center;
+            color: var(--ink-light);
+            font-size: 1.05rem;
+            margin-bottom: 2rem;
+        }
+
+        .cert-artist a {
+            color: var(--navy);
+            text-decoration: none;
+            font-weight: 600;
+            border-bottom: 1px solid rgba(26, 54, 93, 0.2);
+            transition: all 0.2s;
+        }
+
+        .cert-artist a:hover {
+            color: var(--gold);
+            border-bottom-color: var(--gold);
+        }
+
+        /* Details grid */
+        .cert-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.25rem;
+            padding: 1.5rem;
+            background: var(--cream);
+            border-radius: 10px;
+            border: 1px solid rgba(26, 54, 93, 0.04);
+            margin-bottom: 1.75rem;
+        }
+
+        .cert-detail-item {}
+
+        .cert-detail-label {
+            display: block;
+            font-size: 0.68rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--ink-faint);
+            margin-bottom: 0.2rem;
+            font-weight: 600;
+        }
+
+        .cert-detail-value {
+            font-size: 0.95rem;
+            color: var(--ink);
+        }
+
+        .cert-status-verified {
+            color: var(--success);
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        .cert-status-verified::before {
+            content: '';
+            width: 7px; height: 7px;
+            background: var(--success);
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        /* Tier Section */
+        .cert-tier-section {
+            padding: 1.5rem;
+            background: var(--cream);
+            border-radius: 10px;
+            border: 1px solid rgba(26, 54, 93, 0.04);
+            margin-bottom: 1.75rem;
+        }
+
+        .cert-tier-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+        }
+
+        .tier-badge-large {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1.25rem;
+            border-radius: 100px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        .tier-badge-large.tier-gold {
+            background: linear-gradient(135deg, var(--gold-pale), #ede4b5);
+            color: var(--gold);
+            box-shadow: 0 2px 8px rgba(183, 150, 11, 0.15);
+        }
+
+        .tier-badge-large.tier-silver {
+            background: linear-gradient(135deg, #e8edf2, #dce3ed);
+            color: var(--silver);
+            box-shadow: 0 2px 8px rgba(113, 128, 150, 0.15);
+        }
+
+        .tier-badge-large.tier-bronze {
+            background: linear-gradient(135deg, #f0e6d8, #e8d9c4);
+            color: var(--bronze);
+            box-shadow: 0 2px 8px rgba(156, 107, 48, 0.15);
+        }
+
+        .tier-badge-large .tier-icon {
+            font-size: 1rem;
+        }
+
+        .tier-badge-small {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            padding: 0.25rem 0.7rem;
+            border-radius: 100px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+
+        .tier-badge-small.tier-gold { background: var(--gold-pale); color: var(--gold); }
+        .tier-badge-small.tier-silver { background: #e8edf2; color: var(--silver); }
+        .tier-badge-small.tier-bronze { background: #f0e6d8; color: var(--bronze); }
+
+        /* Evidence strength bar */
+        .evidence-bar-wrap {
+            margin-bottom: 0.75rem;
+        }
+
+        .evidence-bar-label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.4rem;
+        }
+
+        .evidence-bar-label-text {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--ink-light);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+
+        .evidence-bar-pct {
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--ink);
+        }
+
+        .evidence-bar-track {
+            width: 100%;
+            height: 8px;
+            background: rgba(26, 54, 93, 0.08);
+            border-radius: 100px;
+            overflow: hidden;
+        }
+
+        .evidence-bar-fill {
+            height: 100%;
+            border-radius: 100px;
+            transition: width 0.6s ease;
+        }
+
+        .evidence-bar-fill.tier-gold { background: linear-gradient(90deg, var(--gold), var(--gold-light)); }
+        .evidence-bar-fill.tier-silver { background: linear-gradient(90deg, #8a9bb0, var(--silver)); }
+        .evidence-bar-fill.tier-bronze { background: linear-gradient(90deg, var(--bronze), #b8863e); }
+
+        .evidence-summary {
+            display: flex;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+            font-size: 0.8rem;
+            color: var(--ink-faint);
+        }
+
+        .evidence-summary-item {
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+        }
+
+        .evidence-summary-item .ev-dot {
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .ev-dot-yes { background: var(--success); }
+        .ev-dot-no { background: rgba(26, 54, 93, 0.15); }
+
+        /* Description */
+        .cert-description {
+            padding: 1.5rem;
+            background: var(--cream);
+            border-radius: 10px;
+            border: 1px solid rgba(26, 54, 93, 0.04);
+            margin-bottom: 1.75rem;
+        }
+
+        .cert-description-label {
+            display: block;
+            font-size: 0.68rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--ink-faint);
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+
+        .cert-description p {
+            color: var(--ink);
+            font-size: 0.95rem;
+            line-height: 1.7;
+        }
+
+        /* QR section */
+        .cert-qr {
+            text-align: center;
+            padding: 1.75rem 0;
+            border-top: 1px solid rgba(26, 54, 93, 0.06);
+        }
+
+        .cert-qr img {
+            max-width: 140px;
+            margin-bottom: 0.5rem;
+            border-radius: 4px;
+        }
+
+        .cert-qr p {
+            font-size: 0.78rem;
+            color: var(--ink-faint);
+        }
+
+        /* Share Section */
+        .cert-share {
+            padding: 1.75rem 0 0;
+            border-top: 1px solid rgba(26, 54, 93, 0.06);
+        }
+
+        .cert-share-label {
+            font-size: 0.68rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--ink-faint);
+            font-weight: 600;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+
+        .share-buttons {
+            display: flex;
+            gap: 0.75rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 1rem;
+        }
+
+        .share-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.6rem 1.1rem;
+            background: transparent;
+            border: 1.5px solid rgba(26, 54, 93, 0.15);
+            border-radius: 6px;
+            color: var(--ink-light);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.82rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .share-btn:hover {
+            border-color: var(--navy);
+            color: var(--navy);
+            background: rgba(26, 54, 93, 0.03);
+        }
+
+        .share-btn.copied {
+            border-color: var(--success);
+            color: var(--success);
+            background: rgba(39, 103, 73, 0.04);
+        }
+
+        .share-btn svg {
+            width: 16px; height: 16px;
+            flex-shrink: 0;
+        }
+
+        /* Embed dropdown */
+        .embed-panel {
+            display: none;
+            margin-top: 1rem;
+            background: var(--cream);
+            border: 1px solid rgba(26, 54, 93, 0.08);
+            border-radius: 10px;
+            padding: 1.5rem;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .embed-panel.show { display: block; }
+
+        .embed-panel-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.1rem;
+            color: var(--navy);
+            margin-bottom: 1rem;
+        }
+
+        .embed-section {
+            margin-bottom: 1.25rem;
+        }
+
+        .embed-section:last-child { margin-bottom: 0; }
+
+        .embed-section-label {
+            font-size: 0.72rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--ink-faint);
+            margin-bottom: 0.35rem;
+            display: block;
+        }
+
+        .embed-code-box {
+            position: relative;
+        }
+
+        .embed-code-box code {
+            display: block;
+            padding: 0.75rem;
+            padding-right: 3.5rem;
+            background: white;
+            border: 1px solid rgba(26, 54, 93, 0.08);
+            border-radius: 6px;
+            font-family: 'DM Mono', 'SF Mono', monospace;
+            font-size: 0.72rem;
+            color: var(--ink-light);
+            overflow-x: auto;
+            white-space: pre;
+            line-height: 1.5;
+        }
+
+        .copy-btn {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            padding: 0.3rem 0.6rem;
+            font-size: 0.68rem;
+            font-weight: 600;
+            background: var(--navy);
+            color: var(--cream);
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: 'DM Sans', sans-serif;
+            transition: background 0.2s;
+        }
+
+        .copy-btn:hover { background: var(--navy-light); }
+        .copy-btn.copied { background: var(--success); }
+
+        /* ==============================
+           NOT FOUND STATE
+           ============================== */
+
+        .not-found {
+            display: none;
+            text-align: center;
+            padding: 3.5rem 2rem;
+            background: white;
+            border: 1px solid rgba(197, 48, 48, 0.12);
+            border-radius: 12px;
+            animation: slideUp 0.4s ease;
+            box-shadow: 0 4px 20px rgba(26, 54, 93, 0.04);
+            margin-bottom: 2rem;
+        }
+
+        .not-found.show { display: block; }
+
+        .not-found-icon {
+            width: 64px; height: 64px;
+            background: rgba(197, 48, 48, 0.08);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.25rem;
+            font-size: 1.5rem;
+            color: var(--error);
+        }
+
+        .not-found h2 {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.6rem;
+            color: var(--error);
+            margin-bottom: 0.5rem;
+        }
+
+        .not-found p {
+            color: var(--ink-light);
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+
+        /* ==============================
+           INSTRUCTIONS
+           ============================== */
+
+        .instructions {
+            margin-top: 2.5rem;
+            padding: 2rem;
+            background: var(--cream-dark);
+            border-radius: 12px;
+            border: 1px solid rgba(26, 54, 93, 0.04);
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .instructions h3 {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.3rem;
+            color: var(--navy);
+            margin-bottom: 0.75rem;
+        }
+
+        .instructions p {
+            font-size: 0.9rem;
+            color: var(--ink-light);
+            line-height: 1.7;
+        }
+
+        .instructions code {
+            display: inline-block;
+            padding: 0.15rem 0.5rem;
+            background: white;
+            border: 1px solid rgba(26, 54, 93, 0.1);
+            border-radius: 4px;
+            font-family: 'DM Mono', 'SF Mono', monospace;
+            font-size: 0.85rem;
+            color: var(--navy);
+            letter-spacing: 0.04em;
+        }
+
+        /* Footer */
+        footer {
+            padding: 3rem 0;
+            border-top: 1px solid rgba(26, 54, 93, 0.08);
+            margin-top: 1rem;
+        }
+
+        .footer-inner {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .footer-links { display: flex; gap: 1.5rem; }
+        .footer-links a { color: var(--ink-faint); text-decoration: none; font-size: 0.85rem; }
+        .footer-links a:hover { color: var(--navy); }
+        footer p { color: var(--ink-faint); font-size: 0.85rem; }
+
+        /* ==============================
+           RESPONSIVE
+           ============================== */
+
+        @media (max-width: 640px) {
+            .search-form { flex-direction: column; }
+            .btn { width: 100%; }
+            .cert-details { grid-template-columns: 1fr; gap: 1rem; }
+            .cert-body { padding: 1.75rem; }
+            .cert-header { padding: 2rem 1.5rem 1.5rem; }
+            .cert-tier-header { flex-direction: column; align-items: flex-start; }
+            .share-buttons { flex-direction: column; }
+            .share-btn { width: 100%; justify-content: center; }
+            .embed-panel { padding: 1rem; }
+            .footer-inner { flex-direction: column; text-align: center; }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-inner">
+            <a href="/" class="logo">Art-<span>Official</span></a>
+            <nav>
+                <a href="register.html">For Artists</a>
+                <a href="/">Home</a>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <div class="container">
+            <!-- Page Header -->
+            <div class="page-header">
+                <h1>Verify <em>Certificate</em></h1>
+                <p>Enter a certificate code to verify its authenticity</p>
+            </div>
+
+            <!-- Search Section -->
+            <section class="search-section">
+                <div class="search-box">
+                    <form class="search-form" id="verify-form">
+                        <input type="text"
+                               class="search-input"
+                               id="cert-code"
+                               placeholder="Enter code (e.g., AO-2026-X7K9M2)"
+                               autocomplete="off"
+                               spellcheck="false">
+                        <button type="submit" class="btn" id="verify-btn">Verify</button>
+                    </form>
+                </div>
+            </section>
+
+            <!-- Loading State -->
+            <div class="search-loading" id="loading-state">
+                <div class="spinner"></div>
+                <p>Verifying certificate...</p>
+            </div>
+
+            <!-- Certificate Display -->
+            <div class="certificate" id="certificate">
+                <div class="cert-card">
+                    <!-- Gold top border via ::before -->
+
+                    <!-- Header -->
+                    <div class="cert-header">
+                        <div class="cert-header-content">
+                            <div class="cert-seal">AO</div>
+                            <div class="cert-verified-badge">
+                                <span class="checkmark">&#10003;</span>
+                                Verified Human Creation
+                            </div>
+                            <div class="cert-title-main">Certificate of Authenticity</div>
+                            <div class="cert-id-display" id="display-cert-id"></div>
+                        </div>
+                    </div>
+
+                    <!-- Body -->
+                    <div class="cert-body">
+                        <h2 class="cert-artwork-title" id="display-title"></h2>
+                        <p class="cert-artist">by <a href="#" id="display-artist-link"><span id="display-artist"></span></a></p>
+
+                        <!-- Details Grid -->
+                        <div class="cert-details">
+                            <div class="cert-detail-item">
+                                <span class="cert-detail-label">Medium</span>
+                                <span class="cert-detail-value" id="display-medium"></span>
+                            </div>
+                            <div class="cert-detail-item">
+                                <span class="cert-detail-label">Created</span>
+                                <span class="cert-detail-value" id="display-created"></span>
+                            </div>
+                            <div class="cert-detail-item">
+                                <span class="cert-detail-label">Registered</span>
+                                <span class="cert-detail-value" id="display-registered"></span>
+                            </div>
+                            <div class="cert-detail-item">
+                                <span class="cert-detail-label">Status</span>
+                                <span class="cert-detail-value">
+                                    <span class="cert-status-verified" id="display-status">Verified</span>
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Tier Indicator -->
+                        <div class="cert-tier-section" id="tier-section">
+                            <div class="cert-tier-header">
+                                <span class="tier-badge-large" id="tier-badge">
+                                    <span class="tier-icon" id="tier-icon"></span>
+                                    <span id="tier-label-text"></span>
+                                    Certification
+                                </span>
+                            </div>
+                            <div class="evidence-bar-wrap">
+                                <div class="evidence-bar-label">
+                                    <span class="evidence-bar-label-text">Evidence Strength</span>
+                                    <span class="evidence-bar-pct" id="evidence-pct"></span>
+                                </div>
+                                <div class="evidence-bar-track">
+                                    <div class="evidence-bar-fill" id="evidence-fill"></div>
+                                </div>
+                            </div>
+                            <div class="evidence-summary" id="evidence-summary"></div>
+                        </div>
+
+                        <!-- Description -->
+                        <div class="cert-description" id="description-section" style="display:none;">
+                            <span class="cert-description-label">Description</span>
+                            <p id="display-description"></p>
+                        </div>
+
+                        <!-- QR Code -->
+                        <div class="cert-qr" id="qr-section">
+                            <img id="qr-code" alt="QR Code for verification" style="display:none;">
+                            <p>Scan to verify this certificate</p>
+                        </div>
+
+                        <!-- Share Section -->
+                        <div class="cert-share">
+                            <div class="cert-share-label">Share This Certificate</div>
+                            <div class="share-buttons">
+                                <button type="button" class="share-btn" id="copy-link-btn">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                                    Copy Verification Link
+                                </button>
+                                <button type="button" class="share-btn" id="embed-toggle-btn">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+                                    Get Embed Code
+                                </button>
+                            </div>
+
+                            <!-- Embed Panel -->
+                            <div class="embed-panel" id="embed-panel">
+                                <div class="embed-panel-title">Embed Code</div>
+                                <div class="embed-section">
+                                    <span class="embed-section-label">HTML</span>
+                                    <div class="embed-code-box">
+                                        <code id="embed-html-code"></code>
+                                        <button type="button" class="copy-btn" data-target="embed-html-code">Copy</button>
+                                    </div>
+                                </div>
+                                <div class="embed-section">
+                                    <span class="embed-section-label">Markdown</span>
+                                    <div class="embed-code-box">
+                                        <code id="embed-md-code"></code>
+                                        <button type="button" class="copy-btn" data-target="embed-md-code">Copy</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Not Found State -->
+            <div class="not-found" id="not-found">
+                <div class="not-found-icon">&#10005;</div>
+                <h2>Certificate Not Found</h2>
+                <p>The certificate code you entered does not exist in our registry.<br>Please check the code and try again.</p>
+            </div>
+
+            <!-- Instructions -->
+            <div class="instructions" id="instructions-section">
+                <h3>How to Verify</h3>
+                <p>
+                    Enter the certificate code found on the artwork's documentation or embedded badge.<br>
+                    Codes follow the format: <code>AO-YYYY-XXXXXX</code> (e.g., AO-2026-A3K9M2).<br><br>
+                    Each Art-Official certificate is a unique, tamper-evident record that an artwork<br>
+                    was created by a human artist without the use of generative AI.
+                </p>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <div class="footer-inner">
+            <a href="/" class="logo" style="font-size:1.25rem;">Art-<span>Official</span></a>
+            <div class="footer-links">
+                <a href="/">Home</a>
+                <a href="register.html">For Artists</a>
+                <a href="verify.html">Verify</a>
+            </div>
+            <p>&copy; 2026 Art-Official</p>
+        </div>
+    </footer>
+
+    <script>
+    (function() {
+        'use strict';
+
+        // ---- DOM Helpers ----
+        function $(id) { return document.getElementById(id); }
+
+        function escHtml(s) {
+            var d = document.createElement('div');
+            d.textContent = s || '';
+            return d.innerHTML;
+        }
+
+        function formatDate(dateStr) {
+            if (!dateStr) return '';
+            try {
+                return new Date(dateStr).toLocaleDateString('en-GB', {
+                    day: 'numeric', month: 'long', year: 'numeric'
+                });
+            } catch (e) { return dateStr; }
+        }
+
+        // ---- Copy to clipboard ----
+        function copyText(text, btn) {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(function() {
+                    showCopied(btn);
+                });
+            } else {
+                var ta = document.createElement('textarea');
+                ta.value = text;
+                ta.style.position = 'fixed';
+                ta.style.opacity = '0';
+                document.body.appendChild(ta);
+                ta.select();
+                try { document.execCommand('copy'); } catch (e) {}
+                document.body.removeChild(ta);
+                showCopied(btn);
+            }
+        }
+
+        function showCopied(btn) {
+            var origText = btn.textContent;
+            btn.textContent = 'Copied!';
+            btn.classList.add('copied');
+            setTimeout(function() {
+                btn.textContent = origText;
+                btn.classList.remove('copied');
+            }, 2000);
+        }
+
+        // ---- Tier helpers ----
+        var tierIcons = { gold: '\u2605', silver: '\u25C6', bronze: '\u25C7' };
+
+        function getTierClass(tier) {
+            if (!tier) return 'bronze';
+            var t = tier.toLowerCase();
+            if (t === 'gold') return 'gold';
+            if (t === 'silver') return 'silver';
+            return 'bronze';
+        }
+
+        // ---- States ----
+        function hideAll() {
+            $('certificate').classList.remove('show');
+            $('not-found').classList.remove('show');
+            $('loading-state').classList.remove('show');
+        }
+
+        function showLoading() {
+            hideAll();
+            $('loading-state').classList.add('show');
+        }
+
+        function showNotFound() {
+            hideAll();
+            $('not-found').classList.add('show');
+        }
+
+        function showCertificate() {
+            hideAll();
+            $('certificate').classList.add('show');
+        }
+
+        // ---- Verify ----
+        var currentCertId = null;
+
+        function verifyCode(code) {
+            code = (code || '').trim().toUpperCase();
+            if (!code) return;
+
+            currentCertId = code;
+            $('cert-code').value = code;
+            showLoading();
+
+            // Update URL
+            history.replaceState(null, '', '?code=' + encodeURIComponent(code));
+
+            fetch('/api/verify/' + encodeURIComponent(code))
+                .then(function(res) { return res.json(); })
+                .then(function(data) {
+                    if (data.success && data.verified && data.certificate) {
+                        displayCertificate(data.certificate);
+                    } else {
+                        showNotFound();
+                    }
+                })
+                .catch(function() {
+                    showNotFound();
+                });
+        }
+
+        function displayCertificate(cert) {
+            // Header
+            $('display-cert-id').textContent = cert.id;
+
+            // Title & Artist
+            $('display-title').textContent = cert.title || 'Untitled';
+            $('display-artist').textContent = cert.artistName || 'Unknown Artist';
+
+            var artistLink = $('display-artist-link');
+            if (cert.artistSlug) {
+                artistLink.href = '/profile.html?artist=' + encodeURIComponent(cert.artistSlug);
+            } else {
+                artistLink.removeAttribute('href');
+                artistLink.style.borderBottom = 'none';
+                artistLink.style.cursor = 'default';
+            }
+
+            // Details
+            $('display-medium').textContent = cert.medium || '--';
+            $('display-created').textContent = formatDate(cert.creationDate);
+            $('display-registered').textContent = formatDate(cert.registeredAt);
+            $('display-status').textContent = cert.status === 'active' || cert.status === 'verified' ? 'Verified' : (cert.status || 'Verified');
+
+            // Tier
+            var tierClass = getTierClass(cert.tier);
+            var tierLabel = cert.tierLabel || cert.tier || 'Bronze';
+
+            var tierBadge = $('tier-badge');
+            tierBadge.className = 'tier-badge-large tier-' + tierClass;
+            $('tier-icon').textContent = tierIcons[tierClass] || tierIcons.bronze;
+            $('tier-label-text').textContent = tierLabel;
+
+            // Evidence strength bar
+            var strength = cert.evidenceStrength || 0;
+            $('evidence-pct').textContent = Math.round(strength) + '%';
+            var fill = $('evidence-fill');
+            fill.className = 'evidence-bar-fill tier-' + tierClass;
+            // Animate the fill
+            setTimeout(function() {
+                fill.style.width = Math.round(strength) + '%';
+            }, 100);
+
+            // Evidence summary
+            var summaryHtml = '';
+            var evCount = cert.evidenceCount || 0;
+            summaryHtml += '<span class="evidence-summary-item">' +
+                '<span class="ev-dot ' + (evCount > 0 ? 'ev-dot-yes' : 'ev-dot-no') + '"></span>' +
+                evCount + ' evidence item' + (evCount !== 1 ? 's' : '') +
+                '</span>';
+
+            var hasNotes = cert.hasProcessNotes;
+            summaryHtml += '<span class="evidence-summary-item">' +
+                '<span class="ev-dot ' + (hasNotes ? 'ev-dot-yes' : 'ev-dot-no') + '"></span>' +
+                'Process notes: ' + (hasNotes ? 'Documented' : 'Not provided') +
+                '</span>';
+
+            $('evidence-summary').innerHTML = summaryHtml;
+
+            // Description
+            var descSection = $('description-section');
+            if (cert.description && cert.description.trim()) {
+                $('display-description').textContent = cert.description;
+                descSection.style.display = 'block';
+            } else {
+                descSection.style.display = 'none';
+            }
+
+            // Reset embed panel
+            $('embed-panel').classList.remove('show');
+
+            // Reset evidence bar width (for animation)
+            fill.style.width = '0%';
+
+            // Show the certificate
+            showCertificate();
+
+            // Animate evidence bar after render
+            setTimeout(function() {
+                fill.style.width = Math.round(strength) + '%';
+            }, 200);
+
+            // Load QR code
+            loadQrCode(cert.id);
+        }
+
+        // ---- QR Code ----
+        function loadQrCode(certId) {
+            var qrImg = $('qr-code');
+            qrImg.style.display = 'none';
+
+            fetch('/api/qr/' + encodeURIComponent(certId))
+                .then(function(res) { return res.json(); })
+                .then(function(data) {
+                    if (data.success && data.qrCode) {
+                        qrImg.src = data.qrCode;
+                        qrImg.style.display = 'inline-block';
+                    }
+                })
+                .catch(function() {
+                    // QR code not available - hide quietly
+                });
+        }
+
+        // ---- Share: Copy Link ----
+        $('copy-link-btn').addEventListener('click', function() {
+            if (!currentCertId) return;
+            var url = location.origin + '/verify.html?code=' + encodeURIComponent(currentCertId);
+            copyText(url, this);
+        });
+
+        // ---- Share: Embed Toggle ----
+        $('embed-toggle-btn').addEventListener('click', function() {
+            var panel = $('embed-panel');
+            if (panel.classList.contains('show')) {
+                panel.classList.remove('show');
+                return;
+            }
+
+            if (!currentCertId) return;
+
+            // Fetch embed code from API
+            fetch('/api/embed/' + encodeURIComponent(currentCertId))
+                .then(function(res) { return res.json(); })
+                .then(function(data) {
+                    if (data.success) {
+                        $('embed-html-code').textContent = data.html || '';
+                        $('embed-md-code').textContent = data.markdown || '';
+                    } else {
+                        // Fallback: generate embed code locally
+                        var origin = location.origin;
+                        $('embed-html-code').textContent = '<a href="' + origin + '/verify.html?code=' + currentCertId + '"><img src="' + origin + '/api/badge/' + currentCertId + '" alt="Art-Official Certified" /></a>';
+                        $('embed-md-code').textContent = '[![Art-Official Certified](' + origin + '/api/badge/' + currentCertId + ')](' + origin + '/verify.html?code=' + currentCertId + ')';
+                    }
+                    panel.classList.add('show');
+                })
+                .catch(function() {
+                    // Fallback on error
+                    var origin = location.origin;
+                    $('embed-html-code').textContent = '<a href="' + origin + '/verify.html?code=' + currentCertId + '"><img src="' + origin + '/api/badge/' + currentCertId + '" alt="Art-Official Certified" /></a>';
+                    $('embed-md-code').textContent = '[![Art-Official Certified](' + origin + '/api/badge/' + currentCertId + ')](' + origin + '/verify.html?code=' + currentCertId + ')';
+                    panel.classList.add('show');
+                });
+        });
+
+        // ---- Copy buttons (event delegation) ----
+        document.addEventListener('click', function(e) {
+            var copyBtn = e.target.closest('.copy-btn');
+            if (copyBtn) {
+                e.stopPropagation();
+                var targetId = copyBtn.getAttribute('data-target');
+                var codeEl = document.getElementById(targetId);
+                if (!codeEl) return;
+                copyText(codeEl.textContent, copyBtn);
+            }
+        });
+
+        // ---- Form submission ----
+        $('verify-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            var code = $('cert-code').value.trim().toUpperCase();
+            if (code) {
+                verifyCode(code);
+            }
+        });
+
+        // ---- On page load: check URL params ----
+        var params = new URLSearchParams(window.location.search);
+        var initialCode = params.get('code');
+        if (initialCode) {
+            $('cert-code').value = initialCode.toUpperCase();
+            verifyCode(initialCode);
+        }
+    })();
+    </script>
+</body>
+</html>

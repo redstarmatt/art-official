@@ -1,0 +1,1757 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Artist Portal — Art-Official</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --navy: #1a365d;
+            --navy-light: #2c5282;
+            --navy-dark: #12284a;
+            --cream: #fffef0;
+            --cream-dark: #f7f5e6;
+            --gold: #b7960b;
+            --gold-light: #d4af37;
+            --gold-pale: #f5efd0;
+            --ink: #2d3748;
+            --ink-light: #4a5568;
+            --ink-faint: #718096;
+            --success: #276749;
+            --error: #c53030;
+            --bronze: #9c6b30;
+            --silver: #718096;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: var(--cream);
+            color: var(--ink);
+            line-height: 1.6;
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+            opacity: 0.03;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* Header */
+        header {
+            padding: 1.25rem 0;
+            position: sticky;
+            top: 0;
+            background: rgba(255, 254, 240, 0.92);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(26, 54, 93, 0.08);
+            z-index: 100;
+        }
+
+        .header-inner {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--navy);
+            text-decoration: none;
+            letter-spacing: -0.02em;
+        }
+
+        .logo span { color: var(--gold); }
+
+        nav { display: flex; gap: 1.5rem; align-items: center; }
+
+        nav a {
+            color: var(--ink-light);
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        nav a:hover { color: var(--navy); }
+
+        /* Main container */
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Page header */
+        .page-header {
+            text-align: center;
+            padding: 3rem 0 2rem;
+        }
+
+        .page-header h1 {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: clamp(2rem, 4vw, 2.75rem);
+            font-weight: 500;
+            color: var(--navy);
+            line-height: 1.15;
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.02em;
+        }
+
+        .page-header h1 em { font-style: italic; color: var(--gold); }
+
+        .page-header p {
+            color: var(--ink-light);
+            font-size: 1.05rem;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 0;
+            border-bottom: 2px solid rgba(26, 54, 93, 0.08);
+            margin-bottom: 2rem;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .tab-btn {
+            padding: 0.875rem 1.5rem;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--ink-faint);
+            background: none;
+            border: none;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -2px;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .tab-btn:hover { color: var(--navy); }
+
+        .tab-btn.active {
+            color: var(--navy);
+            border-bottom-color: var(--gold);
+        }
+
+        .tab-btn.hidden { display: none; }
+
+        .tab-panel { display: none; animation: fadeIn 0.3s ease; }
+        .tab-panel.active { display: block; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Cards */
+        .card {
+            background: white;
+            border: 1px solid rgba(26, 54, 93, 0.08);
+            border-radius: 12px;
+            padding: 2.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 20px rgba(26, 54, 93, 0.04);
+        }
+
+        .card-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.5rem;
+            color: var(--navy);
+            margin-bottom: 0.5rem;
+        }
+
+        .card-subtitle {
+            color: var(--ink-light);
+            font-size: 0.9rem;
+            margin-bottom: 2rem;
+        }
+
+        /* Form elements */
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+        }
+
+        label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--ink);
+            margin-bottom: 0.4rem;
+        }
+
+        label .required {
+            color: var(--error);
+            margin-left: 0.15rem;
+        }
+
+        label .optional {
+            color: var(--ink-faint);
+            font-weight: 400;
+            font-size: 0.8rem;
+        }
+
+        input[type="text"],
+        input[type="email"],
+        input[type="url"],
+        input[type="date"],
+        select,
+        textarea {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.95rem;
+            color: var(--ink);
+            background: var(--cream);
+            border: 1px solid rgba(26, 54, 93, 0.18);
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--navy);
+            box-shadow: 0 0 0 3px rgba(26, 54, 93, 0.08);
+        }
+
+        textarea { resize: vertical; min-height: 100px; }
+
+        select {
+            appearance: none;
+            -webkit-appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%234a5568' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 1rem center;
+            padding-right: 2.5rem;
+        }
+
+        .char-count {
+            text-align: right;
+            font-size: 0.75rem;
+            color: var(--ink-faint);
+            margin-top: 0.25rem;
+        }
+
+        .form-hint {
+            font-size: 0.8rem;
+            color: var(--ink-faint);
+            margin-top: 0.3rem;
+        }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            background: var(--navy);
+            color: var(--cream);
+            text-decoration: none;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 600;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn:hover { background: var(--navy-light); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(26, 54, 93, 0.2); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+        .btn-gold { background: var(--gold); }
+        .btn-gold:hover { background: var(--gold-light); }
+        .btn-outline { background: transparent; border: 1.5px solid var(--navy); color: var(--navy); }
+        .btn-outline:hover { background: var(--navy); color: var(--cream); }
+        .btn-sm { padding: 0.5rem 1rem; font-size: 0.8rem; }
+        .btn-full { width: 100%; }
+        .btn-lg { padding: 1rem 2rem; font-size: 1rem; }
+
+        /* Evidence upload area */
+        .upload-area {
+            border: 2px dashed rgba(26, 54, 93, 0.2);
+            border-radius: 10px;
+            padding: 2.5rem 2rem;
+            text-align: center;
+            transition: all 0.2s;
+            cursor: pointer;
+            background: rgba(26, 54, 93, 0.01);
+        }
+
+        .upload-area:hover,
+        .upload-area.dragover {
+            border-color: var(--navy);
+            background: rgba(26, 54, 93, 0.03);
+        }
+
+        .upload-area.dragover {
+            border-color: var(--gold);
+            background: var(--gold-pale);
+        }
+
+        .upload-icon {
+            width: 48px; height: 48px;
+            margin: 0 auto 1rem;
+            background: rgba(26, 54, 93, 0.06);
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.25rem;
+            color: var(--navy);
+        }
+
+        .upload-area h4 {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.15rem;
+            color: var(--navy);
+            margin-bottom: 0.35rem;
+        }
+
+        .upload-area p {
+            font-size: 0.85rem;
+            color: var(--ink-faint);
+        }
+
+        .upload-area p strong {
+            color: var(--navy);
+            text-decoration: underline;
+            cursor: pointer;
+        }
+
+        .file-input-hidden { display: none; }
+
+        /* File thumbnails */
+        .file-thumbnails {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 0.75rem;
+            margin-top: 1rem;
+        }
+
+        .file-thumb {
+            position: relative;
+            aspect-ratio: 1;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid rgba(26, 54, 93, 0.1);
+            background: var(--cream-dark);
+        }
+
+        .file-thumb img {
+            width: 100%; height: 100%;
+            object-fit: cover;
+        }
+
+        .file-thumb .file-icon {
+            width: 100%; height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.65rem;
+            color: var(--ink-faint);
+            padding: 0.5rem;
+            word-break: break-all;
+            text-align: center;
+        }
+
+        .file-thumb .file-icon-symbol {
+            display: block;
+            width: 28px; height: 28px;
+            margin-bottom: 0.35rem;
+            background: rgba(26, 54, 93, 0.1);
+            border-radius: 4px;
+        }
+
+        .file-thumb-remove {
+            position: absolute;
+            top: 4px; right: 4px;
+            width: 22px; height: 22px;
+            background: rgba(0, 0, 0, 0.6);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            font-size: 0.7rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+            transition: background 0.2s;
+        }
+
+        .file-thumb-remove:hover { background: var(--error); }
+
+        .file-count {
+            font-size: 0.8rem;
+            color: var(--ink-faint);
+            margin-top: 0.5rem;
+        }
+
+        /* Evidence strength meter */
+        .strength-meter {
+            margin-top: 1.5rem;
+            padding: 1.25rem 1.5rem;
+            background: var(--cream-dark);
+            border-radius: 8px;
+            border: 1px solid rgba(26, 54, 93, 0.06);
+        }
+
+        .strength-label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.6rem;
+        }
+
+        .strength-label-text {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--ink);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+
+        .strength-tier {
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            padding: 0.2rem 0.75rem;
+            border-radius: 100px;
+        }
+
+        .strength-tier.tier-bronze { background: #f0e6d8; color: var(--bronze); }
+        .strength-tier.tier-silver { background: #e8edf2; color: var(--silver); }
+        .strength-tier.tier-gold { background: var(--gold-pale); color: var(--gold); }
+
+        .strength-bar-track {
+            width: 100%;
+            height: 8px;
+            background: rgba(26, 54, 93, 0.08);
+            border-radius: 100px;
+            overflow: hidden;
+        }
+
+        .strength-bar-fill {
+            height: 100%;
+            border-radius: 100px;
+            transition: width 0.4s ease, background 0.4s ease;
+            width: 0%;
+        }
+
+        .strength-bar-fill.tier-bronze { background: var(--bronze); }
+        .strength-bar-fill.tier-silver { background: var(--silver); }
+        .strength-bar-fill.tier-gold { background: var(--gold); }
+
+        .strength-details {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem 1rem;
+            margin-top: 0.75rem;
+        }
+
+        .strength-item {
+            font-size: 0.72rem;
+            color: var(--ink-faint);
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        .strength-check {
+            width: 14px; height: 14px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.55rem;
+            flex-shrink: 0;
+        }
+
+        .strength-check.done {
+            background: rgba(39, 103, 73, 0.12);
+            color: var(--success);
+        }
+
+        .strength-check.pending {
+            background: rgba(26, 54, 93, 0.06);
+            color: var(--ink-faint);
+        }
+
+        /* Declaration */
+        .declaration {
+            background: var(--cream-dark);
+            border: 1px solid rgba(26, 54, 93, 0.1);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .declaration h4 {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.1rem;
+            color: var(--navy);
+            margin-bottom: 0.75rem;
+        }
+
+        .declaration-text {
+            font-size: 0.85rem;
+            color: var(--ink-light);
+            line-height: 1.7;
+            margin-bottom: 1rem;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: 18px; height: 18px;
+            margin-top: 2px;
+            accent-color: var(--navy);
+            flex-shrink: 0;
+        }
+
+        .checkbox-group label {
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--ink);
+            cursor: pointer;
+            margin-bottom: 0;
+        }
+
+        /* Dashboard */
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .dashboard-header h2 {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.75rem;
+            color: var(--navy);
+        }
+
+        .dashboard-header h2 small {
+            display: block;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 400;
+            color: var(--ink-faint);
+            margin-top: 0.15rem;
+        }
+
+        .profile-link {
+            color: var(--navy);
+            font-size: 0.85rem;
+            font-weight: 500;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            transition: color 0.2s;
+        }
+
+        .profile-link:hover { color: var(--gold); }
+
+        /* Certificate list */
+        .cert-list { display: flex; flex-direction: column; gap: 1rem; }
+
+        .cert-item {
+            background: white;
+            border: 1px solid rgba(26, 54, 93, 0.08);
+            border-radius: 10px;
+            padding: 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+            transition: box-shadow 0.2s;
+        }
+
+        .cert-item:hover { box-shadow: 0 4px 16px rgba(26, 54, 93, 0.08); }
+
+        .cert-item-info { flex: 1; min-width: 200px; }
+
+        .cert-item-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.2rem;
+            color: var(--navy);
+            margin-bottom: 0.25rem;
+        }
+
+        .cert-item-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem 1.25rem;
+            font-size: 0.8rem;
+            color: var(--ink-faint);
+        }
+
+        .cert-item-meta a {
+            color: var(--navy);
+            text-decoration: none;
+            font-family: monospace;
+            font-size: 0.78rem;
+            letter-spacing: 0.04em;
+        }
+
+        .cert-item-meta a:hover { color: var(--gold); text-decoration: underline; }
+
+        .cert-item-actions {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .tier-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            padding: 0.25rem 0.7rem;
+            border-radius: 100px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+
+        .tier-badge.tier-gold { background: var(--gold-pale); color: var(--gold); }
+        .tier-badge.tier-silver { background: #e8edf2; color: var(--silver); }
+        .tier-badge.tier-bronze { background: #f0e6d8; color: var(--bronze); }
+
+        /* Embed dropdown */
+        .embed-wrap { position: relative; }
+
+        .embed-dropdown {
+            display: none;
+            position: absolute;
+            top: 100%;
+            right: 0;
+            margin-top: 0.5rem;
+            width: 420px;
+            max-width: calc(100vw - 4rem);
+            background: white;
+            border: 1px solid rgba(26, 54, 93, 0.12);
+            border-radius: 10px;
+            box-shadow: 0 12px 40px rgba(26, 54, 93, 0.15);
+            z-index: 50;
+            padding: 1.5rem;
+        }
+
+        .embed-dropdown.show { display: block; }
+
+        .embed-dropdown h4 {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.1rem;
+            color: var(--navy);
+            margin-bottom: 1rem;
+        }
+
+        .embed-section { margin-bottom: 1rem; }
+        .embed-section:last-child { margin-bottom: 0; }
+
+        .embed-section-label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--ink-faint);
+            margin-bottom: 0.35rem;
+            display: block;
+        }
+
+        .embed-code-box { position: relative; }
+
+        .embed-code-box code {
+            display: block;
+            padding: 0.75rem;
+            padding-right: 3.5rem;
+            background: var(--cream-dark);
+            border: 1px solid rgba(26, 54, 93, 0.08);
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 0.72rem;
+            color: var(--ink-light);
+            overflow-x: auto;
+            white-space: pre;
+            line-height: 1.5;
+        }
+
+        .copy-btn {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            padding: 0.3rem 0.6rem;
+            font-size: 0.7rem;
+            font-weight: 600;
+            background: var(--navy);
+            color: var(--cream);
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: 'DM Sans', sans-serif;
+            transition: background 0.2s;
+        }
+
+        .copy-btn:hover { background: var(--navy-light); }
+        .copy-btn.copied { background: var(--success); }
+
+        .embed-badge-preview {
+            padding: 1rem;
+            background: var(--cream-dark);
+            border-radius: 6px;
+            text-align: center;
+            border: 1px solid rgba(26, 54, 93, 0.06);
+        }
+
+        .embed-badge-preview img {
+            max-width: 200px;
+            height: auto;
+        }
+
+        /* Success card */
+        .success-card {
+            display: none;
+            background: white;
+            border: 2px solid rgba(39, 103, 73, 0.2);
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: 2rem;
+            animation: fadeIn 0.4s ease;
+        }
+
+        .success-card.show { display: block; }
+
+        .success-card-header {
+            background: linear-gradient(135deg, var(--success), #2f855a);
+            color: white;
+            padding: 1.5rem 2rem;
+            text-align: center;
+        }
+
+        .success-card-header h3 {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.5rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .success-card-header p {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .success-card-body { padding: 2rem; }
+
+        .success-detail {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .success-detail-item { }
+
+        .success-detail-label {
+            display: block;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--ink-faint);
+            margin-bottom: 0.2rem;
+            font-weight: 600;
+        }
+
+        .success-detail-value {
+            font-size: 0.95rem;
+            color: var(--ink);
+        }
+
+        .success-actions {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        /* Alerts */
+        .alert {
+            padding: 1rem 1.25rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            margin-bottom: 1.5rem;
+            display: none;
+            align-items: flex-start;
+            gap: 0.75rem;
+        }
+
+        .alert.show { display: flex; }
+
+        .alert-error {
+            background: rgba(197, 48, 48, 0.08);
+            border: 1px solid rgba(197, 48, 48, 0.15);
+            color: var(--error);
+        }
+
+        .alert-success {
+            background: rgba(39, 103, 73, 0.08);
+            border: 1px solid rgba(39, 103, 73, 0.15);
+            color: var(--success);
+        }
+
+        .alert-icon { font-size: 1.1rem; flex-shrink: 0; line-height: 1.4; }
+
+        /* User bar */
+        .user-bar {
+            display: none;
+            padding: 0.75rem 1.25rem;
+            background: rgba(39, 103, 73, 0.06);
+            border: 1px solid rgba(39, 103, 73, 0.12);
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+            font-size: 0.85rem;
+            color: var(--success);
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+        }
+
+        .user-bar.show { display: flex; }
+
+        .user-bar strong { color: var(--ink); }
+
+        .user-bar button {
+            background: none;
+            border: none;
+            color: var(--ink-faint);
+            font-size: 0.8rem;
+            cursor: pointer;
+            font-family: inherit;
+            text-decoration: underline;
+        }
+
+        .user-bar button:hover { color: var(--error); }
+
+        /* Empty state */
+        .empty-state {
+            text-align: center;
+            padding: 3rem 2rem;
+            color: var(--ink-faint);
+        }
+
+        .empty-state-icon {
+            width: 64px; height: 64px;
+            margin: 0 auto 1rem;
+            background: rgba(26, 54, 93, 0.04);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+
+        .empty-state h3 {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.25rem;
+            color: var(--ink-light);
+            margin-bottom: 0.5rem;
+        }
+
+        .empty-state p {
+            font-size: 0.9rem;
+            margin-bottom: 1.5rem;
+        }
+
+        /* Loading spinner */
+        .spinner {
+            display: inline-block;
+            width: 16px; height: 16px;
+            border: 2px solid rgba(255, 254, 240, 0.3);
+            border-top-color: var(--cream);
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+        }
+
+        .spinner-dark {
+            border-color: rgba(26, 54, 93, 0.15);
+            border-top-color: var(--navy);
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Footer */
+        footer {
+            padding: 3rem 0;
+            border-top: 1px solid rgba(26, 54, 93, 0.08);
+            margin-top: 3rem;
+        }
+
+        .footer-inner {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .footer-links { display: flex; gap: 1.5rem; }
+        .footer-links a { color: var(--ink-faint); text-decoration: none; font-size: 0.85rem; }
+        .footer-links a:hover { color: var(--navy); }
+        footer p { color: var(--ink-faint); font-size: 0.85rem; }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .card { padding: 1.5rem; }
+            .form-row { grid-template-columns: 1fr; gap: 0; }
+            .dashboard-header { flex-direction: column; align-items: flex-start; }
+            .cert-item { flex-direction: column; align-items: flex-start; }
+            .cert-item-actions { width: 100%; justify-content: flex-start; }
+            .embed-dropdown { right: auto; left: 0; }
+            .success-detail { grid-template-columns: 1fr; }
+            .file-thumbnails { grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); }
+            nav { gap: 1rem; }
+        }
+
+        @media (max-width: 480px) {
+            .tabs { gap: 0; }
+            .tab-btn { padding: 0.75rem 0.75rem; font-size: 0.8rem; }
+            .page-header { padding: 2rem 0 1.5rem; }
+            .footer-inner { flex-direction: column; text-align: center; }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-inner">
+            <a href="/" class="logo">Art-<span>Official</span></a>
+            <nav>
+                <a href="verify.html">Verify</a>
+                <a href="/">Home</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+        <div class="page-header">
+            <h1>Artist <em>Portal</em></h1>
+            <p>Register your art. Prove it's art-official.</p>
+        </div>
+
+        <!-- User bar -->
+        <div class="user-bar" id="user-bar">
+            <span>Signed in as <strong id="user-name"></strong></span>
+            <button type="button" id="signout-btn">Sign out</button>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tabs" id="tabs-bar">
+            <button class="tab-btn active" data-tab="signin" id="tab-signin">Sign In</button>
+            <button class="tab-btn" data-tab="register" id="tab-register">Create Account</button>
+            <button class="tab-btn hidden" data-tab="submit" id="tab-submit">Submit Artwork</button>
+            <button class="tab-btn hidden" data-tab="dashboard" id="tab-dashboard">My Certificates</button>
+        </div>
+
+        <!-- SIGN IN TAB -->
+        <div class="tab-panel active" id="panel-signin">
+            <div class="card">
+                <h2 class="card-title">Welcome Back</h2>
+                <p class="card-subtitle">Enter your email to access your artist portal.</p>
+                <div id="signin-alert" class="alert alert-error">
+                    <span class="alert-icon">!</span>
+                    <span id="signin-alert-msg"></span>
+                </div>
+                <form id="signin-form">
+                    <div class="form-group">
+                        <label for="signin-email">Email Address <span class="required">*</span></label>
+                        <input type="email" id="signin-email" name="email" placeholder="you@example.com" required>
+                    </div>
+                    <button type="submit" class="btn btn-lg btn-full" id="signin-btn">Sign In</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- CREATE ACCOUNT TAB -->
+        <div class="tab-panel" id="panel-register">
+            <div class="card">
+                <h2 class="card-title">Create Your Artist Account</h2>
+                <p class="card-subtitle">Set up your profile to start certifying your work.</p>
+                <div id="register-alert" class="alert alert-error">
+                    <span class="alert-icon">!</span>
+                    <span id="register-alert-msg"></span>
+                </div>
+                <form id="register-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="reg-name">Full Name <span class="required">*</span></label>
+                            <input type="text" id="reg-name" name="name" placeholder="Elena Marchetti" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="reg-email">Email Address <span class="required">*</span></label>
+                            <input type="email" id="reg-email" name="email" placeholder="you@example.com" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="reg-bio">Bio <span class="optional">(optional)</span></label>
+                        <textarea id="reg-bio" name="bio" rows="3" placeholder="Tell us about your art practice..."></textarea>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="reg-location">Location <span class="optional">(optional)</span></label>
+                            <input type="text" id="reg-location" name="location" placeholder="Florence, Italy">
+                        </div>
+                        <div class="form-group">
+                            <label for="reg-portfolio">Portfolio URL <span class="optional">(optional)</span></label>
+                            <input type="url" id="reg-portfolio" name="portfolioUrl" placeholder="https://yourportfolio.com">
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-gold btn-lg btn-full" id="register-btn">Create Account</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- SUBMIT ARTWORK TAB -->
+        <div class="tab-panel" id="panel-submit">
+            <div class="card">
+                <h2 class="card-title">Submit Your Artwork</h2>
+                <p class="card-subtitle">Provide details and evidence to certify your work as authentically human-made.</p>
+                <div id="submit-alert" class="alert alert-error">
+                    <span class="alert-icon">!</span>
+                    <span id="submit-alert-msg"></span>
+                </div>
+                <form id="submit-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="art-title">Artwork Title <span class="required">*</span></label>
+                            <input type="text" id="art-title" name="title" placeholder="Twilight Over Florence" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="art-medium">Medium <span class="required">*</span></label>
+                            <select id="art-medium" name="medium" required>
+                                <option value="">Select medium...</option>
+                                <option value="Oil Painting">Oil Painting</option>
+                                <option value="Acrylic Painting">Acrylic Painting</option>
+                                <option value="Watercolor">Watercolor</option>
+                                <option value="Digital Art (hand-drawn)">Digital Art (hand-drawn)</option>
+                                <option value="Photography">Photography</option>
+                                <option value="Sculpture">Sculpture</option>
+                                <option value="Drawing">Drawing</option>
+                                <option value="Mixed Media">Mixed Media</option>
+                                <option value="Textile/Fiber Art">Textile/Fiber Art</option>
+                                <option value="Ceramics">Ceramics</option>
+                                <option value="Printmaking">Printmaking</option>
+                                <option value="Music Composition">Music Composition</option>
+                                <option value="Writing/Literature">Writing/Literature</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="art-date">Date of Creation <span class="required">*</span></label>
+                        <input type="date" id="art-date" name="creationDate" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="art-description">Description <span class="required">*</span></label>
+                        <textarea id="art-description" name="description" rows="4" placeholder="Describe your artwork, its inspiration, and what makes it uniquely human..." required></textarea>
+                        <div class="char-count"><span id="desc-count">0</span> characters</div>
+                    </div>
+                    <div class="form-group">
+                        <label for="art-process">Process Notes <span class="optional">(optional)</span></label>
+                        <textarea id="art-process" name="processNotes" rows="3" placeholder="Describe your creative process, tools used, time taken..."></textarea>
+                        <p class="form-hint">Including process notes strengthens your certification tier.</p>
+                    </div>
+
+                    <!-- Evidence upload -->
+                    <div class="form-group">
+                        <label>Evidence Upload <span class="optional">(up to 10 files)</span></label>
+                        <div class="upload-area" id="upload-area">
+                            <div class="upload-icon">&#8686;</div>
+                            <h4>Drag and drop your evidence files here</h4>
+                            <p>or <strong id="browse-trigger">click to browse</strong></p>
+                            <p style="margin-top:0.5rem;font-size:0.78rem;">Process photos, WIP shots, sketches, timelapses, source files</p>
+                        </div>
+                        <input type="file" id="evidence-input" class="file-input-hidden" multiple accept="image/*,video/*,.pdf,.psd,.ai,.svg,.sketch">
+                        <div class="file-thumbnails" id="file-thumbnails"></div>
+                        <div class="file-count" id="file-count"></div>
+                    </div>
+
+                    <!-- Evidence Strength Meter -->
+                    <div class="strength-meter" id="strength-meter">
+                        <div class="strength-label">
+                            <span class="strength-label-text">Evidence Strength</span>
+                            <span class="strength-tier tier-bronze" id="strength-tier">Bronze</span>
+                        </div>
+                        <div class="strength-bar-track">
+                            <div class="strength-bar-fill tier-bronze" id="strength-fill"></div>
+                        </div>
+                        <div class="strength-details" id="strength-details"></div>
+                    </div>
+
+                    <!-- Declaration -->
+                    <div class="declaration" style="margin-top:1.5rem;">
+                        <h4>Declaration of Human Creation</h4>
+                        <div class="declaration-text">
+                            I hereby declare that the artwork submitted above was created entirely by me as a human artist,
+                            without the use of generative artificial intelligence tools for the creation of the primary artistic
+                            content. I understand that this declaration is made in good faith, and that providing false information
+                            may result in the revocation of any certificate issued and the removal of my work from the Art-Official registry.
+                            I grant Art-Official permission to display my certificate publicly for verification purposes.
+                        </div>
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="declaration-check" required>
+                            <label for="declaration-check">I confirm that this artwork is authentically human-made and I agree to the declaration above.</label>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-gold btn-lg btn-full" id="submit-btn" disabled>Submit for Certification</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- MY CERTIFICATES TAB -->
+        <div class="tab-panel" id="panel-dashboard">
+            <!-- Success card -->
+            <div class="success-card" id="success-card">
+                <div class="success-card-header">
+                    <h3>Artwork Certified Successfully</h3>
+                    <p>Your certificate has been issued.</p>
+                </div>
+                <div class="success-card-body">
+                    <div class="success-detail" id="success-details"></div>
+                    <div class="success-actions" id="success-actions"></div>
+                </div>
+            </div>
+
+            <div class="dashboard-header" id="dashboard-header">
+                <h2 id="dashboard-title">My Certificates <small>Loading...</small></h2>
+                <a href="#" class="profile-link" id="profile-link">View Public Profile &#8594;</a>
+            </div>
+            <div class="cert-list" id="cert-list"></div>
+            <div class="empty-state" id="empty-state" style="display:none;">
+                <div class="empty-state-icon">&#9671;</div>
+                <h3>No certificates yet</h3>
+                <p>Submit your first artwork to receive a certificate of human creation.</p>
+                <button type="button" class="btn btn-gold" id="empty-submit-btn">Submit Artwork</button>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <div class="footer-inner">
+            <a href="/" class="logo" style="font-size:1.25rem;">Art-<span>Official</span></a>
+            <div class="footer-links">
+                <a href="/">Home</a>
+                <a href="verify.html">Verify</a>
+            </div>
+            <p>&copy; 2026 Art-Official</p>
+        </div>
+    </footer>
+
+    <script>
+    (function() {
+        'use strict';
+
+        // ---- State ----
+        var currentArtist = null;
+        var selectedFiles = [];
+
+        // ---- DOM Helpers ----
+        function $(id) { return document.getElementById(id); }
+        function escHtml(s) {
+            var d = document.createElement('div');
+            d.textContent = s || '';
+            return d.innerHTML;
+        }
+
+        // ---- Tab System ----
+        var tabBtns = document.querySelectorAll('.tab-btn');
+        var tabPanels = document.querySelectorAll('.tab-panel');
+
+        function switchTab(name) {
+            tabBtns.forEach(function(t) { t.classList.toggle('active', t.dataset.tab === name); });
+            tabPanels.forEach(function(p) { p.classList.toggle('active', p.id === 'panel-' + name); });
+            if (name === 'dashboard' && currentArtist) {
+                loadCertificates();
+            }
+        }
+
+        tabBtns.forEach(function(btn) {
+            btn.addEventListener('click', function() { switchTab(btn.dataset.tab); });
+        });
+
+        $('empty-submit-btn').addEventListener('click', function() { switchTab('submit'); });
+
+        // ---- Auth ----
+        function setLoggedIn(artist) {
+            currentArtist = artist;
+            $('user-bar').classList.add('show');
+            $('user-name').textContent = artist.name;
+            $('tab-submit').classList.remove('hidden');
+            $('tab-dashboard').classList.remove('hidden');
+            $('tab-signin').classList.add('hidden');
+            $('tab-register').classList.add('hidden');
+            var slug = artist.slug || artist.id;
+            $('profile-link').href = '/profile.html?artist=' + encodeURIComponent(slug);
+            switchTab('submit');
+        }
+
+        function signOut() {
+            currentArtist = null;
+            selectedFiles = [];
+            $('user-bar').classList.remove('show');
+            $('tab-submit').classList.add('hidden');
+            $('tab-dashboard').classList.add('hidden');
+            $('tab-signin').classList.remove('hidden');
+            $('tab-register').classList.remove('hidden');
+            switchTab('signin');
+            $('submit-form').reset();
+            $('signin-form').reset();
+            $('file-thumbnails').innerHTML = '';
+            $('file-count').textContent = '';
+            $('desc-count').textContent = '0';
+            $('success-card').classList.remove('show');
+            updateStrength();
+        }
+
+        $('signout-btn').addEventListener('click', signOut);
+
+        // ---- Alerts ----
+        function showAlert(id, msg) {
+            $(id).classList.add('show');
+            $(id + '-msg').textContent = msg;
+        }
+        function hideAlert(id) {
+            $(id).classList.remove('show');
+        }
+
+        // ---- Sign In ----
+        $('signin-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            var email = $('signin-email').value.trim();
+            if (!email) return;
+            var btn = $('signin-btn');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span> Signing in...';
+            hideAlert('signin-alert');
+
+            fetch('/api/artist/lookup?email=' + encodeURIComponent(email))
+                .then(function(res) { return res.json(); })
+                .then(function(data) {
+                    if (data.success && data.artist) {
+                        setLoggedIn(data.artist);
+                    } else {
+                        showAlert('signin-alert', data.error || 'No account found with that email. Please create an account first.');
+                    }
+                })
+                .catch(function() {
+                    showAlert('signin-alert', 'Connection error. Please try again.');
+                })
+                .finally(function() {
+                    btn.disabled = false;
+                    btn.textContent = 'Sign In';
+                });
+        });
+
+        // ---- Create Account ----
+        $('register-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            var btn = $('register-btn');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span> Creating account...';
+            hideAlert('register-alert');
+
+            var body = {
+                name: $('reg-name').value.trim(),
+                email: $('reg-email').value.trim()
+            };
+            var bio = $('reg-bio').value.trim();
+            var loc = $('reg-location').value.trim();
+            var port = $('reg-portfolio').value.trim();
+            if (bio) body.bio = bio;
+            if (loc) body.location = loc;
+            if (port) body.portfolioUrl = port;
+
+            fetch('/api/artist/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            })
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+                if (data.success && data.artist) {
+                    setLoggedIn(data.artist);
+                } else {
+                    showAlert('register-alert', data.error || 'Registration failed. Please try again.');
+                }
+            })
+            .catch(function() {
+                showAlert('register-alert', 'Connection error. Please try again.');
+            })
+            .finally(function() {
+                btn.disabled = false;
+                btn.textContent = 'Create Account';
+            });
+        });
+
+        // ---- Submit Artwork ----
+
+        // Character count
+        $('art-description').addEventListener('input', function() {
+            $('desc-count').textContent = this.value.length;
+            updateStrength();
+        });
+        $('art-process').addEventListener('input', updateStrength);
+
+        // Declaration checkbox
+        $('declaration-check').addEventListener('change', function() {
+            $('submit-btn').disabled = !this.checked;
+        });
+
+        // File upload
+        var uploadArea = $('upload-area');
+        var evidenceInput = $('evidence-input');
+
+        uploadArea.addEventListener('click', function() { evidenceInput.click(); });
+
+        uploadArea.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', function(e) {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            addFiles(e.dataTransfer.files);
+        });
+
+        evidenceInput.addEventListener('change', function() {
+            addFiles(evidenceInput.files);
+            evidenceInput.value = '';
+        });
+
+        function addFiles(fileList) {
+            var newFiles = Array.prototype.slice.call(fileList);
+            var remaining = 10 - selectedFiles.length;
+            var toAdd = newFiles.slice(0, remaining);
+            selectedFiles = selectedFiles.concat(toAdd);
+            renderThumbnails();
+            updateStrength();
+        }
+
+        function removeFile(index) {
+            selectedFiles.splice(index, 1);
+            renderThumbnails();
+            updateStrength();
+        }
+
+        function renderThumbnails() {
+            var container = $('file-thumbnails');
+            container.innerHTML = '';
+
+            selectedFiles.forEach(function(file, i) {
+                var thumb = document.createElement('div');
+                thumb.className = 'file-thumb';
+
+                if (file.type && file.type.startsWith('image/')) {
+                    var img = document.createElement('img');
+                    img.src = URL.createObjectURL(file);
+                    img.alt = file.name;
+                    thumb.appendChild(img);
+                } else {
+                    var icon = document.createElement('div');
+                    icon.className = 'file-icon';
+                    var sym = document.createElement('span');
+                    sym.className = 'file-icon-symbol';
+                    icon.appendChild(sym);
+                    var ext = file.name.split('.').pop().toUpperCase();
+                    icon.appendChild(document.createTextNode(ext));
+                    thumb.appendChild(icon);
+                }
+
+                var removeBtn = document.createElement('button');
+                removeBtn.className = 'file-thumb-remove';
+                removeBtn.type = 'button';
+                removeBtn.innerHTML = '&#10005;';
+                removeBtn.setAttribute('data-index', i);
+                removeBtn.addEventListener('click', function() {
+                    removeFile(parseInt(this.getAttribute('data-index'), 10));
+                });
+                thumb.appendChild(removeBtn);
+                container.appendChild(thumb);
+            });
+
+            $('file-count').textContent = selectedFiles.length > 0
+                ? selectedFiles.length + ' of 10 files selected'
+                : '';
+        }
+
+        // Evidence strength meter
+        var strengthLabels = [
+            'Description >50 chars',
+            'Description >200 chars',
+            'Process notes',
+            '1+ evidence files',
+            '3+ evidence files',
+            '5+ evidence files'
+        ];
+
+        function updateStrength() {
+            var descLen = ($('art-description').value || '').length;
+            var processLen = ($('art-process').value || '').trim().length;
+            var fileCount = selectedFiles.length;
+
+            var score = 0;
+            var checks = [];
+
+            var d50 = descLen > 50;
+            checks.push(d50);
+            if (d50) score++;
+
+            var d200 = descLen > 200;
+            checks.push(d200);
+            if (d200) score++;
+
+            var pn = processLen > 0;
+            checks.push(pn);
+            if (pn) score++;
+
+            var f1 = fileCount >= 1;
+            checks.push(f1);
+            if (f1) score++;
+
+            var f3 = fileCount >= 3;
+            checks.push(f3);
+            if (f3) score++;
+
+            var f5 = fileCount >= 5;
+            checks.push(f5);
+            if (f5) score += 2;
+
+            var tier, tierLabel;
+            if (score >= 5) { tier = 'gold'; tierLabel = 'Gold'; }
+            else if (score >= 3) { tier = 'silver'; tierLabel = 'Silver'; }
+            else { tier = 'bronze'; tierLabel = 'Bronze'; }
+
+            var tierEl = $('strength-tier');
+            tierEl.textContent = tierLabel;
+            tierEl.className = 'strength-tier tier-' + tier;
+
+            var maxScore = 7;
+            var pct = Math.min((score / maxScore) * 100, 100);
+            var fill = $('strength-fill');
+            fill.style.width = pct + '%';
+            fill.className = 'strength-bar-fill tier-' + tier;
+
+            var detailsHtml = '';
+            for (var i = 0; i < checks.length; i++) {
+                var done = checks[i];
+                detailsHtml += '<span class="strength-item">' +
+                    '<span class="strength-check ' + (done ? 'done' : 'pending') + '">' +
+                    (done ? '&#10003;' : '&#9675;') + '</span> ' +
+                    strengthLabels[i] + '</span>';
+            }
+            $('strength-details').innerHTML = detailsHtml;
+        }
+
+        // Submit form
+        $('submit-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            if (!currentArtist) return;
+
+            var btn = $('submit-btn');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span> Submitting...';
+            hideAlert('submit-alert');
+
+            var formData = new FormData();
+            formData.append('artistId', currentArtist.id);
+            formData.append('title', $('art-title').value.trim());
+            formData.append('medium', $('art-medium').value);
+            formData.append('creationDate', $('art-date').value);
+            formData.append('description', $('art-description').value.trim());
+            formData.append('processNotes', $('art-process').value.trim());
+            formData.append('declaration', 'true');
+
+            selectedFiles.forEach(function(file) {
+                formData.append('evidence', file);
+            });
+
+            fetch('/api/artwork/submit', {
+                method: 'POST',
+                body: formData
+            })
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+                if (data.success && data.certificate) {
+                    showSuccessCard(data.certificate);
+                    $('submit-form').reset();
+                    selectedFiles = [];
+                    renderThumbnails();
+                    updateStrength();
+                    $('desc-count').textContent = '0';
+                    $('submit-btn').disabled = true;
+                    switchTab('dashboard');
+                } else {
+                    showAlert('submit-alert', data.error || 'Submission failed. Please try again.');
+                    btn.disabled = !$('declaration-check').checked;
+                }
+            })
+            .catch(function() {
+                showAlert('submit-alert', 'Connection error. Please try again.');
+                btn.disabled = !$('declaration-check').checked;
+            })
+            .finally(function() {
+                btn.textContent = 'Submit for Certification';
+            });
+        });
+
+        // ---- Success Card ----
+        function showSuccessCard(cert) {
+            var card = $('success-card');
+            var details = $('success-details');
+            var actions = $('success-actions');
+            var tierClass = (cert.tier || 'bronze').toLowerCase();
+
+            details.innerHTML =
+                '<div class="success-detail-item">' +
+                    '<span class="success-detail-label">Title</span>' +
+                    '<span class="success-detail-value">' + escHtml(cert.title) + '</span>' +
+                '</div>' +
+                '<div class="success-detail-item">' +
+                    '<span class="success-detail-label">Certificate ID</span>' +
+                    '<span class="success-detail-value">' +
+                        '<a href="verify.html?code=' + encodeURIComponent(cert.id) + '" style="color:var(--navy);font-family:monospace;letter-spacing:0.04em;text-decoration:none;">' +
+                            escHtml(cert.id) +
+                        '</a>' +
+                    '</span>' +
+                '</div>' +
+                '<div class="success-detail-item">' +
+                    '<span class="success-detail-label">Medium</span>' +
+                    '<span class="success-detail-value">' + escHtml(cert.medium) + '</span>' +
+                '</div>' +
+                '<div class="success-detail-item">' +
+                    '<span class="success-detail-label">Tier</span>' +
+                    '<span class="success-detail-value"><span class="tier-badge tier-' + tierClass + '">' + escHtml(cert.tier) + '</span></span>' +
+                '</div>';
+
+            actions.innerHTML =
+                '<a href="verify.html?code=' + encodeURIComponent(cert.id) + '" class="btn btn-sm" target="_blank">View Certificate</a>' +
+                '<button type="button" class="btn btn-sm btn-outline" id="submit-another-btn">Submit Another</button>';
+
+            card.classList.add('show');
+
+            // Bind submit another after rendering
+            setTimeout(function() {
+                var sa = $('submit-another-btn');
+                if (sa) sa.addEventListener('click', function() { switchTab('submit'); });
+            }, 0);
+        }
+
+        // ---- Load Certificates ----
+        function loadCertificates() {
+            if (!currentArtist) return;
+
+            var list = $('cert-list');
+            var empty = $('empty-state');
+            var header = $('dashboard-title');
+
+            list.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--ink-faint);"><span class="spinner spinner-dark"></span><br>Loading certificates...</div>';
+            empty.style.display = 'none';
+
+            fetch('/api/artist/' + encodeURIComponent(currentArtist.id) + '/certificates')
+                .then(function(res) { return res.json(); })
+                .then(function(data) {
+                    if (data.success && data.certificates && data.certificates.length > 0) {
+                        var certs = data.certificates;
+                        header.innerHTML = 'My Certificates <small>' + certs.length + ' certified work' + (certs.length !== 1 ? 's' : '') + '</small>';
+                        list.innerHTML = '';
+                        certs.forEach(function(cert) {
+                            list.appendChild(createCertItem(cert));
+                        });
+                        empty.style.display = 'none';
+                    } else {
+                        header.innerHTML = 'My Certificates <small>No certificates yet</small>';
+                        list.innerHTML = '';
+                        empty.style.display = 'block';
+                    }
+                })
+                .catch(function() {
+                    header.innerHTML = 'My Certificates';
+                    list.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--error);">Failed to load certificates. Please try again.</div>';
+                });
+        }
+
+        function createCertItem(cert) {
+            var tierClass = (cert.tier || 'bronze').toLowerCase();
+            var dateStr = '';
+            if (cert.registeredAt) {
+                dateStr = new Date(cert.registeredAt).toLocaleDateString('en-GB', {
+                    day: 'numeric', month: 'short', year: 'numeric'
+                });
+            }
+
+            var certId = escHtml(cert.id);
+            var origin = location.origin;
+
+            var htmlEmbed = '<a href="' + origin + '/verify.html?code=' + certId + '"><img src="' + origin + '/api/badge/' + certId + '" alt="Art-Official Certified" /></a>';
+            var mdEmbed = '[![Art-Official Certified](' + origin + '/api/badge/' + certId + ')](' + origin + '/verify.html?code=' + certId + ')';
+
+            var item = document.createElement('div');
+            item.className = 'cert-item';
+            item.innerHTML =
+                '<div class="cert-item-info">' +
+                    '<div class="cert-item-title">' + escHtml(cert.title) + '</div>' +
+                    '<div class="cert-item-meta">' +
+                        '<span>' + escHtml(cert.medium || '') + '</span>' +
+                        (dateStr ? '<span>Registered ' + dateStr + '</span>' : '') +
+                        '<a href="verify.html?code=' + encodeURIComponent(cert.id) + '">' + certId + '</a>' +
+                    '</div>' +
+                '</div>' +
+                '<div class="cert-item-actions">' +
+                    '<span class="tier-badge tier-' + tierClass + '">' + escHtml(cert.tier || 'Bronze') + '</span>' +
+                    '<div class="embed-wrap">' +
+                        '<button type="button" class="btn btn-sm btn-outline embed-toggle-btn" data-cert-id="' + certId + '">Get Embed Code</button>' +
+                        '<div class="embed-dropdown" id="embed-' + certId + '">' +
+                            '<h4>Embed Code</h4>' +
+                            '<div class="embed-section">' +
+                                '<span class="embed-section-label">HTML</span>' +
+                                '<div class="embed-code-box">' +
+                                    '<code id="html-code-' + certId + '"></code>' +
+                                    '<button type="button" class="copy-btn" data-target="html-code-' + certId + '">Copy</button>' +
+                                '</div>' +
+                            '</div>' +
+                            '<div class="embed-section">' +
+                                '<span class="embed-section-label">Markdown</span>' +
+                                '<div class="embed-code-box">' +
+                                    '<code id="md-code-' + certId + '"></code>' +
+                                    '<button type="button" class="copy-btn" data-target="md-code-' + certId + '">Copy</button>' +
+                                '</div>' +
+                            '</div>' +
+                            '<div class="embed-section">' +
+                                '<span class="embed-section-label">Badge Preview</span>' +
+                                '<div class="embed-badge-preview">' +
+                                    '<img src="/api/badge/' + certId + '" alt="Art-Official Badge" onerror="this.style.display=\'none\';this.parentElement.insertAdjacentHTML(\'beforeend\',\'<span style=color:var(--ink-faint);font-size:0.8rem>Badge preview unavailable</span>\')">' +
+                                '</div>' +
+                            '</div>' +
+                        '</div>' +
+                    '</div>' +
+                '</div>';
+
+            // Set code content as text (not HTML) to avoid XSS
+            setTimeout(function() {
+                var htmlCode = document.getElementById('html-code-' + certId);
+                var mdCode = document.getElementById('md-code-' + certId);
+                if (htmlCode) htmlCode.textContent = htmlEmbed;
+                if (mdCode) mdCode.textContent = mdEmbed;
+            }, 0);
+
+            return item;
+        }
+
+        // ---- Embed Toggle (event delegation) ----
+        document.addEventListener('click', function(e) {
+            var toggle = e.target.closest('.embed-toggle-btn');
+            if (toggle) {
+                e.stopPropagation();
+                var certId = toggle.getAttribute('data-cert-id');
+                var dropdown = document.getElementById('embed-' + certId);
+                // Close all other dropdowns
+                document.querySelectorAll('.embed-dropdown.show').forEach(function(d) {
+                    if (d !== dropdown) d.classList.remove('show');
+                });
+                if (dropdown) dropdown.classList.toggle('show');
+                return;
+            }
+
+            // Copy button
+            var copyBtn = e.target.closest('.copy-btn');
+            if (copyBtn) {
+                e.stopPropagation();
+                var targetId = copyBtn.getAttribute('data-target');
+                var codeEl = document.getElementById(targetId);
+                if (!codeEl) return;
+                var text = codeEl.textContent;
+
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(text).then(function() {
+                        copyBtn.textContent = 'Copied!';
+                        copyBtn.classList.add('copied');
+                        setTimeout(function() {
+                            copyBtn.textContent = 'Copy';
+                            copyBtn.classList.remove('copied');
+                        }, 2000);
+                    });
+                } else {
+                    var ta = document.createElement('textarea');
+                    ta.value = text;
+                    ta.style.position = 'fixed';
+                    ta.style.opacity = '0';
+                    document.body.appendChild(ta);
+                    ta.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(ta);
+                    copyBtn.textContent = 'Copied!';
+                    copyBtn.classList.add('copied');
+                    setTimeout(function() {
+                        copyBtn.textContent = 'Copy';
+                        copyBtn.classList.remove('copied');
+                    }, 2000);
+                }
+                return;
+            }
+
+            // Close dropdowns on outside click
+            if (!e.target.closest('.embed-dropdown')) {
+                document.querySelectorAll('.embed-dropdown.show').forEach(function(d) {
+                    d.classList.remove('show');
+                });
+            }
+        });
+
+        // ---- Init ----
+        updateStrength();
+    })();
+    </script>
+</body>
+</html>
