@@ -5,11 +5,104 @@ const multer = require('multer');
 const bcrypt = require('bcryptjs');
 const nodemailer = require('nodemailer');
 const Stripe = require('stripe');
+const helmet = require('helmet');
 const path = require('path');
 const fs = require('fs');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// HTTPS enforcement in production (behind Railway proxy)
+app.use((req, res, next) => {
+    if (process.env.NODE_ENV === 'production' && req.headers['x-forwarded-proto'] !== 'https') {
+        return res.redirect(301, 'https://' + req.get('host') + req.url);
+    }
+    next();
+});
+
+// Basic auth gate — set SITE_PASSWORD env var to enable (remove to disable)
+if (process.env.SITE_PASSWORD) {
+    app.use((req, res, next) => {
+        // Allow Stripe webhooks through without auth
+        if (req.path === '/api/webhooks/stripe') return next();
+        // Allow embeddable badges/widgets through (they're meant to be public)
+        if (req.path.startsWith('/api/badge/') || req.path.startsWith('/api/widget/')) return next();
+
+        const auth = req.headers.authorization;
+        if (auth) {
+            const [scheme, encoded] = auth.split(' ');
+            if (scheme === 'Basic') {
+                const [user, pass] = Buffer.from(encoded, 'base64').toString().split(':');
+                if (pass === process.env.SITE_PASSWORD) return next();
+            }
+        }
+        res.setHeader('WWW-Authenticate', 'Basic realm="Officially Human Art (Preview)"');
+        res.status(401).send('Authentication required');
+    });
+    console.log('Site password protection enabled');
+}
+
+// Security headers
+app.use(helmet({
+    contentSecurityPolicy: {
+        directives: {
+            defaultSrc: ["'self'"],
+            scriptSrc: ["'self'", "'unsafe-inline'", "https://js.stripe.com"],
+            styleSrc: ["'self'", "'unsafe-inline'"],
+            imgSrc: ["'self'", "data:", "blob:"],
+            fontSrc: ["'self'"],
+            connectSrc: ["'self'", "https://api.stripe.com"],
+            frameSrc: ["'self'", "https://js.stripe.com"],
+            objectSrc: ["'none'"],
+            upgradeInsecureRequests: process.env.NODE_ENV === 'production' ? [] : null
+        }
+    },
+    crossOriginEmbedderPolicy: false, // allow embeddable widgets/badges
+    hsts: {
+        maxAge: 31536000,
+        includeSubDomains: true,
+        preload: true
+    }
+}));
+
+// Common weak passwords (top 50)
+const COMMON_PASSWORDS = new Set([
+    'password', '123456', '12345678', '123456789', '1234567890', 'qwerty', 'abc123',
+    'password1', '111111', 'iloveyou', 'sunshine', 'princess', 'football', 'charlie',
+    'shadow', 'michael', 'master', 'letmein', 'dragon', 'monkey', 'trustno1',
+    'baseball', 'access', 'hello', 'welcome', 'qwerty123', 'password123', '1q2w3e4r',
+    '1234', '12345', 'admin', 'login', 'passw0rd', 'starwars', '654321', 'batman',
+    'qwerty1', 'ashley', 'mustang', 'bailey', 'passpass', 'buster', 'andrew',
+    'jordan', 'thomas', 'hockey', 'ranger', 'daniel', 'hunter', 'superman'
+]);
+
+function validatePassword(password) {
+    if (!password || password.length < 8) {
+        return 'Password must be at least 8 characters.';
+    }
+    if (COMMON_PASSWORDS.has(password.toLowerCase())) {
+        return 'That password is too common. Please choose a stronger password.';
+    }
+    return null;
+}
+
+// Input length limits
+const MAX_LENGTHS = {
+    name: 100,
+    email: 254,
+    bio: 1000,
+    location: 100,
+    portfolio: 500,
+    title: 200,
+    description: 5000,
+    processNotes: 5000,
+    reportReason: 2000
+};
+
+function truncate(str, max) {
+    if (!str) return str;
+    return str.length > max ? str.slice(0, max) : str;
+}
 
 // Stripe setup
 const stripe = process.env.STRIPE_SECRET_KEY ? Stripe(process.env.STRIPE_SECRET_KEY) : null;
@@ -123,7 +216,48 @@ const DATA_DIR = path.join(PERSIST_DIR, 'data');
 const UPLOADS_DIR = path.join(PERSIST_DIR, 'uploads');
 
 app.use(express.static('public'));
-app.use('/uploads', express.static(UPLOADS_DIR));
+
+// Controlled file serving — public artwork/evidence served freely, private evidence requires ownership
+app.get('/uploads/:filename', (req, res) => {
+    const { filename } = req.params;
+    const filePath = path.join(UPLOADS_DIR, path.basename(filename));
+
+    if (!fs.existsSync(filePath)) {
+        return res.status(404).json({ success: false, message: 'File not found' });
+    }
+
+    // Check if this file is a public artwork image or public evidence
+    const db = loadDB();
+    const certs = Object.values(db.certificates);
+
+    for (const cert of certs) {
+        // Artwork images are always public
+        if (cert.artworkImage === filename) {
+            return res.sendFile(filePath);
+        }
+        // Check evidence files
+        if (cert.evidenceFiles) {
+            for (const ef of cert.evidenceFiles) {
+                const efName = typeof ef === 'string' ? ef : ef.filename;
+                if (efName === filename) {
+                    // Old format (string) or public files — serve freely
+                    if (typeof ef === 'string' || ef.public) {
+                        return res.sendFile(filePath);
+                    }
+                    // Private evidence — require artistId query param matching owner
+                    const requestArtistId = req.query.artistId;
+                    if (requestArtistId && requestArtistId === cert.artistId) {
+                        return res.sendFile(filePath);
+                    }
+                    return res.status(403).json({ success: false, message: 'This file is private.' });
+                }
+            }
+        }
+    }
+
+    // File exists on disk but not referenced in any certificate — deny access
+    return res.status(403).json({ success: false, message: 'Access denied.' });
+});
 
 // Ensure directories exist
 if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
@@ -145,11 +279,26 @@ function saveDB(db) {
 }
 
 // File upload config
+const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+const MIME_TO_EXT = { 'image/jpeg': '.jpg', 'image/png': '.png', 'image/gif': '.gif', 'image/webp': '.webp' };
+
 const storage = multer.diskStorage({
     destination: (req, file, cb) => cb(null, UPLOADS_DIR),
-    filename: (req, file, cb) => cb(null, Date.now() + '-' + file.originalname)
+    filename: (req, file, cb) => {
+        const ext = MIME_TO_EXT[file.mimetype] || path.extname(file.originalname).toLowerCase();
+        cb(null, uuidv4() + ext);
+    }
 });
-const upload = multer({ storage, limits: { fileSize: 20 * 1024 * 1024 } });
+const upload = multer({
+    storage,
+    limits: { fileSize: 20 * 1024 * 1024 },
+    fileFilter: (req, file, cb) => {
+        if (!ALLOWED_MIME_TYPES.includes(file.mimetype)) {
+            return cb(new Error('Only image files are allowed (JPEG, PNG, GIF, WebP).'));
+        }
+        cb(null, true);
+    }
+});
 const artworkUpload = upload.fields([
     { name: 'artworkImage', maxCount: 1 },
     { name: 'evidence', maxCount: 10 }
@@ -284,6 +433,16 @@ async function sendCertificateEmail(artist, certificate, host) {
     }
 }
 
+// Structured audit logging
+function audit(event, details = {}) {
+    const entry = {
+        timestamp: new Date().toISOString(),
+        event,
+        ...details
+    };
+    console.log('[AUDIT]', JSON.stringify(entry));
+}
+
 // Simple rate limiting (in-memory)
 const rateLimits = {};
 function rateLimit(key, maxAttempts, windowMs) {
@@ -305,15 +464,21 @@ function safeArtist(artist) {
 
 // Register artist
 app.post('/api/artist/register', async (req, res) => {
-    const { name, email, password, portfolio, bio, location } = req.body;
+    const { password } = req.body;
+    const name = truncate(req.body.name, MAX_LENGTHS.name);
+    const email = truncate(req.body.email, MAX_LENGTHS.email);
+    const portfolio = truncate(req.body.portfolio, MAX_LENGTHS.portfolio);
+    const bio = truncate(req.body.bio, MAX_LENGTHS.bio);
+    const location = truncate(req.body.location, MAX_LENGTHS.location);
 
     const ip = req.ip || req.connection.remoteAddress;
     if (!rateLimit('register:' + ip, 5, 3600000)) {
         return res.status(429).json({ success: false, message: 'Too many registration attempts. Please try again later.' });
     }
 
-    if (!password || password.length < 6) {
-        return res.status(400).json({ success: false, message: 'Password must be at least 6 characters' });
+    const pwError = validatePassword(password);
+    if (pwError) {
+        return res.status(400).json({ success: false, message: pwError });
     }
 
     const db = loadDB();
@@ -344,6 +509,7 @@ app.post('/api/artist/register', async (req, res) => {
     };
     db.artists[artistId] = artist;
     saveDB(db);
+    audit('registration', { artistId, email: artist.email });
     res.json({ success: true, artist: safeArtist(artist) });
 });
 
@@ -360,19 +526,54 @@ app.post('/api/artist/login', async (req, res) => {
     const artist = Object.values(db.artists).find(a => a.email === email);
 
     if (!artist) {
+        audit('login_failed', { email, reason: 'not_found' });
         return res.json({ success: false, message: 'No account found with that email.' });
     }
 
-    // Backward compat: old accounts without passwords
+    // Legacy accounts without passwords must set one via password reset
     if (!artist.passwordHash) {
-        return res.json({ success: true, artist: safeArtist(artist) });
+        audit('login_failed', { artistId: artist.id, reason: 'no_password' });
+        return res.json({ success: false, message: 'This account needs a password. Please use "Forgot password" to set one.' });
     }
 
     const match = await bcrypt.compare(password, artist.passwordHash);
     if (!match) {
+        audit('login_failed', { artistId: artist.id, reason: 'wrong_password' });
         return res.json({ success: false, message: 'Incorrect password.' });
     }
 
+    audit('login_success', { artistId: artist.id });
+    res.json({ success: true, artist: safeArtist(artist) });
+});
+
+// Update artist profile
+app.put('/api/artist/:artistId', (req, res) => {
+    const { artistId } = req.params;
+    const db = loadDB();
+    const artist = db.artists[artistId];
+
+    if (!artist) {
+        return res.status(404).json({ success: false, message: 'Artist not found' });
+    }
+
+    const { name, bio, location, portfolio } = req.body;
+
+    if (name !== undefined) {
+        const trimmed = truncate(name, MAX_LENGTHS.name).trim();
+        if (!trimmed) return res.status(400).json({ success: false, message: 'Name cannot be empty.' });
+        artist.name = trimmed;
+        artist.slug = trimmed.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    }
+    if (bio !== undefined) artist.bio = truncate(bio, MAX_LENGTHS.bio).trim();
+    if (location !== undefined) artist.location = truncate(location, MAX_LENGTHS.location).trim();
+    if (portfolio !== undefined) {
+        let p = truncate(portfolio, MAX_LENGTHS.portfolio).trim();
+        if (p && !/^https?:\/\//i.test(p)) p = 'https://' + p;
+        artist.portfolio = p;
+    }
+
+    saveDB(db);
+    audit('profile_updated', { artistId });
     res.json({ success: true, artist: safeArtist(artist) });
 });
 
@@ -413,8 +614,19 @@ app.get('/api/artist/profile/:slug', (req, res) => {
 });
 
 // Submit artwork for certification
-app.post('/api/artwork/submit', artworkUpload, async (req, res) => {
-    const { artistId, title, description, medium, creationDate, declaration, processNotes } = req.body;
+app.post('/api/artwork/submit', (req, res, next) => {
+    artworkUpload(req, res, (err) => {
+        if (err) {
+            return res.status(400).json({ success: false, message: err.message });
+        }
+        next();
+    });
+}, async (req, res) => {
+    const { artistId, creationDate, declaration } = req.body;
+    const title = truncate(req.body.title, MAX_LENGTHS.title);
+    const description = truncate(req.body.description, MAX_LENGTHS.description);
+    const medium = truncate(req.body.medium, MAX_LENGTHS.title);
+    const processNotes = truncate(req.body.processNotes, MAX_LENGTHS.processNotes);
 
     if (declaration !== 'true') {
         return res.status(400).json({ success: false, message: 'Declaration required' });
@@ -480,6 +692,7 @@ app.post('/api/artwork/submit', artworkUpload, async (req, res) => {
 
     db.certificates[certificateId] = certificate;
     saveDB(db);
+    audit('certificate_created', { artistId, certificateId, tier: tierResult.tier });
 
     // Send certificate email (non-blocking)
     const host = `${req.protocol}://${req.get('host')}`;
@@ -740,7 +953,7 @@ app.post('/api/stripe/create-subscription', async (req, res) => {
         });
     } catch (err) {
         console.error('Stripe create subscription error:', err.message);
-        res.status(500).json({ success: false, message: 'Failed to create subscription: ' + err.message });
+        res.status(500).json({ success: false, message: 'Failed to create subscription. Please try again or contact support.' });
     }
 });
 
@@ -809,6 +1022,7 @@ app.delete('/api/artwork/:certificateId', (req, res) => {
 
     delete db.certificates[certificateId.toUpperCase()];
     saveDB(db);
+    audit('certificate_deleted', { artistId, certificateId: certificateId.toUpperCase() });
 
     res.json({ success: true, message: 'Certificate deleted' });
 });
@@ -816,7 +1030,10 @@ app.delete('/api/artwork/:certificateId', (req, res) => {
 // Edit certificate (text fields only)
 app.put('/api/artwork/:certificateId', (req, res) => {
     const { certificateId } = req.params;
-    const { artistId, title, description, processNotes } = req.body;
+    const { artistId } = req.body;
+    const title = req.body.title !== undefined ? truncate(req.body.title, MAX_LENGTHS.title) : undefined;
+    const description = req.body.description !== undefined ? truncate(req.body.description, MAX_LENGTHS.description) : undefined;
+    const processNotes = req.body.processNotes !== undefined ? truncate(req.body.processNotes, MAX_LENGTHS.processNotes) : undefined;
 
     if (!artistId) {
         return res.status(400).json({ success: false, message: 'Artist ID required' });
@@ -859,6 +1076,7 @@ app.put('/api/artwork/:certificateId', (req, res) => {
     cert.evidenceStrength = tierResult.strength;
 
     saveDB(db);
+    audit('certificate_edited', { artistId, certificateId: certificateId.toUpperCase(), fields: changes });
 
     res.json({ success: true, certificate: cert });
 });
@@ -866,7 +1084,8 @@ app.put('/api/artwork/:certificateId', (req, res) => {
 // Report/dispute a certificate
 app.post('/api/report/:certificateId', (req, res) => {
     const { certificateId } = req.params;
-    const { reason, email } = req.body;
+    const reason = truncate(req.body.reason, MAX_LENGTHS.reportReason);
+    const email = truncate(req.body.email, MAX_LENGTHS.email);
 
     if (!reason || reason.trim().length < 10) {
         return res.status(400).json({ success: false, message: 'Please provide a reason (at least 10 characters).' });
@@ -894,6 +1113,7 @@ app.post('/api/report/:certificateId', (req, res) => {
     cert.reportCount = (cert.reportCount || 0) + 1;
 
     saveDB(db);
+    audit('certificate_reported', { certificateId: certificateId.toUpperCase(), reportId });
     res.json({ success: true, message: 'Report submitted. We will review this certificate.' });
 });
 
@@ -1030,8 +1250,9 @@ app.post('/api/artist/reset-password', async (req, res) => {
     if (!token || !password) {
         return res.status(400).json({ success: false, message: 'Token and password are required.' });
     }
-    if (password.length < 6) {
-        return res.status(400).json({ success: false, message: 'Password must be at least 6 characters.' });
+    const pwError = validatePassword(password);
+    if (pwError) {
+        return res.status(400).json({ success: false, message: pwError });
     }
 
     const db = loadDB();
@@ -1047,6 +1268,7 @@ app.post('/api/artist/reset-password', async (req, res) => {
     delete artist.resetToken;
     delete artist.resetTokenExpires;
     saveDB(db);
+    audit('password_reset', { artistId: artist.id });
 
     res.json({ success: true, message: 'Password updated successfully. You can now sign in.' });
 });
@@ -1123,6 +1345,7 @@ app.delete('/api/artist/:artistId', async (req, res) => {
     // Delete artist
     delete db.artists[artistId];
     saveDB(db);
+    audit('account_deleted', { artistId, certificatesDeleted: artistCerts.length });
 
     res.json({ success: true, message: 'Account and all associated data have been permanently deleted.' });
 });

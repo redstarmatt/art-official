@@ -37,7 +37,37 @@
 - [ ] Review "Date of Creation" label — consider "Date Created" or "Date Completed"
 - [ ] Configure Stripe for production (set STRIPE_SECRET_KEY, STRIPE_PUBLISHABLE_KEY, STRIPE_WEBHOOK_SECRET, STRIPE_CREATOR_PRICE_ID on Railway)
   - Create Product + £5/month Price in Stripe dashboard, set up webhook endpoint
-- [ ] Add custom domain and verify in Resend so emails send from @officiallyhuman.art (or similar)
-  - Buy domain, add DNS records (SPF, DKIM), update SMTP_FROM env var on Railway
+- [ ] Set up custom domain email via GoDaddy
+  - Buy domain on GoDaddy, add GoDaddy Workspace Email (or Microsoft 365)
+  - Create mailbox e.g. noreply@officiallyhuman.art
+  - Set Railway env vars: SMTP_HOST=smtpout.secureserver.net, SMTP_PORT=465, SMTP_USER=noreply@officiallyhuman.art, SMTP_PASS=<mailbox password>, SMTP_FROM=noreply@officiallyhuman.art
+  - GoDaddy handles SPF/DKIM automatically for its own email
 - [x] Data protection risk assessment
 - [x] General risk assessment
+- [x] Security headers (helmet — CSP, HSTS, X-Frame-Options, X-Content-Type-Options, Referrer-Policy)
+- [x] HTTPS enforcement (redirect + HSTS in production)
+- [x] Server-side file type validation (JPEG, PNG, GIF, WebP only)
+- [x] Randomised upload filenames (UUIDs instead of timestamp + original name)
+- [x] Private evidence file access control (ownership-checked serving)
+- [x] Self-hosted Google Fonts (eliminated external Google dependency)
+- [x] Sanitised Stripe error messages (no internal details exposed to client)
+- [x] Strengthened password policy (8+ chars, common password blocklist)
+- [x] Legacy passwordless login removed (must use password reset)
+- [x] Audit logging (structured JSON logs for auth, certificates, reports, account deletion)
+- [x] Profile editing endpoint (PUT /api/artist/:artistId)
+- [x] Input length limits on all text fields
+
+### Still pending (from risk assessments)
+- [ ] Server-side session management (signed cookies or JWT — replaces artistId-as-auth)
+- [ ] CSRF protection on state-changing endpoints
+- [ ] Persistent rate limiting (Redis — survives server restarts)
+- [ ] Migrate from JSON file to SQLite or PostgreSQL
+- [ ] Automated backup strategy for database and uploads
+- [ ] Monitoring and alerting (uptime, errors, disk space)
+- [ ] Email verification on registration
+- [ ] Admin/moderation panel for dispute resolution and content takedown
+- [ ] Data export endpoint for DSAR compliance (Art. 15/20 UK GDPR)
+- [ ] Data processing agreements with Stripe, SMTP provider, Railway
+- [ ] Data retention policy (automated cleanup of inactive accounts)
+- [ ] Copyright/takedown policy and process
+- [ ] Automated test suite for critical paths
