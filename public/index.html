@@ -4,7 +4,44 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Officially Human Art — Certify Your Work as Authentically Human</title>
+    <meta name="description" content="Certify your creative work as authentically human-made. Evidence-based verification for artists, writers, and musicians in the age of AI.">
+    <link rel="canonical" href="https://officallyhuman.art/">
     <link rel="stylesheet" href="/fonts/fonts.css">
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "Officially Human Art",
+        "url": "https://officallyhuman.art",
+        "description": "Evidence-based certification that proves creative work is authentically human-made. For artists, writers, and musicians.",
+        "applicationCategory": "BusinessApplication",
+        "operatingSystem": "Web",
+        "offers": [
+            {
+                "@type": "Offer",
+                "name": "Free",
+                "price": "0",
+                "priceCurrency": "GBP",
+                "description": "Up to 3 certified works with QR codes, badges, and verification pages"
+            },
+            {
+                "@type": "Offer",
+                "name": "Creator",
+                "price": "5",
+                "priceCurrency": "GBP",
+                "priceSpecification": {
+                    "@type": "UnitPriceSpecification",
+                    "billingDuration": "P1M"
+                },
+                "description": "Unlimited certified works for working creators"
+            }
+        ],
+        "creator": {
+            "@type": "Organization",
+            "name": "Officially Human Art"
+        }
+    }
+    </script>
     <style>
         :root {
             --navy: #1a365d;
@@ -999,6 +1036,7 @@
                     <a href="#pricing">Pricing</a>
                     <a href="verify.html">Verify</a>
                     <a href="browse.html">Browse</a>
+                    <a href="/blog">Blog</a>
                 </div>
                 <a href="register.html" class="btn btn-sm">Register Your Work</a>
                 <div class="auth-area" id="auth-area" data-state="loading">
@@ -1041,6 +1079,7 @@
         <a href="#pricing" class="mobile-nav-link">Pricing</a>
         <a href="verify.html">Verify a Certificate</a>
         <a href="browse.html" class="mobile-nav-link">Browse Registry</a>
+        <a href="/blog" class="mobile-nav-link">Blog</a>
         <a href="register.html#login" class="mobile-nav-link" id="mobile-auth-link">Log In</a>
         <a href="register.html">Register Your Work</a>
     </div>
@@ -1295,8 +1334,19 @@
                 <div class="cta-inner fade-up">
                     <h2>Your work is officially human.<br>Now you can prove it.</h2>
                     <p>Join creators who are building verifiable trust with their fans, collectors, galleries, and buyers.</p>
-                    <div id="community-stats" style="display:none;margin:1.5rem 0 0.5rem;font-size:0.9rem;color:rgba(255,254,240,0.7);letter-spacing:0.02em;"></div>
+                    <div id="community-stats" style="display:none;margin:1.5rem 0 0.5rem;font-size:0.9rem;color:var(--ink-faint);letter-spacing:0.02em;"></div>
                     <a href="register.html" class="btn btn-gold btn-lg">Certify Your First Work Free</a>
+
+                    <div class="newsletter-signup" style="margin-top:3.5rem;padding-top:2.5rem;border-top:1px solid rgba(26,54,93,0.08);">
+                        <p style="font-size:0.95rem;color:var(--ink-light);margin-bottom:1rem;">Not ready yet? Get updates on authenticity, creator rights, and new features.</p>
+                        <form id="newsletter-form" style="display:flex;gap:0.5rem;max-width:440px;margin:0 auto;flex-wrap:wrap;justify-content:center;">
+                            <input type="email" id="newsletter-email" placeholder="Your email address" required
+                                style="flex:1;min-width:220px;padding:0.75rem 1rem;border:1.5px solid rgba(26,54,93,0.18);border-radius:8px;font-family:inherit;font-size:0.9rem;background:white;color:var(--ink);">
+                            <button type="submit" class="btn btn-sm" id="newsletter-submit">Subscribe</button>
+                        </form>
+                        <p id="newsletter-msg" style="display:none;margin-top:0.75rem;font-size:0.85rem;"></p>
+                        <p style="font-size:0.72rem;color:var(--ink-faint);margin-top:0.5rem;">No spam, ever. Unsubscribe anytime.</p>
+                    </div>
                 </div>
             </div>
         </section>
@@ -1310,6 +1360,7 @@
                     <a href="#how-it-works">How It Works</a>
                     <a href="register.html">For Creators</a>
                     <a href="verify.html">Verify</a>
+                    <a href="/blog">Blog</a>
                     <a href="legal.html">Legal</a>
                 </div>
                 <p>&copy; 2026 Officially Human Art</p>
@@ -1465,6 +1516,13 @@
             observer.observe(el);
         });
 
+        // Page view tracking (no cookies, no personal data)
+        fetch('/api/pageview', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ page: location.pathname, referrer: document.referrer })
+        }).catch(function() {});
+
         // Community stats
         fetch('/api/stats')
             .then(function(res) { return res.json(); })
@@ -1477,6 +1535,51 @@
                 }
             })
             .catch(function() {});
+
+        // Newsletter signup
+        (function() {
+            var nlForm = document.getElementById('newsletter-form');
+            var nlMsg = document.getElementById('newsletter-msg');
+            var nlSubmit = document.getElementById('newsletter-submit');
+            var nlCsrf = null;
+
+            fetch('/api/csrf-token', { credentials: 'same-origin' })
+                .then(function(r) { return r.json(); })
+                .then(function(d) { if (d.token) nlCsrf = d.token; })
+                .catch(function() {});
+
+            nlForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                var email = document.getElementById('newsletter-email').value.trim();
+                if (!email) return;
+                nlSubmit.disabled = true;
+                nlSubmit.textContent = 'Subscribing...';
+                var headers = { 'Content-Type': 'application/json' };
+                if (nlCsrf) headers['X-CSRF-Token'] = nlCsrf;
+                fetch('/api/newsletter/subscribe', {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: headers,
+                    body: JSON.stringify({ email: email, source: 'homepage_cta' })
+                })
+                .then(function(r) { return r.json(); })
+                .then(function(d) {
+                    nlMsg.textContent = d.message || 'Thanks for subscribing!';
+                    nlMsg.style.color = d.success ? 'var(--success)' : 'var(--error)';
+                    nlMsg.style.display = 'block';
+                    if (d.success) nlForm.reset();
+                })
+                .catch(function() {
+                    nlMsg.textContent = 'Something went wrong. Please try again.';
+                    nlMsg.style.color = 'var(--error)';
+                    nlMsg.style.display = 'block';
+                })
+                .finally(function() {
+                    nlSubmit.disabled = false;
+                    nlSubmit.textContent = 'Subscribe';
+                });
+            });
+        })();
     </script>
 </body>
 </html>

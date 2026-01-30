@@ -1,0 +1,94 @@
+{
+    "title": "The Trust Problem: Why 'I Didn't Use AI' Isn't Enough Anymore",
+    "date": "2026-01-30",
+    "author": "Officially Human Art",
+    "excerpt": "AI detection tools don't work. 'I didn't use AI' isn't enough. Learn why evidence-based certification is the only reliable way to prove your art is human-made.",
+    "keywords": "prove art is not AI, human made art certificate, how to prove I didn't use AI, art authenticity verification",
+    "published": true,
+    "body": [
+        "A freelance illustrator lands their dream commission. Weeks of work. The client loves it. Then comes the email: 'Our legal team needs confirmation this wasn't AI-generated. Can you provide proof?'",
+
+        "What proof? A signed statement? A timelapse? A sworn oath?",
+
+        "There's no standard. No answer. And increasingly, 'trust me' isn't good enough.",
+
+        { "type": "heading", "text": "The landscape has changed" },
+
+        "In 2022, AI art was a novelty. By 2023, it had flooded stock sites, social media, and marketplaces. Now, in 2025 and beyond, buyers, clients, and platforms can't tell the difference \u2014 and they know it.",
+
+        "The consequence is that everyone is now under suspicion. Traditional artists have been publicly accused of using AI. Platforms like DeviantArt and ArtStation have faced backlash over AI-generated content. Etsy sellers report drops in sales as buyers grow wary of what's real and what isn't.",
+
+        "The irony is sharp: the people most harmed are the human artists who never touched AI tools.",
+
+        { "type": "heading", "text": "Why existing solutions fail" },
+
+        "AI detection tools are built on flawed assumptions. They look for statistical patterns, but those patterns produce false positives that flag genuine human work as AI-generated, and false negatives that let machine output pass undetected. They're adversarial by nature \u2014 treating every artist as a suspect. Even the major tools have publicly acknowledged their limitations.",
+
+        { "type": "quote", "text": "Using AI detection on art is like using a lie detector in court \u2014 it feels scientific, but it's not reliable." },
+
+        "'I didn't use AI' statements are equally problematic. Anyone can say it. There's no standard format, no accountability, and no way for a buyer to verify the claim. Platforms have added 'human-made' tags, but they're just checkboxes \u2014 a tick that means nothing without evidence behind it.",
+
+        "Blockchain and NFT solutions missed the mark too. They proved ownership, not creation method. Minting an AI-generated image on a blockchain doesn't make it human-made. The technology solved the wrong problem.",
+
+        "The gap is clear: there's no trusted, verifiable standard for proving human creation.",
+
+        { "type": "heading", "text": "What would actually work?" },
+
+        "The question isn't 'how do we detect AI?' \u2014 it's 'how do we demonstrate human process?'",
+
+        "Human creation leaves traces:",
+
+        { "type": "list", "items": [
+            "Sketches and drafts that show the evolution of an idea",
+            "Work-in-progress photos with context across different stages",
+            "Timelapse recordings of the actual work being created",
+            "Notes, reference gathering, and iteration",
+            "Physical evidence \u2014 paint tubes, canvases, instrument recordings"
+        ]},
+
+        "This evidence is hard to fake. AI can generate a finished image in seconds, but it can't generate a plausible three-hour timelapse of painting it. It can't produce a sketchbook page with coffee stains and crossed-out ideas. Process evidence is the asymmetry we need.",
+
+        "Think of it like a notary. A notary doesn't verify the content of a document \u2014 they verify the identity and intent of the signer. A certification system doesn't need to 'detect' AI. It needs to verify that a human process occurred.",
+
+        { "type": "heading", "text": "Introducing a trust layer" },
+
+        "This is what we built with Officially Human Art. Not another detection tool, but evidence-based certification.",
+
+        "Artists submit their work alongside process evidence. That evidence is reviewed and a trust tier is assigned:",
+
+        { "type": "list", "items": [
+            "Bronze \u2014 your finished work plus a signed declaration",
+            "Silver \u2014 process evidence included (work-in-progress photos, sketches, notes)",
+            "Gold \u2014 rich documentation (timelapse, dated files, extensive process evidence)"
+        ]},
+
+        "Each certified work gets a permanent verification page, an embeddable badge, and a QR code. Anyone \u2014 a buyer, a gallery, a client \u2014 can check the certification tier and see the evidence behind it.",
+
+        "The tiers matter because not everyone has timelapse software running. But someone who submits a thirty-minute timelapse has more credibility than someone who ticks a box. Buyers can decide what level of trust they need. Artists are rewarded for transparency, not penalised for not having perfect documentation.",
+
+        { "type": "heading", "text": "This isn't anti-technology" },
+
+        "AI tools have legitimate uses across many industries, including creative ones. Officially Human Art is not an anti-AI platform. It's about transparency and choice.",
+
+        "Some creators choose not to use generative AI. Some buyers want to specifically support human-made work. Both of those positions are valid, and both deserve a reliable way to connect with each other. AI-generated art and human-made art can coexist \u2014 but only if we can tell them apart.",
+
+        { "type": "heading", "text": "What you can do today" },
+
+        "If you're a creator who wants to prove your work is human-made, you can start for free. Your first three certificates cost nothing, and the process is straightforward:",
+
+        { "type": "ol", "items": [
+            "Create your account at Officially Human Art",
+            "Submit your work with whatever process evidence you have",
+            "Get your certificate, QR code, and embeddable badge",
+            "Share it wherever your work is sold or displayed"
+        ]},
+
+        "The trust problem isn't going away. As AI gets better, the question 'is this human?' will get harder to answer by looking at the output alone.",
+
+        "But human creation isn't just about the output. It's about the process \u2014 the hours, the decisions, the drafts, the mistakes. That process leaves evidence. And evidence can be verified.",
+
+        { "type": "hr" },
+
+        "Officially Human Art is a free certification service for artists, writers, musicians, and all human creators. <a href='/register.html'>Get started free</a> or <a href='/browse.html'>browse certified works</a>."
+    ]
+}

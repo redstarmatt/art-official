@@ -117,6 +117,21 @@ CREATE TABLE IF NOT EXISTS sessions (
   sess JSON NOT NULL,
   expire TEXT NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS newsletter_subscribers (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  email TEXT UNIQUE NOT NULL,
+  source TEXT DEFAULT 'website',
+  subscribed_at TEXT NOT NULL,
+  unsubscribed_at TEXT
+);
+
+CREATE TABLE IF NOT EXISTS page_views (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  page TEXT NOT NULL,
+  referrer TEXT DEFAULT '',
+  date TEXT NOT NULL
+);
 `);
 
 // Add columns for email verification, retention, reports — safe to re-run (ALTER TABLE IF NOT EXISTS pattern)
@@ -130,6 +145,8 @@ addColumnIfMissing('artists', 'email_verified', 'INTEGER DEFAULT 0');
 addColumnIfMissing('artists', 'verification_token', 'TEXT');
 addColumnIfMissing('artists', 'last_login_at', 'TEXT');
 addColumnIfMissing('artists', 'deletion_warning_sent_at', 'TEXT');
+addColumnIfMissing('artists', 'banned', 'INTEGER DEFAULT 0');
+addColumnIfMissing('artists', 'ban_reason', 'TEXT');
 addColumnIfMissing('reports', 'resolution', 'TEXT');
 addColumnIfMissing('reports', 'resolved_at', 'TEXT');
 addColumnIfMissing('reports', 'type', "TEXT DEFAULT 'dispute'");
@@ -144,6 +161,9 @@ CREATE INDEX IF NOT EXISTS idx_history_cert ON certificate_history(certificate_i
 CREATE INDEX IF NOT EXISTS idx_reports_cert ON reports(certificate_id);
 CREATE INDEX IF NOT EXISTS idx_rate_key_time ON rate_limits(key, timestamp);
 CREATE INDEX IF NOT EXISTS idx_sessions_expire ON sessions(expire);
+CREATE INDEX IF NOT EXISTS idx_newsletter_email ON newsletter_subscribers(email);
+CREATE INDEX IF NOT EXISTS idx_page_views_date ON page_views(date);
+CREATE INDEX IF NOT EXISTS idx_page_views_page ON page_views(page);
 `);
 
 // ============================================================
@@ -314,7 +334,9 @@ function rowToArtist(row) {
         emailVerified: row.email_verified === 1,
         verificationToken: row.verification_token,
         lastLoginAt: row.last_login_at,
-        deletionWarningSentAt: row.deletion_warning_sent_at
+        deletionWarningSentAt: row.deletion_warning_sent_at,
+        banned: row.banned === 1,
+        banReason: row.ban_reason || null
     };
 }
 
@@ -492,6 +514,60 @@ app.post('/api/webhooks/stripe', express.raw({ type: 'application/json' }), asyn
             if (artist) {
                 stmts.updateArtistPlan.run('free', 'expired', null, artist.id);
                 stmts.updateArtistStripeSubscription.run(null, artist.id);
+                // Notify the artist their subscription has ended
+                if (emailEnabled) {
+                    const certCount = stmts.countCertsByArtist.get(artist.id).n;
+                    sendEmail({
+                        from: process.env.SMTP_FROM || process.env.SMTP_USER,
+                        to: artist.email,
+                        subject: 'Your Officially Human Art subscription has ended',
+                        html: `<div style="font-family:'Helvetica Neue',Arial,sans-serif;max-width:600px;margin:0 auto;background:#fffef0;">
+                            <div style="background:#1a365d;color:#fffef0;padding:2rem;text-align:center;">
+                                <div style="font-family:Georgia,serif;font-size:1.75rem;font-weight:bold;">Officially <span style="color:#d4af37;">Human</span> Art</div>
+                            </div>
+                            <div style="padding:2rem;">
+                                <p style="color:#4a5568;margin-bottom:1rem;">Hi ${artist.name},</p>
+                                <p style="color:#4a5568;margin-bottom:1rem;">Your Creator subscription has ended. Your account has been moved to the Free plan.</p>
+                                <p style="color:#4a5568;margin-bottom:1rem;"><strong>Your ${certCount} existing certificate${certCount !== 1 ? 's remain' : ' remains'} fully active.</strong> All badges, QR codes, and verification pages continue to work as normal. Nothing has been removed.</p>
+                                <p style="color:#4a5568;margin-bottom:1rem;">On the Free plan, you can maintain up to 3 certified works. To certify unlimited works again, you can resubscribe at any time from your dashboard.</p>
+                                <div style="text-align:center;margin:2rem 0;">
+                                    <a href="${process.env.BASE_URL || 'https://officallyhuman.art'}/register.html" style="display:inline-block;padding:0.75rem 2rem;background:#1a365d;color:#fffef0;text-decoration:none;border-radius:6px;font-weight:600;font-size:0.9rem;">Go to Dashboard</a>
+                                </div>
+                                <p style="color:#718096;font-size:0.85rem;">Thanks for supporting Officially Human Art. We hope to see you back.</p>
+                            </div>
+                            <div style="background:#f7f5e6;padding:1rem;text-align:center;font-size:0.75rem;color:#a0aec0;border-top:1px solid rgba(26,54,93,0.06);">
+                                <p style="margin:0;">&copy; 2026 Officially Human Art</p>
+                            </div>
+                        </div>`
+                    }).catch(err => console.error('Failed to send subscription ended email:', err.message));
+                }
+            }
+            break;
+        }
+        case 'invoice.payment_failed': {
+            const invoice = event.data.object;
+            const artist = rowToArtist(stmts.getArtistByStripeCustomer.get(invoice.customer));
+            if (artist && emailEnabled) {
+                sendEmail({
+                    from: process.env.SMTP_FROM || process.env.SMTP_USER,
+                    to: artist.email,
+                    subject: 'Payment failed for your Officially Human Art subscription',
+                    html: `<div style="font-family:'Helvetica Neue',Arial,sans-serif;max-width:600px;margin:0 auto;background:#fffef0;">
+                        <div style="background:#1a365d;color:#fffef0;padding:2rem;text-align:center;">
+                            <div style="font-family:Georgia,serif;font-size:1.75rem;font-weight:bold;">Officially <span style="color:#d4af37;">Human</span> Art</div>
+                        </div>
+                        <div style="padding:2rem;">
+                            <p style="color:#4a5568;margin-bottom:1rem;">Hi ${artist.name},</p>
+                            <p style="color:#4a5568;margin-bottom:1rem;">We weren't able to process your latest payment for the Creator plan. This can happen if your card has expired or has insufficient funds.</p>
+                            <p style="color:#4a5568;margin-bottom:1rem;">Please update your payment method to keep your subscription active. Stripe will automatically retry the payment, but if it continues to fail your subscription will be cancelled.</p>
+                            <p style="color:#4a5568;margin-bottom:1rem;"><strong>Your certificates remain active while we retry.</strong> No changes have been made to your account yet.</p>
+                            <p style="color:#718096;font-size:0.85rem;">If you believe this is an error, please check with your bank or card provider.</p>
+                        </div>
+                        <div style="background:#f7f5e6;padding:1rem;text-align:center;font-size:0.75rem;color:#a0aec0;border-top:1px solid rgba(26,54,93,0.06);">
+                            <p style="margin:0;">&copy; 2026 Officially Human Art</p>
+                        </div>
+                    </div>`
+                }).catch(err => console.error('Failed to send payment failed email:', err.message));
             }
             break;
         }
@@ -574,6 +650,10 @@ app.get('/verify.html', (req, res, next) => {
     const cert = rowToCert(row);
     if (!cert) return next();
 
+    // Don't inject OG tags for revoked certs or banned artists
+    const certArtist = rowToArtist(stmts.getArtistById.get(cert.artistId));
+    if (cert.status === 'revoked' || (certArtist && certArtist.banned)) return next();
+
     const host = `${req.protocol}://${req.get('host')}`;
     const verifyUrl = `${host}/verify.html?code=${encodeURIComponent(cert.id)}`;
     const imageUrl = cert.artworkImage ? `${host}/uploads/${cert.artworkImage}` : null;
@@ -604,6 +684,192 @@ app.get('/verify.html', (req, res, next) => {
     res.send(html);
 });
 
+// Dynamic sitemap
+app.get('/sitemap.xml', (req, res) => {
+    const host = `${req.protocol}://${req.get('host')}`;
+    const now = new Date().toISOString().split('T')[0];
+
+    const staticPages = [
+        { url: '/', changefreq: 'weekly', priority: '1.0' },
+        { url: '/verify.html', changefreq: 'monthly', priority: '0.8' },
+        { url: '/browse.html', changefreq: 'daily', priority: '0.8' },
+        { url: '/register.html', changefreq: 'monthly', priority: '0.7' },
+        { url: '/legal.html', changefreq: 'yearly', priority: '0.3' },
+    ];
+
+    // Add blog posts
+    const blogDir = path.join(__dirname, 'content', 'blog');
+    if (fs.existsSync(blogDir)) {
+        fs.readdirSync(blogDir).filter(f => f.endsWith('.json')).forEach(f => {
+            const slug = f.replace('.json', '');
+            staticPages.push({ url: `/blog/${slug}`, changefreq: 'monthly', priority: '0.6' });
+        });
+    }
+
+    // Add artist profiles
+    const artists = db.prepare('SELECT slug FROM artists WHERE slug IS NOT NULL AND slug != \'\'').all();
+    artists.forEach(a => {
+        staticPages.push({ url: `/profile.html?artist=${encodeURIComponent(a.slug)}`, changefreq: 'weekly', priority: '0.5' });
+    });
+
+    let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
+    xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
+    staticPages.forEach(p => {
+        xml += `  <url>\n    <loc>${host}${p.url}</loc>\n    <lastmod>${now}</lastmod>\n    <changefreq>${p.changefreq}</changefreq>\n    <priority>${p.priority}</priority>\n  </url>\n`;
+    });
+    xml += '</urlset>';
+
+    res.set('Content-Type', 'application/xml');
+    res.send(xml);
+});
+
+// Blog system — serves posts from content/blog/*.json
+const BLOG_DIR = path.join(__dirname, 'content', 'blog');
+
+function getBlogPosts() {
+    if (!fs.existsSync(BLOG_DIR)) return [];
+    return fs.readdirSync(BLOG_DIR)
+        .filter(f => f.endsWith('.json'))
+        .map(f => {
+            try {
+                const data = JSON.parse(fs.readFileSync(path.join(BLOG_DIR, f), 'utf8'));
+                data.slug = f.replace('.json', '');
+                return data;
+            } catch { return null; }
+        })
+        .filter(p => p && p.published !== false)
+        .sort((a, b) => new Date(b.date) - new Date(a.date));
+}
+
+function blogTemplate(title, content, { description, isIndex, keywords } = {}) {
+    const esc = s => (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${esc(title)} — Officially Human Art</title>
+    <meta name="description" content="${esc(description || title)}">
+${keywords ? `    <meta name="keywords" content="${esc(keywords)}">` : ''}
+    <link rel="stylesheet" href="/fonts/fonts.css">
+    <style>
+        :root{--navy:#1a365d;--navy-light:#2c5282;--cream:#fffef0;--cream-dark:#f7f5e6;--gold:#b7960b;--gold-light:#d4af37;--ink:#2d3748;--ink-light:#4a5568;--ink-faint:#718096;}
+        *{margin:0;padding:0;box-sizing:border-box;}
+        body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);line-height:1.6;-webkit-font-smoothing:antialiased;}
+        .container{max-width:760px;margin:0 auto;padding:0 2rem;}
+        header{padding:1rem 0;border-bottom:1px solid rgba(26,54,93,0.06);margin-bottom:3rem;}
+        .header-inner{display:flex;justify-content:space-between;align-items:center;max-width:760px;margin:0 auto;padding:0 2rem;}
+        .logo{font-family:'Cormorant Garamond',serif;font-size:1.5rem;font-weight:700;color:var(--navy);text-decoration:none;}
+        .logo span{color:var(--gold);}
+        nav a{color:var(--ink-light);text-decoration:none;font-size:0.9rem;font-weight:500;margin-left:1.5rem;}
+        nav a:hover{color:var(--navy);}
+        .blog-content{padding-bottom:5rem;}
+        .blog-content h1{font-family:'Cormorant Garamond',serif;font-size:clamp(2rem,4vw,2.75rem);color:var(--navy);margin-bottom:0.5rem;line-height:1.15;}
+        .blog-content h2{font-family:'Cormorant Garamond',serif;font-size:1.5rem;color:var(--navy);margin:2.5rem 0 0.75rem;}
+        .blog-content h3{font-size:1.15rem;color:var(--navy);margin:2rem 0 0.5rem;}
+        .blog-meta{font-size:0.85rem;color:var(--ink-faint);margin-bottom:2.5rem;}
+        .blog-content p{margin-bottom:1.25rem;line-height:1.8;color:var(--ink-light);font-size:1.02rem;}
+        .blog-content blockquote{border-left:3px solid var(--gold);padding:0.5rem 0 0.5rem 1.5rem;margin:1.5rem 0;font-family:'Cormorant Garamond',serif;font-size:1.3rem;color:var(--navy);font-style:italic;line-height:1.5;}
+        .blog-content ul,.blog-content ol{margin:0 0 1.25rem 1.5rem;color:var(--ink-light);}
+        .blog-content li{margin-bottom:0.4rem;line-height:1.7;}
+        .blog-content a{color:var(--navy);font-weight:600;}
+        .blog-content a:hover{color:var(--gold);}
+        .blog-content img{max-width:100%;border-radius:8px;margin:1.5rem 0;}
+        .blog-content hr{border:none;border-top:1px solid rgba(26,54,93,0.08);margin:2.5rem 0;}
+        .post-list{list-style:none;padding:0;}
+        .post-item{padding:1.75rem 0;border-bottom:1px solid rgba(26,54,93,0.06);}
+        .post-item:first-child{padding-top:0;}
+        .post-item h2{font-family:'Cormorant Garamond',serif;font-size:1.5rem;margin-bottom:0.3rem;}
+        .post-item h2 a{color:var(--navy);text-decoration:none;}
+        .post-item h2 a:hover{color:var(--gold);}
+        .post-item .post-date{font-size:0.82rem;color:var(--ink-faint);margin-bottom:0.5rem;}
+        .post-item .post-excerpt{color:var(--ink-light);font-size:0.95rem;line-height:1.65;}
+        .back-link{display:inline-block;margin-bottom:2rem;font-size:0.9rem;color:var(--ink-faint);text-decoration:none;}
+        .back-link:hover{color:var(--navy);}
+        footer{padding:2rem 0;border-top:1px solid rgba(26,54,93,0.06);text-align:center;}
+        footer p{color:var(--ink-faint);font-size:0.82rem;}
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-inner">
+            <a href="/" class="logo">Officially <span>Human</span> Art</a>
+            <nav>
+                <a href="/blog">Blog</a>
+                <a href="/browse.html">Browse</a>
+                <a href="/verify.html">Verify</a>
+                <a href="/register.html">Register</a>
+            </nav>
+        </div>
+    </header>
+    <main class="container blog-content">
+        ${content}
+    </main>
+    <footer>
+        <div class="container">
+            <p>&copy; 2026 Officially Human Art</p>
+        </div>
+    </footer>
+</body>
+</html>`;
+}
+
+// Simple markdown-like rendering (no external dependency)
+function renderBlogBody(body) {
+    if (Array.isArray(body)) {
+        return body.map(block => {
+            if (typeof block === 'string') return `<p>${block}</p>`;
+            if (block.type === 'heading') return `<h2>${block.text}</h2>`;
+            if (block.type === 'h3') return `<h3>${block.text}</h3>`;
+            if (block.type === 'quote') return `<blockquote>${block.text}</blockquote>`;
+            if (block.type === 'list') return `<ul>${block.items.map(i => `<li>${i}</li>`).join('')}</ul>`;
+            if (block.type === 'ol') return `<ol>${block.items.map(i => `<li>${i}</li>`).join('')}</ol>`;
+            if (block.type === 'hr') return '<hr>';
+            if (block.type === 'html') return block.content;
+            return `<p>${block.text || ''}</p>`;
+        }).join('\n');
+    }
+    return `<p>${body}</p>`;
+}
+
+// Blog index
+app.get('/blog', (req, res) => {
+    const posts = getBlogPosts();
+    let content = '<h1>Blog</h1>\n<p style="color:var(--ink-light);margin-bottom:2rem;">Thoughts on authenticity, creator rights, and human creativity in the age of AI.</p>\n';
+    if (posts.length === 0) {
+        content += '<p>No posts yet. Check back soon.</p>';
+    } else {
+        content += '<ul class="post-list">';
+        posts.forEach(p => {
+            content += `<li class="post-item">
+                <h2><a href="/blog/${p.slug}">${p.title}</a></h2>
+                <div class="post-date">${new Date(p.date).toLocaleDateString('en-GB', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
+                <div class="post-excerpt">${p.excerpt || ''}</div>
+            </li>`;
+        });
+        content += '</ul>';
+    }
+    res.send(blogTemplate('Blog', content, { description: 'Articles about authenticity, creator rights, and human creativity.', isIndex: true }));
+});
+
+// Blog post
+app.get('/blog/:slug', (req, res) => {
+    const filePath = path.join(BLOG_DIR, `${req.params.slug}.json`);
+    if (!fs.existsSync(filePath)) return res.status(404).send(blogTemplate('Not Found', '<h1>Post not found</h1><p><a href="/blog">Back to blog</a></p>'));
+    try {
+        const post = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+        if (post.published === false) return res.status(404).send(blogTemplate('Not Found', '<h1>Post not found</h1><p><a href="/blog">Back to blog</a></p>'));
+        const dateStr = new Date(post.date).toLocaleDateString('en-GB', { year: 'numeric', month: 'long', day: 'numeric' });
+        const content = `<a href="/blog" class="back-link">&larr; All posts</a>
+            <h1>${post.title}</h1>
+            <div class="blog-meta">${dateStr}${post.author ? ' &middot; ' + post.author : ''}</div>
+            ${renderBlogBody(post.body)}`;
+        res.send(blogTemplate(post.title, content, { description: post.excerpt, keywords: post.keywords }));
+    } catch {
+        res.status(500).send(blogTemplate('Error', '<h1>Error loading post</h1><p><a href="/blog">Back to blog</a></p>'));
+    }
+});
+
 app.use(express.static('public'));
 
 // Controlled file serving — public artwork/evidence served freely, private evidence requires session ownership
@@ -618,12 +884,22 @@ app.get('/uploads/:filename', (req, res) => {
     // Check if artwork image (always public)
     const certRow = stmts.findCertByArtworkImage.get(filename);
     if (certRow) {
+        // Block serving if certificate is revoked or artist is banned
+        if (certRow.status === 'revoked') return res.status(403).json({ success: false, message: 'This content has been removed.' });
+        const fileArtist = rowToArtist(stmts.getArtistById.get(certRow.artist_id));
+        if (fileArtist && fileArtist.banned) return res.status(403).json({ success: false, message: 'This content has been removed.' });
         return res.sendFile(filePath);
     }
 
     // Check evidence files
     const efRow = stmts.findEvidenceFile.get(filename);
     if (efRow) {
+        // Block serving if associated certificate is revoked or artist is banned
+        const efCert = stmts.getCertById.get(efRow.certificate_id);
+        if (efCert && efCert.status === 'revoked') return res.status(403).json({ success: false, message: 'This content has been removed.' });
+        const efArtist = rowToArtist(stmts.getArtistById.get(efRow.artist_id));
+        if (efArtist && efArtist.banned) return res.status(403).json({ success: false, message: 'This content has been removed.' });
+
         if (efRow.is_public === 1) {
             return res.sendFile(filePath);
         }
@@ -711,7 +987,7 @@ function isCreator(artist) {
 
 // Sanitise artist for client (strip password hash and internal fields)
 function safeArtist(artist) {
-    const { passwordHash, stripeCustomerId, stripeSubscriptionId, resetToken, resetTokenExpires, verificationToken, deletionWarningSentAt, ...safe } = artist;
+    const { passwordHash, stripeCustomerId, stripeSubscriptionId, resetToken, resetTokenExpires, verificationToken, deletionWarningSentAt, banReason, ...safe } = artist;
     return safe;
 }
 
@@ -1115,13 +1391,54 @@ app.put('/api/admin/certificates/:certId/revoke', requireAdmin, (req, res) => {
     res.json({ success: true, message: 'Certificate revoked' });
 });
 
+// ---- Admin: Ban Artist ----
+app.put('/api/admin/artists/:artistId/ban', requireAdmin, express.json(), (req, res) => {
+    const { artistId } = req.params;
+    const { reason } = req.body;
+    const artist = rowToArtist(stmts.getArtistById.get(artistId));
+    if (!artist) {
+        return res.status(404).json({ success: false, message: 'Artist not found' });
+    }
+
+    db.prepare('UPDATE artists SET banned = 1, ban_reason = ? WHERE id = ?').run(reason || 'Violation of terms of service', artistId);
+
+    // Revoke all their certificates
+    const certs = stmts.getCertsByArtist.all(artistId);
+    const revokeAll = db.transaction(() => {
+        for (const cert of certs) {
+            if (cert.status !== 'revoked') {
+                stmts.updateCertStatus.run('revoked', cert.id);
+                stmts.insertHistory.run(cert.id, 'revoked_account_ban', null, new Date().toISOString());
+            }
+        }
+    });
+    revokeAll();
+
+    audit('artist_banned', { artistId, reason: reason || 'Violation of terms of service', certificatesRevoked: certs.length });
+    res.json({ success: true, message: `Artist banned. ${certs.length} certificate(s) revoked.` });
+});
+
+// ---- Admin: Unban Artist ----
+app.put('/api/admin/artists/:artistId/unban', requireAdmin, (req, res) => {
+    const { artistId } = req.params;
+    const artist = rowToArtist(stmts.getArtistById.get(artistId));
+    if (!artist) {
+        return res.status(404).json({ success: false, message: 'Artist not found' });
+    }
+
+    db.prepare('UPDATE artists SET banned = 0, ban_reason = NULL WHERE id = ?').run(artistId);
+    // Note: certificates are NOT automatically un-revoked — admin must manually reinstate if appropriate
+    audit('artist_unbanned', { artistId });
+    res.json({ success: true, message: 'Artist unbanned. Certificates remain revoked and must be reinstated individually if appropriate.' });
+});
+
 // Session restore endpoint
 app.get('/api/artist/me', (req, res) => {
     if (!req.session.artistId) {
         return res.json({ success: false });
     }
     const artist = rowToArtist(stmts.getArtistById.get(req.session.artistId));
-    if (!artist) {
+    if (!artist || artist.banned) {
         req.session.destroy(() => {});
         return res.json({ success: false });
     }
@@ -1208,6 +1525,11 @@ app.post('/api/artist/login', doubleCsrfProtection, async (req, res) => {
     if (!artist) {
         audit('login_failed', { email, reason: 'not_found' });
         return res.json({ success: false, message: 'No account found with that email.' });
+    }
+
+    if (artist.banned) {
+        audit('login_failed', { artistId: artist.id, reason: 'banned' });
+        return res.json({ success: false, message: 'This account has been suspended. Please contact support if you believe this is an error.' });
     }
 
     if (!artist.passwordHash) {
@@ -1313,12 +1635,12 @@ app.put('/api/artist/:artistId', doubleCsrfProtection, requireAuth, (req, res) =
 app.get('/api/artist/profile/:slug', (req, res) => {
     const { slug } = req.params;
     const artist = rowToArtist(stmts.getArtistBySlug.get(slug));
-    if (!artist) {
+    if (!artist || artist.banned) {
         return res.json({ success: false, message: 'Artist not found' });
     }
 
     const certRows = stmts.getCertsByArtist.all(artist.id);
-    const certificates = certRows.map(rowToCert);
+    const certificates = certRows.map(rowToCert).filter(c => c.status === 'verified');
 
     res.json({
         success: true,
@@ -1510,6 +1832,17 @@ app.get('/api/verify/:certificateId', (req, res) => {
     const certificate = rowToCert(row);
 
     if (certificate) {
+        // Check if certificate is revoked or artist is banned
+        const artist = rowToArtist(stmts.getArtistById.get(certificate.artistId));
+        if (certificate.status === 'revoked' || (artist && artist.banned)) {
+            return res.json({
+                success: true,
+                verified: false,
+                revoked: true,
+                message: 'This certificate has been revoked and is no longer valid.'
+            });
+        }
+
         const evidenceFiles = getEvidenceForCert(certificate.id);
         res.json({
             success: true,
@@ -1558,6 +1891,12 @@ app.get('/api/badge/:certificateId', (req, res) => {
         return res.status(404).send('Certificate not found');
     }
 
+    // Block badges for revoked certs or banned artists
+    const badgeArtist = rowToArtist(stmts.getArtistById.get(cert.artistId));
+    if (cert.status === 'revoked' || (badgeArtist && badgeArtist.banned)) {
+        return res.status(404).send('Certificate not found');
+    }
+
     const tierColors = {
         gold: { bg: '#b7960b', text: '#fffef0' },
         silver: { bg: '#718096', text: '#fffef0' },
@@ -1584,9 +1923,17 @@ app.get('/api/widget/:certificateId', (req, res) => {
     const { certificateId } = req.params;
     const cert = rowToCert(stmts.getCertById.get(certificateId.toUpperCase()));
 
+    const widgetNotFound = '<html><body style="margin:0;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100%;color:#718096;font-size:14px;">Certificate not found</body></html>';
     if (!cert) {
         res.setHeader('Content-Type', 'text/html');
-        return res.send('<html><body style="margin:0;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100%;color:#718096;font-size:14px;">Certificate not found</body></html>');
+        return res.send(widgetNotFound);
+    }
+
+    // Block widgets for revoked certs or banned artists
+    const widgetArtist = rowToArtist(stmts.getArtistById.get(cert.artistId));
+    if (cert.status === 'revoked' || (widgetArtist && widgetArtist.banned)) {
+        res.setHeader('Content-Type', 'text/html');
+        return res.send(widgetNotFound);
     }
 
     const host = `${req.protocol}://${req.get('host')}`;
@@ -2082,6 +2429,68 @@ app.delete('/api/artist/:artistId', doubleCsrfProtection, requireAuth, async (re
     req.session.destroy(() => {});
     res.clearCookie('oh.sid');
     res.json({ success: true, message: 'Account and all associated data have been permanently deleted.' });
+});
+
+// Lightweight page view tracking (no cookies, no personal data)
+app.post('/api/pageview', (req, res) => {
+    const { page, referrer } = req.body;
+    if (!page || typeof page !== 'string') return res.status(400).json({ success: false });
+    const cleanPage = page.split('?')[0].substring(0, 200);
+    const cleanReferrer = (referrer || '').substring(0, 500);
+    const date = new Date().toISOString().split('T')[0];
+    db.prepare('INSERT INTO page_views (page, referrer, date) VALUES (?, ?, ?)').run(cleanPage, cleanReferrer, date);
+    res.json({ success: true });
+});
+
+// Admin: analytics summary
+app.get('/api/admin/analytics', requireAdmin, (req, res) => {
+    const days = parseInt(req.query.days) || 30;
+    const since = new Date(Date.now() - days * 86400000).toISOString().split('T')[0];
+
+    const totalViews = db.prepare('SELECT COUNT(*) as n FROM page_views WHERE date >= ?').get(since).n;
+    const byPage = db.prepare('SELECT page, COUNT(*) as views FROM page_views WHERE date >= ? GROUP BY page ORDER BY views DESC LIMIT 20').all(since);
+    const byDay = db.prepare('SELECT date, COUNT(*) as views FROM page_views WHERE date >= ? GROUP BY date ORDER BY date').all(since);
+    const topReferrers = db.prepare("SELECT referrer, COUNT(*) as views FROM page_views WHERE date >= ? AND referrer != '' GROUP BY referrer ORDER BY views DESC LIMIT 10").all(since);
+    const subscribers = db.prepare('SELECT COUNT(*) as n FROM newsletter_subscribers WHERE unsubscribed_at IS NULL').get().n;
+
+    res.json({ success: true, days, totalViews, byPage, byDay, topReferrers, subscribers });
+});
+
+// Newsletter subscribe
+app.post('/api/newsletter/subscribe', doubleCsrfProtection, (req, res) => {
+    const { email, source } = req.body;
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        return res.status(400).json({ success: false, message: 'Please enter a valid email address.' });
+    }
+
+    const ip = req.ip || req.connection.remoteAddress;
+    if (!rateLimit('newsletter:' + ip, 5, 3600000)) {
+        return res.status(429).json({ success: false, message: 'Too many requests. Please try again later.' });
+    }
+
+    const existing = db.prepare('SELECT * FROM newsletter_subscribers WHERE email = ?').get(email.toLowerCase().trim());
+    if (existing) {
+        if (existing.unsubscribed_at) {
+            db.prepare('UPDATE newsletter_subscribers SET unsubscribed_at = NULL, subscribed_at = ? WHERE email = ?')
+                .run(new Date().toISOString(), email.toLowerCase().trim());
+            return res.json({ success: true, message: 'Welcome back! You\'ve been re-subscribed.' });
+        }
+        return res.json({ success: true, message: 'You\'re already subscribed!' });
+    }
+
+    db.prepare('INSERT INTO newsletter_subscribers (email, source, subscribed_at) VALUES (?, ?, ?)')
+        .run(email.toLowerCase().trim(), source || 'website', new Date().toISOString());
+
+    res.json({ success: true, message: 'Thanks for subscribing! We\'ll keep you updated.' });
+});
+
+// Newsletter unsubscribe
+app.get('/api/newsletter/unsubscribe', (req, res) => {
+    const { email } = req.query;
+    if (!email) return res.status(400).send('Missing email.');
+    db.prepare('UPDATE newsletter_subscribers SET unsubscribed_at = ? WHERE email = ?')
+        .run(new Date().toISOString(), email.toLowerCase().trim());
+    res.send('<html><body style="font-family:sans-serif;text-align:center;padding:4rem;"><h2>You\'ve been unsubscribed.</h2><p>You will no longer receive emails from Officially Human Art.</p></body></html>');
 });
 
 // Copyright takedown request
