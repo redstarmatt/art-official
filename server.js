@@ -1817,6 +1817,17 @@ app.post('/api/report/:certificateId', doubleCsrfProtection, (req, res) => {
     stmts.updateCertReportCount.run(certificateId.toUpperCase());
 
     audit('certificate_reported', { certificateId: certificateId.toUpperCase(), reportId });
+
+    // Notify admin via email
+    if (mailTransporter) {
+        mailTransporter.sendMail({
+            from: process.env.SMTP_FROM || process.env.SMTP_USER,
+            to: process.env.ADMIN_EMAIL || 'matt@mattlewsey.com',
+            subject: `Certificate Report: ${certificateId.toUpperCase()}`,
+            text: `A certificate has been reported.\n\nCertificate: ${certificateId.toUpperCase()}\nTitle: ${cert.title}\nArtist: ${cert.artistName}\nReason: ${reason.trim()}\nReporter email: ${email || 'Not provided'}\n\nReview at: /admin.html`
+        }).catch(err => console.error('Failed to send report notification:', err.message));
+    }
+
     res.json({ success: true, message: 'Report submitted. We will review this certificate.' });
 });
 

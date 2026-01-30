@@ -52,6 +52,14 @@
 - [x] Migrate from JSON file to SQLite
 - [x] Renamed "Date of Creation" label to "Date Registered" (defaults to today)
 - [x] Unified auth header (Log In / Sign Out) on all pages
+- [x] Automated backup strategy (daily SQLite backup with 7-day rotation, admin trigger endpoint)
+- [x] Monitoring and alerting (GET /api/health — DB status, disk usage, uptime, error count, slow request logging)
+- [x] Email verification on registration (verification email, submission gate, resend flow)
+- [x] Admin/moderation panel (admin.html with report management, certificate revocation, dashboard stats)
+- [x] Data export endpoint for DSAR compliance (GET /api/artist/:id/export — Art. 15/20 UK GDPR)
+- [x] Data retention policy (24-month inactive account cleanup with 30-day warning grace period)
+- [x] Copyright/takedown policy and process (structured form on legal page, POST /api/takedown endpoint)
+- [x] Automated test suite for critical paths (25 tests via node:test — auth, CSRF, submission, admin, export, takedown)
 
 ## Pending
 - [ ] Configure Stripe for production (set STRIPE_SECRET_KEY, STRIPE_PUBLISHABLE_KEY, STRIPE_WEBHOOK_SECRET, STRIPE_CREATOR_PRICE_ID on Railway)
@@ -61,12 +69,4 @@
   - Create mailbox e.g. noreply@officiallyhuman.art
   - Set Railway env vars: SMTP_HOST=smtpout.secureserver.net, SMTP_PORT=465, SMTP_USER=noreply@officiallyhuman.art, SMTP_PASS=<mailbox password>, SMTP_FROM=noreply@officiallyhuman.art
   - GoDaddy handles SPF/DKIM automatically for its own email
-- [ ] Automated backup strategy for database and uploads
-- [ ] Monitoring and alerting (uptime, errors, disk space)
-- [ ] Email verification on registration
-- [ ] Admin/moderation panel for dispute resolution and content takedown
-- [ ] Data export endpoint for DSAR compliance (Art. 15/20 UK GDPR)
 - [ ] Data processing agreements with Stripe, SMTP provider, Railway
-- [ ] Data retention policy (automated cleanup of inactive accounts)
-- [ ] Copyright/takedown policy and process
-- [ ] Automated test suite for critical paths
