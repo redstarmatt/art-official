@@ -1,3 +1,5 @@
+process.on('uncaughtException', (err) => { console.error('UNCAUGHT:', err); process.exit(1); });
+
 const express = require('express');
 const { v4: uuidv4 } = require('uuid');
 const QRCode = require('qrcode');
