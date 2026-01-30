@@ -392,7 +392,7 @@
             position: relative;
         }
 
-        .work-thumb img {
+        .work-thumb img, .work-thumb video {
             width: 100%;
             height: 100%;
             object-fit: cover;
@@ -1110,11 +1110,21 @@
                 // Thumbnail
                 var thumbHtml;
                 if (cert.thumbnailFile) {
-                    thumbHtml =
-                        '<div class="work-thumb">' +
-                            '<img src="/uploads/' + escHtml(cert.thumbnailFile) + '" alt="' + escHtml(cert.title) + '" loading="lazy" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\';">' +
-                            '<div class="work-thumb-placeholder" style="display:none;">' + escHtml(initials) + '</div>' +
-                        '</div>';
+                    var ext = cert.thumbnailFile.split('.').pop().toLowerCase();
+                    var isVideo = ['mp4','webm','mov'].indexOf(ext) !== -1;
+                    if (isVideo) {
+                        thumbHtml =
+                            '<div class="work-thumb">' +
+                                '<video src="/uploads/' + escHtml(cert.thumbnailFile) + '" preload="metadata" muted style="pointer-events:none;" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\';"></video>' +
+                                '<div class="work-thumb-placeholder" style="display:none;">' + escHtml(initials) + '</div>' +
+                            '</div>';
+                    } else {
+                        thumbHtml =
+                            '<div class="work-thumb">' +
+                                '<img src="/uploads/' + escHtml(cert.thumbnailFile) + '" alt="' + escHtml(cert.title) + '" loading="lazy" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\';">' +
+                                '<div class="work-thumb-placeholder" style="display:none;">' + escHtml(initials) + '</div>' +
+                            '</div>';
+                    }
                 } else {
                     thumbHtml =
                         '<div class="work-thumb">' +

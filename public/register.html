@@ -1450,7 +1450,7 @@
                             <p>or <strong id="artwork-browse-trigger">click to browse</strong></p>
                             <p style="margin-top:0.5rem;font-size:0.78rem;">This image will be displayed on your certificate page</p>
                         </div>
-                        <input type="file" id="artwork-input" class="file-input-hidden" accept="image/*">
+                        <input type="file" id="artwork-input" class="file-input-hidden" accept="image/*,video/mp4,video/webm,video/quicktime">
                         <div class="file-thumbnails" id="artwork-thumbnail"></div>
                     </div>
 
@@ -1946,7 +1946,7 @@
         });
 
         function setArtworkFile(file) {
-            if (!file.type || !file.type.startsWith('image/')) return;
+            if (!file.type || !(file.type.startsWith('image/') || file.type.startsWith('video/'))) return;
             artworkFile = file;
             renderArtworkThumbnail();
             updateStrength();
@@ -1959,10 +1959,22 @@
 
             var thumb = document.createElement('div');
             thumb.className = 'file-thumb';
-            var img = document.createElement('img');
-            img.src = URL.createObjectURL(artworkFile);
-            img.alt = artworkFile.name;
-            thumb.appendChild(img);
+            if (artworkFile.type && artworkFile.type.startsWith('video/')) {
+                var vid = document.createElement('video');
+                vid.src = URL.createObjectURL(artworkFile);
+                vid.style.maxWidth = '100%';
+                vid.style.borderRadius = '6px';
+                vid.muted = true;
+                vid.playsInline = true;
+                vid.autoplay = false;
+                vid.controls = true;
+                thumb.appendChild(vid);
+            } else {
+                var img = document.createElement('img');
+                img.src = URL.createObjectURL(artworkFile);
+                img.alt = artworkFile.name;
+                thumb.appendChild(img);
+            }
 
             var removeBtn = document.createElement('button');
             removeBtn.className = 'file-thumb-remove';
@@ -2028,6 +2040,15 @@
                     img.src = URL.createObjectURL(file);
                     img.alt = file.name;
                     preview.appendChild(img);
+                } else if (file.type && file.type.startsWith('video/')) {
+                    var vid = document.createElement('video');
+                    vid.src = URL.createObjectURL(file);
+                    vid.style.width = '100%';
+                    vid.style.borderRadius = '4px';
+                    vid.muted = true;
+                    vid.playsInline = true;
+                    vid.controls = true;
+                    preview.appendChild(vid);
                 } else {
                     var icon = document.createElement('div');
                     icon.className = 'file-icon';

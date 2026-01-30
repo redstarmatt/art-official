@@ -398,6 +398,7 @@ app.use(helmet({
             scriptSrc: ["'self'", "'unsafe-inline'", "https://js.stripe.com"],
             styleSrc: ["'self'", "'unsafe-inline'"],
             imgSrc: ["'self'", "data:", "blob:"],
+            mediaSrc: ["'self'"],
             fontSrc: ["'self'"],
             connectSrc: ["'self'", "https://api.stripe.com"],
             frameSrc: ["'self'", "https://js.stripe.com"],
@@ -638,8 +639,14 @@ app.get('/uploads/:filename', (req, res) => {
 });
 
 // File upload config
-const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-const MIME_TO_EXT = { 'image/jpeg': '.jpg', 'image/png': '.png', 'image/gif': '.gif', 'image/webp': '.webp' };
+const ALLOWED_MIME_TYPES = [
+    'image/jpeg', 'image/png', 'image/gif', 'image/webp',
+    'video/mp4', 'video/webm', 'video/quicktime'
+];
+const MIME_TO_EXT = {
+    'image/jpeg': '.jpg', 'image/png': '.png', 'image/gif': '.gif', 'image/webp': '.webp',
+    'video/mp4': '.mp4', 'video/webm': '.webm', 'video/quicktime': '.mov'
+};
 
 const storage = multer.diskStorage({
     destination: (req, file, cb) => cb(null, UPLOADS_DIR),
@@ -650,10 +657,10 @@ const storage = multer.diskStorage({
 });
 const upload = multer({
     storage,
-    limits: { fileSize: 20 * 1024 * 1024 },
+    limits: { fileSize: 100 * 1024 * 1024 },
     fileFilter: (req, file, cb) => {
         if (!ALLOWED_MIME_TYPES.includes(file.mimetype)) {
-            return cb(new Error('Only image files are allowed (JPEG, PNG, GIF, WebP).'));
+            return cb(new Error('Only image and video files are allowed (JPEG, PNG, GIF, WebP, MP4, WebM, MOV).'));
         }
         cb(null, true);
     }

@@ -188,7 +188,7 @@
             position: relative;
         }
 
-        .work-thumb img {
+        .work-thumb img, .work-thumb video {
             width: 100%;
             height: 100%;
             object-fit: cover;
@@ -742,7 +742,13 @@
 
                         var thumbHtml;
                         if (cert.artworkImage) {
-                            thumbHtml = '<div class="work-thumb"><img src="/uploads/' + escHtml(cert.artworkImage) + '" alt="' + escHtml(cert.title) + '" loading="lazy" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\';"><div class="work-thumb-placeholder" style="display:none;">OH</div></div>';
+                            var ext = cert.artworkImage.split('.').pop().toLowerCase();
+                            var isVideo = ['mp4','webm','mov'].indexOf(ext) !== -1;
+                            if (isVideo) {
+                                thumbHtml = '<div class="work-thumb"><video src="/uploads/' + escHtml(cert.artworkImage) + '" preload="metadata" muted style="pointer-events:none;" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\';"></video><div class="work-thumb-placeholder" style="display:none;">OH</div></div>';
+                            } else {
+                                thumbHtml = '<div class="work-thumb"><img src="/uploads/' + escHtml(cert.artworkImage) + '" alt="' + escHtml(cert.title) + '" loading="lazy" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\';"><div class="work-thumb-placeholder" style="display:none;">OH</div></div>';
+                            }
                         } else {
                             thumbHtml = '<div class="work-thumb"><div class="work-thumb-placeholder">OH</div></div>';
                         }
