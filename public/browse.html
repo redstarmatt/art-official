@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Browse Certified Works — Art-Official</title>
+    <title>Browse Certified Works — Officially Human Art</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -340,7 +340,7 @@
 <body>
     <header>
         <div class="header-inner">
-            <a href="/" class="logo">Art-<span>Official</span></a>
+            <a href="/" class="logo">Officially <span>Human</span> Art</a>
             <nav>
                 <a href="verify.html">Verify</a>
                 <a href="register.html">For Artists</a>
@@ -381,14 +381,14 @@
 
     <footer>
         <div class="footer-inner">
-            <a href="/" class="logo" style="font-size:1.25rem;">Art-<span>Official</span></a>
+            <a href="/" class="logo" style="font-size:1.25rem;">Officially <span>Human</span> Art</a>
             <div class="footer-links">
                 <a href="/">Home</a>
                 <a href="register.html">For Artists</a>
                 <a href="verify.html">Verify</a>
                 <a href="legal.html">Legal</a>
             </div>
-            <p>&copy; 2026 Art-Official</p>
+            <p>&copy; 2026 Officially Human Art</p>
         </div>
     </footer>
 
@@ -454,9 +454,9 @@
 
                         var thumbHtml;
                         if (cert.artworkImage) {
-                            thumbHtml = '<div class="work-thumb"><img src="/uploads/' + escHtml(cert.artworkImage) + '" alt="' + escHtml(cert.title) + '" loading="lazy" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\';"><div class="work-thumb-placeholder" style="display:none;">AO</div></div>';
+                            thumbHtml = '<div class="work-thumb"><img src="/uploads/' + escHtml(cert.artworkImage) + '" alt="' + escHtml(cert.title) + '" loading="lazy" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\';"><div class="work-thumb-placeholder" style="display:none;">OH</div></div>';
                         } else {
-                            thumbHtml = '<div class="work-thumb"><div class="work-thumb-placeholder">AO</div></div>';
+                            thumbHtml = '<div class="work-thumb"><div class="work-thumb-placeholder">OH</div></div>';
                         }
 
                         card.innerHTML =

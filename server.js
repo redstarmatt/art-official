@@ -94,11 +94,11 @@ app.get('/verify.html', (req, res, next) => {
 
     const ogTags = [
         `<meta property="og:type" content="article">`,
-        `<meta property="og:title" content="${escAttr(cert.title)} — Art-Official Certificate">`,
+        `<meta property="og:title" content="${escAttr(cert.title)} — Officially Human Art Certificate">`,
         `<meta property="og:description" content="Certified human-made work by ${escAttr(cert.artistName)}. ${escAttr(cert.tierLabel || cert.tier || 'Bronze')} tier certification.">`,
         `<meta property="og:url" content="${escAttr(verifyUrl)}">`,
         `<meta name="twitter:card" content="${imageUrl ? 'summary_large_image' : 'summary'}">`,
-        `<meta name="twitter:title" content="${escAttr(cert.title)} — Art-Official Certificate">`,
+        `<meta name="twitter:title" content="${escAttr(cert.title)} — Officially Human Art Certificate">`,
         `<meta name="twitter:description" content="Certified human-made work by ${escAttr(cert.artistName)}.">`
     ];
     if (imageUrl) {
@@ -110,8 +110,8 @@ app.get('/verify.html', (req, res, next) => {
     html = html.replace('</head>', ogTags.join('\n    ') + '\n</head>');
     // Update page title
     html = html.replace(
-        '<title>Verify Certificate — Art-Official</title>',
-        `<title>${escAttr(cert.title)} by ${escAttr(cert.artistName)} — Art-Official</title>`
+        '<title>Verify Certificate — Officially Human Art</title>',
+        `<title>${escAttr(cert.title)} by ${escAttr(cert.artistName)} — Officially Human Art</title>`
     );
 
     res.send(html);
@@ -155,11 +155,11 @@ const artworkUpload = upload.fields([
     { name: 'evidence', maxCount: 10 }
 ]);
 
-// Generate certificate ID: AO-YYYY-XXXXXX
+// Generate certificate ID: OH-YYYY-XXXXXX
 function generateCertificateId() {
     const year = new Date().getFullYear();
     const random = Math.random().toString(36).substring(2, 8).toUpperCase();
-    return `AO-${year}-${random}`;
+    return `OH-${year}-${random}`;
 }
 
 // Calculate certification tier based on evidence
@@ -245,7 +245,7 @@ async function sendCertificateEmail(artist, certificate, host) {
     const html = `
     <div style="font-family:'Helvetica Neue',Arial,sans-serif;max-width:600px;margin:0 auto;background:#fffef0;">
         <div style="background:#1a365d;color:#fffef0;padding:2rem;text-align:center;">
-            <div style="font-family:Georgia,serif;font-size:1.75rem;font-weight:bold;">Art-<span style="color:#d4af37;">Official</span></div>
+            <div style="font-family:Georgia,serif;font-size:1.75rem;font-weight:bold;">Officially <span style="color:#d4af37;">Human</span> Art</div>
             <div style="font-size:0.8rem;text-transform:uppercase;letter-spacing:0.12em;opacity:0.8;margin-top:0.25rem;">Certificate of Human Creation</div>
         </div>
         <div style="padding:2rem;">
@@ -268,7 +268,7 @@ async function sendCertificateEmail(artist, certificate, host) {
         </div>
         <div style="background:#f7f5e6;padding:1.25rem;text-align:center;font-size:0.75rem;color:#a0aec0;border-top:1px solid rgba(26,54,93,0.06);">
             <p style="margin:0;">All rights reserved by the original creator. Registration does not transfer copyright.</p>
-            <p style="margin:0.5rem 0 0;">&copy; 2026 Art-Official</p>
+            <p style="margin:0.5rem 0 0;">&copy; 2026 Officially Human Art</p>
         </div>
     </div>`;
 
@@ -276,7 +276,7 @@ async function sendCertificateEmail(artist, certificate, host) {
         await mailTransporter.sendMail({
             from: process.env.SMTP_FROM || process.env.SMTP_USER,
             to: artist.email,
-            subject: `Your Art-Official Certificate: ${certificate.title} (${certificate.id})`,
+            subject: `Your Officially Human Art Certificate: ${certificate.title} (${certificate.id})`,
             html
         });
     } catch (err) {
@@ -572,10 +572,10 @@ app.get('/api/badge/:certificateId', (req, res) => {
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="200" height="36" viewBox="0 0 200 36">
   <rect width="200" height="36" rx="4" fill="${colors.bg}"/>
   <rect x="1" y="1" width="198" height="34" rx="3" fill="none" stroke="${colors.text}" stroke-opacity="0.3"/>
-  <text x="28" y="22" font-family="Georgia,serif" font-size="11" fill="${colors.text}" font-weight="bold">Art-Official</text>
+  <text x="28" y="22" font-family="Georgia,serif" font-size="11" fill="${colors.text}" font-weight="bold">Officially Human Art</text>
   <text x="115" y="22" font-family="monospace" font-size="9" fill="${colors.text}" opacity="0.85">${cert.id}</text>
   <circle cx="14" cy="18" r="8" fill="${colors.text}" opacity="0.2"/>
-  <text x="14" y="22" font-family="Georgia,serif" font-size="10" fill="${colors.text}" text-anchor="middle" font-weight="bold">AO</text>
+  <text x="14" y="22" font-family="Georgia,serif" font-size="10" fill="${colors.text}" text-anchor="middle" font-weight="bold">OH</text>
 </svg>`;
 
     res.setHeader('Content-Type', 'image/svg+xml');
@@ -629,13 +629,13 @@ a{text-decoration:none;color:inherit}
 <body><a href="${verifyUrl}" target="_blank" rel="noopener">
 <div class="card">
   <div class="header">
-    <div class="logo">Art-<span>Official</span></div>
+    <div class="logo">Officially <span>Human</span> Art</div>
     <div class="check">&#10003; Verified</div>
   </div>
   <div class="body">
     ${thumbnail
       ? `<img class="thumb" src="${thumbnail}" alt="">`
-      : `<div class="thumb-placeholder">AO</div>`}
+      : `<div class="thumb-placeholder">OH</div>`}
     <div class="info">
       <div class="title">${cert.title || 'Untitled'}</div>
       <div class="artist">by ${cert.artistName || 'Unknown'}</div>
@@ -664,8 +664,8 @@ app.get('/api/embed/:certificateId', (req, res) => {
 
     res.json({
         success: true,
-        html: `<a href="${verifyUrl}" target="_blank" rel="noopener"><img src="${badgeUrl}" alt="Verified Art-Official" style="height:36px"></a>`,
-        markdown: `[![Verified Art-Official](${badgeUrl})](${verifyUrl})`,
+        html: `<a href="${verifyUrl}" target="_blank" rel="noopener"><img src="${badgeUrl}" alt="Verified Officially Human Art" style="height:36px"></a>`,
+        markdown: `[![Verified Officially Human Art](${badgeUrl})](${verifyUrl})`,
         widget: `<iframe src="${widgetUrl}" width="340" height="160" style="border:none;border-radius:10px;" loading="lazy"></iframe>`,
         badgeUrl,
         verifyUrl,
@@ -996,11 +996,11 @@ app.post('/api/artist/forgot-password', async (req, res) => {
             await mailTransporter.sendMail({
                 from: process.env.SMTP_FROM || process.env.SMTP_USER,
                 to: artist.email,
-                subject: 'Art-Official — Password Reset',
+                subject: 'Officially Human Art — Password Reset',
                 html: `
                 <div style="font-family:'Helvetica Neue',Arial,sans-serif;max-width:600px;margin:0 auto;background:#fffef0;">
                     <div style="background:#1a365d;color:#fffef0;padding:2rem;text-align:center;">
-                        <div style="font-family:Georgia,serif;font-size:1.75rem;font-weight:bold;">Art-<span style="color:#d4af37;">Official</span></div>
+                        <div style="font-family:Georgia,serif;font-size:1.75rem;font-weight:bold;">Officially <span style="color:#d4af37;">Human</span> Art</div>
                     </div>
                     <div style="padding:2rem;">
                         <p style="color:#4a5568;margin-bottom:1.5rem;">Hi ${artist.name},</p>
@@ -1011,7 +1011,7 @@ app.post('/api/artist/forgot-password', async (req, res) => {
                         <p style="color:#718096;font-size:0.82rem;">This link expires in 1 hour. If you didn't request a password reset, you can safely ignore this email.</p>
                     </div>
                     <div style="background:#f7f5e6;padding:1.25rem;text-align:center;font-size:0.75rem;color:#a0aec0;border-top:1px solid rgba(26,54,93,0.06);">
-                        <p style="margin:0;">&copy; 2026 Art-Official</p>
+                        <p style="margin:0;">&copy; 2026 Officially Human Art</p>
                     </div>
                 </div>`
             });
@@ -1128,5 +1128,5 @@ app.delete('/api/artist/:artistId', async (req, res) => {
 });
 
 app.listen(PORT, () => {
-    console.log(`Art-Official server running at http://localhost:${PORT}`);
+    console.log(`Officially Human Art server running at http://localhost:${PORT}`);
 });

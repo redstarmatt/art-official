@@ -1,4 +1,4 @@
-# HumanMade — AI-Free Art Certification
+# Officially Human Art — AI-Free Art Certification
 
 A prototype service where artists can register their work as created without AI assistance. Artists pay for verification, receive a certificate with QR code, and buyers can verify authenticity via public lookup.
 
@@ -19,7 +19,7 @@ Then open http://localhost:3000
 - **Submit Artwork** — Register works with title, medium, date, description
 - **Upload Evidence** — Optional process photos/videos as supporting documentation  
 - **Sign Declaration** — Legally-binding statement that work is human-made
-- **Receive Certificate** — Unique ID (format: `HM-2026-X7K9M2`) with QR code
+- **Receive Certificate** — Unique ID (format: `OH-2026-X7K9M2`) with QR code
 - **Dashboard** — View all registered certificates
 
 ### For Buyers/Verifiers

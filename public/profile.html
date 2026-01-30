@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Artist Profile — Art-Official</title>
+    <title>Artist Profile — Officially Human Art</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -574,7 +574,7 @@
 <body>
     <header>
         <div class="header-inner">
-            <a href="/" class="logo">Art-<span>Official</span></a>
+            <a href="/" class="logo">Officially <span>Human</span> Art</a>
             <nav>
                 <a href="register.html">For Artists</a>
                 <a href="verify.html">Verify</a>
@@ -632,7 +632,7 @@
                     </div>
                     <div class="verified-badge">
                         <span class="checkmark">&#10003;</span>
-                        Verified Art-Official Artist
+                        Verified Officially Human Artist
                     </div>
                 </section>
             </div>
@@ -652,14 +652,14 @@
 
     <footer>
         <div class="footer-inner">
-            <a href="/" class="logo" style="font-size:1.25rem;">Art-<span>Official</span></a>
+            <a href="/" class="logo" style="font-size:1.25rem;">Officially <span>Human</span> Art</a>
             <div class="footer-links">
                 <a href="/">Home</a>
                 <a href="register.html">For Artists</a>
                 <a href="verify.html">Verify</a>
                 <a href="legal.html">Legal</a>
             </div>
-            <p>&copy; 2026 Art-Official</p>
+            <p>&copy; 2026 Officially Human Art</p>
         </div>
     </footer>
 
@@ -731,7 +731,7 @@
             $('loading-state').style.display = 'none';
             $('error-state').querySelector('.error-state').classList.add('show');
             $('profile-content').classList.remove('show');
-            document.title = 'Artist Not Found — Art-Official';
+            document.title = 'Artist Not Found — Officially Human Art';
         }
 
         function showProfile() {
@@ -761,7 +761,7 @@
         // ---- Render Profile ----
         function renderProfile(artist, certificates) {
             // Page title
-            document.title = (artist.name || 'Artist') + ' — Art-Official';
+            document.title = (artist.name || 'Artist') + ' — Officially Human Art';
 
             // Avatar
             var initials = getInitials(artist.name);

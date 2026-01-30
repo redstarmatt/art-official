@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Creator Portal — Art-Official</title>
+    <title>Creator Portal — Officially Human Art</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -1025,7 +1025,7 @@
 <body>
     <header>
         <div class="header-inner">
-            <a href="/" class="logo">Art-<span>Official</span></a>
+            <a href="/" class="logo">Officially <span>Human</span> Art</a>
             <nav>
                 <a href="verify.html">Verify</a>
                 <a href="/">Home</a>
@@ -1036,7 +1036,7 @@
     <main class="container">
         <div class="page-header">
             <h1>Creator <em>Portal</em></h1>
-            <p>Register your work. Prove it's art-official.</p>
+            <p>Register your work. Prove it's officially human.</p>
         </div>
 
         <!-- User bar -->
@@ -1307,12 +1307,12 @@
                             I hereby declare that the work submitted above was created entirely by me as a human creator,
                             without the use of generative artificial intelligence tools for the creation of the primary creative
                             content. I understand that this declaration is made in good faith, and that providing false information
-                            may result in the revocation of any certificate issued and the removal of my work from the Art-Official registry.
-                            I grant Art-Official permission to display my certificate publicly for verification purposes.
+                            may result in the revocation of any certificate issued and the removal of my work from the Officially Human Art registry.
+                            I grant Officially Human Art permission to display my certificate publicly for verification purposes.
                         </div>
                         <p style="font-size:0.82rem;border-top:1px solid rgba(26,54,93,0.08);padding-top:0.75rem;margin-top:0.75rem;color:#4a5568;">
                             <strong>Copyright Notice:</strong> All rights reserved by the original creator.
-                            Registration with Art-Official does not transfer, assign, or affect copyright
+                            Registration with Officially Human Art does not transfer, assign, or affect copyright
                             ownership in any way. Your work remains yours.
                         </p>
                         <div class="checkbox-group">
@@ -1472,13 +1472,13 @@
 
     <footer>
         <div class="footer-inner">
-            <a href="/" class="logo" style="font-size:1.25rem;">Art-<span>Official</span></a>
+            <a href="/" class="logo" style="font-size:1.25rem;">Officially <span>Human</span> Art</a>
             <div class="footer-links">
                 <a href="/">Home</a>
                 <a href="verify.html">Verify</a>
                 <a href="legal.html">Legal</a>
             </div>
-            <p>&copy; 2026 Art-Official</p>
+            <p>&copy; 2026 Officially Human Art</p>
         </div>
     </footer>
 
@@ -1987,7 +1987,7 @@
                     '<p style="font-size:0.82rem;color:#718096;margin-bottom:0.75rem;">Share this certificate card:</p>' +
                     '<div id="certificate-card" style="width:600px;max-width:100%;background:#fff;border:2px solid #1a365d;border-radius:12px;overflow:hidden;margin:0 auto;">' +
                         '<div style="background:#1a365d;color:#fffef0;padding:1.25rem 1.5rem;text-align:center;">' +
-                            '<div style="font-family:Cormorant Garamond,Georgia,serif;font-size:1.5rem;font-weight:700;">Art-<span style="color:#d4a843;">Official</span></div>' +
+                            '<div style="font-family:Cormorant Garamond,Georgia,serif;font-size:1.5rem;font-weight:700;">Officially <span style="color:#d4a843;">Human</span> Art</div>' +
                             '<div style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.12em;opacity:0.8;margin-top:0.25rem;">Certificate of Human Creation</div>' +
                         '</div>' +
                         '<div style="padding:1.5rem;text-align:center;">' +
@@ -2064,7 +2064,7 @@
                 ctx.fillStyle = '#fffef0';
                 ctx.font = 'bold 52px Georgia, serif';
                 ctx.textAlign = 'center';
-                ctx.fillText('Art-Official', W / 2, 70);
+                ctx.fillText('Officially Human Art', W / 2, 70);
                 ctx.font = '18px sans-serif';
                 ctx.fillStyle = 'rgba(255,254,240,0.7)';
                 ctx.fillText('CERTIFICATE OF HUMAN CREATION', W / 2, 115);
@@ -2104,7 +2104,7 @@
                     ctx.textAlign = 'center';
                     for (var wy = -artSize; wy < artSize; wy += 120) {
                         for (var wx = -artSize; wx < artSize; wx += 380) {
-                            ctx.fillText('Art-Official', wx, wy);
+                            ctx.fillText('Officially Human Art', wx, wy);
                         }
                     }
                     ctx.restore();
@@ -2113,7 +2113,7 @@
                     ctx.fillStyle = '#a0aec0';
                     ctx.font = '48px Georgia, serif';
                     ctx.textAlign = 'center';
-                    ctx.fillText('AO', artX + artSize / 2, artY + artSize / 2 + 16);
+                    ctx.fillText('OH', artX + artSize / 2, artY + artSize / 2 + 16);
                 }
 
                 // Border around artwork
@@ -2204,7 +2204,7 @@
                 ctx.fillStyle = '#a0aec0';
                 ctx.font = '14px sans-serif';
                 ctx.textAlign = 'center';
-                ctx.fillText('Verified Human Creation  \u00b7  art-official.com', W / 2, H - 20);
+                ctx.fillText('Verified Human Creation  \u00b7  officiallyhuman.art', W / 2, H - 20);
 
                 // Download
                 var link = document.createElement('a');
@@ -2271,8 +2271,8 @@
             var certId = escHtml(cert.id);
             var origin = location.origin;
 
-            var htmlEmbed = '<a href="' + origin + '/verify.html?code=' + certId + '"><img src="' + origin + '/api/badge/' + certId + '" alt="Art-Official Certified" /></a>';
-            var mdEmbed = '[![Art-Official Certified](' + origin + '/api/badge/' + certId + ')](' + origin + '/verify.html?code=' + certId + ')';
+            var htmlEmbed = '<a href="' + origin + '/verify.html?code=' + certId + '"><img src="' + origin + '/api/badge/' + certId + '" alt="Officially Human Art Certified" /></a>';
+            var mdEmbed = '[![Officially Human Art Certified](' + origin + '/api/badge/' + certId + ')](' + origin + '/verify.html?code=' + certId + ')';
 
             var item = document.createElement('div');
             item.className = 'cert-item';
@@ -2311,7 +2311,7 @@
                             '<div class="embed-section">' +
                                 '<span class="embed-section-label">Badge Preview</span>' +
                                 '<div class="embed-badge-preview">' +
-                                    '<img src="/api/badge/' + certId + '" alt="Art-Official Badge" onerror="this.style.display=\'none\';this.parentElement.insertAdjacentHTML(\'beforeend\',\'<span style=color:var(--ink-faint);font-size:0.8rem>Badge preview unavailable</span>\')">' +
+                                    '<img src="/api/badge/' + certId + '" alt="Officially Human Art Badge" onerror="this.style.display=\'none\';this.parentElement.insertAdjacentHTML(\'beforeend\',\'<span style=color:var(--ink-faint);font-size:0.8rem>Badge preview unavailable</span>\')">' +
                                 '</div>' +
                             '</div>' +
                         '</div>' +

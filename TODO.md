@@ -1,4 +1,4 @@
-# Art-Official — TODO
+# Officially Human Art — TODO
 
 ## Completed
 - [x] Fix registration API response mismatch
@@ -37,5 +37,7 @@
 - [ ] Review "Date of Creation" label — consider "Date Created" or "Date Completed"
 - [ ] Configure Stripe for production (set STRIPE_SECRET_KEY, STRIPE_PUBLISHABLE_KEY, STRIPE_WEBHOOK_SECRET, STRIPE_CREATOR_PRICE_ID on Railway)
   - Create Product + £5/month Price in Stripe dashboard, set up webhook endpoint
-- [ ] Add custom domain and verify in Resend so emails send from @art-official.com (or similar)
+- [ ] Add custom domain and verify in Resend so emails send from @officiallyhuman.art (or similar)
   - Buy domain, add DNS records (SPF, DKIM), update SMTP_FROM env var on Railway
+- [ ] Data protection risk assessment
+- [ ] General risk assessment
