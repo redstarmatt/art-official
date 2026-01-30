@@ -1843,16 +1843,31 @@
             btn.innerHTML = '<span class="spinner"></span> Signing in...';
             hideAlert('signin-alert');
 
-            fetch('/api/artist/login', {
-                method: 'POST',
-                credentials: 'same-origin',
-                headers: csrfHeaders('application/json'),
-                body: JSON.stringify({ email: email, password: password })
-            })
+            function doLogin() {
+                return fetch('/api/artist/login', {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: csrfHeaders('application/json'),
+                    body: JSON.stringify({ email: email, password: password })
+                });
+            }
+
+            doLogin()
                 .then(function(res) { return res.json(); })
                 .then(function(data) {
                     if (data.success && data.artist) {
                         setLoggedIn(data.artist);
+                    } else if (data.message && data.message.indexOf('csrf') !== -1) {
+                        // CSRF token stale — refresh and retry once
+                        return fetchCsrfToken().then(doLogin)
+                            .then(function(res) { return res.json(); })
+                            .then(function(data2) {
+                                if (data2.success && data2.artist) {
+                                    setLoggedIn(data2.artist);
+                                } else {
+                                    showAlert('signin-alert', data2.message || 'Sign in failed. Please check your credentials.');
+                                }
+                            });
                     } else {
                         showAlert('signin-alert', data.message || 'Sign in failed. Please check your credentials.');
                     }
