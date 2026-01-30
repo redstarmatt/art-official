@@ -14,13 +14,8 @@ const fs = require('fs');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// HTTPS enforcement in production (behind Railway proxy)
-app.use((req, res, next) => {
-    if (process.env.NODE_ENV === 'production' && req.headers['x-forwarded-proto'] !== 'https') {
-        return res.redirect(301, 'https://' + req.get('host') + req.url);
-    }
-    next();
-});
+// Railway handles HTTPS at the proxy level — trust the forwarded proto header
+app.set('trust proxy', true);
 
 // Basic auth gate — set SITE_PASSWORD env var to enable (remove to disable)
 if (process.env.SITE_PASSWORD) {
