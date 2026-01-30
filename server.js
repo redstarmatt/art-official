@@ -10,6 +10,11 @@ const Stripe = require('stripe');
 const helmet = require('helmet');
 const path = require('path');
 const fs = require('fs');
+const Database = require('better-sqlite3');
+const session = require('express-session');
+const SqliteStore = require('better-sqlite3-session-store')(session);
+const cookieParser = require('cookie-parser');
+const { doubleCsrf } = require('csrf-csrf');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -17,12 +22,318 @@ const PORT = process.env.PORT || 3000;
 // Railway handles HTTPS at the proxy level — trust the forwarded proto header
 app.set('trust proxy', true);
 
-// Basic auth gate — set SITE_PASSWORD env var to enable (remove to disable)
+// Persistent storage — use /app/persist on Railway, local dirs for dev
+const PERSIST_DIR = fs.existsSync('/app/persist') ? '/app/persist' : '.';
+const DATA_DIR = path.join(PERSIST_DIR, 'data');
+const UPLOADS_DIR = path.join(PERSIST_DIR, 'uploads');
+
+// Ensure directories exist
+if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+
+// ============================================================
+// Phase 1: SQLite Database
+// ============================================================
+const DB_PATH = path.join(DATA_DIR, 'officallyhuman.db');
+const db = new Database(DB_PATH);
+db.pragma('journal_mode = WAL');
+db.pragma('foreign_keys = ON');
+
+// Create tables
+db.exec(`
+CREATE TABLE IF NOT EXISTS artists (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  email TEXT UNIQUE NOT NULL,
+  password_hash TEXT,
+  bio TEXT DEFAULT '',
+  location TEXT DEFAULT '',
+  portfolio TEXT DEFAULT '',
+  slug TEXT NOT NULL,
+  plan TEXT DEFAULT 'free',
+  plan_status TEXT DEFAULT 'active',
+  plan_expires_at TEXT,
+  stripe_customer_id TEXT,
+  stripe_subscription_id TEXT,
+  reset_token TEXT,
+  reset_token_expires TEXT,
+  created_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS certificates (
+  id TEXT PRIMARY KEY,
+  artist_id TEXT NOT NULL REFERENCES artists(id),
+  artist_name TEXT NOT NULL,
+  artist_slug TEXT NOT NULL,
+  title TEXT NOT NULL,
+  description TEXT DEFAULT '',
+  medium TEXT,
+  creation_date TEXT,
+  process_notes TEXT DEFAULT '',
+  artwork_image TEXT,
+  tier TEXT NOT NULL,
+  tier_label TEXT NOT NULL,
+  evidence_strength INTEGER,
+  status TEXT DEFAULT 'verified',
+  report_count INTEGER DEFAULT 0,
+  registered_at TEXT NOT NULL,
+  FOREIGN KEY (artist_id) REFERENCES artists(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS evidence_files (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  certificate_id TEXT NOT NULL REFERENCES certificates(id) ON DELETE CASCADE,
+  filename TEXT NOT NULL,
+  is_public INTEGER DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS certificate_history (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  certificate_id TEXT NOT NULL REFERENCES certificates(id) ON DELETE CASCADE,
+  type TEXT NOT NULL,
+  fields TEXT,
+  created_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS reports (
+  id TEXT PRIMARY KEY,
+  certificate_id TEXT NOT NULL REFERENCES certificates(id) ON DELETE CASCADE,
+  reason TEXT NOT NULL,
+  reporter_email TEXT,
+  status TEXT DEFAULT 'pending',
+  created_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS rate_limits (
+  key TEXT NOT NULL,
+  timestamp INTEGER NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS sessions (
+  sid TEXT NOT NULL PRIMARY KEY,
+  sess JSON NOT NULL,
+  expire TEXT NOT NULL
+);
+`);
+
+// Create indexes (IF NOT EXISTS)
+db.exec(`
+CREATE INDEX IF NOT EXISTS idx_artists_email ON artists(email);
+CREATE INDEX IF NOT EXISTS idx_artists_slug ON artists(slug);
+CREATE INDEX IF NOT EXISTS idx_certificates_artist ON certificates(artist_id);
+CREATE INDEX IF NOT EXISTS idx_evidence_cert ON evidence_files(certificate_id);
+CREATE INDEX IF NOT EXISTS idx_history_cert ON certificate_history(certificate_id);
+CREATE INDEX IF NOT EXISTS idx_reports_cert ON reports(certificate_id);
+CREATE INDEX IF NOT EXISTS idx_rate_key_time ON rate_limits(key, timestamp);
+CREATE INDEX IF NOT EXISTS idx_sessions_expire ON sessions(expire);
+`);
+
+// ============================================================
+// JSON -> SQLite Migration
+// ============================================================
+const JSON_DB_FILE = path.join(DATA_DIR, 'db.json');
+if (fs.existsSync(JSON_DB_FILE)) {
+    const artistCount = db.prepare('SELECT COUNT(*) as n FROM artists').get().n;
+    if (artistCount === 0) {
+        console.log('Migrating data from db.json to SQLite...');
+        const jsonDb = JSON.parse(fs.readFileSync(JSON_DB_FILE, 'utf8'));
+        if (!jsonDb.reports) jsonDb.reports = {};
+
+        const migrateAll = db.transaction(() => {
+            // Migrate artists
+            const insertArtist = db.prepare(`INSERT OR IGNORE INTO artists
+                (id, name, email, password_hash, bio, location, portfolio, slug, plan, plan_status, plan_expires_at, stripe_customer_id, stripe_subscription_id, reset_token, reset_token_expires, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
+            for (const artist of Object.values(jsonDb.artists)) {
+                insertArtist.run(
+                    artist.id, artist.name, artist.email, artist.passwordHash || null,
+                    artist.bio || '', artist.location || '', artist.portfolio || '',
+                    artist.slug || '', artist.plan || 'free', artist.planStatus || 'active',
+                    artist.planExpiresAt || null, artist.stripeCustomerId || null,
+                    artist.stripeSubscriptionId || null, artist.resetToken || null,
+                    artist.resetTokenExpires || null, artist.createdAt || new Date().toISOString()
+                );
+            }
+
+            // Migrate certificates
+            const insertCert = db.prepare(`INSERT OR IGNORE INTO certificates
+                (id, artist_id, artist_name, artist_slug, title, description, medium, creation_date, process_notes, artwork_image, tier, tier_label, evidence_strength, status, report_count, registered_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
+            const insertEvidence = db.prepare(`INSERT INTO evidence_files (certificate_id, filename, is_public) VALUES (?, ?, ?)`);
+            const insertHistory = db.prepare(`INSERT INTO certificate_history (certificate_id, type, fields, created_at) VALUES (?, ?, ?, ?)`);
+
+            for (const cert of Object.values(jsonDb.certificates)) {
+                insertCert.run(
+                    cert.id, cert.artistId, cert.artistName, cert.artistSlug || '',
+                    cert.title, cert.description || '', cert.medium || '', cert.creationDate || '',
+                    cert.processNotes || '', cert.artworkImage || null,
+                    cert.tier || 'bronze', cert.tierLabel || 'Bronze', cert.evidenceStrength || 40,
+                    cert.status || 'verified', cert.reportCount || 0, cert.registeredAt || new Date().toISOString()
+                );
+
+                // Migrate evidence files
+                if (cert.evidenceFiles && cert.evidenceFiles.length > 0) {
+                    for (const ef of cert.evidenceFiles) {
+                        if (typeof ef === 'string') {
+                            insertEvidence.run(cert.id, ef, 1); // old format: treat as public
+                        } else {
+                            insertEvidence.run(cert.id, ef.filename, ef.public ? 1 : 0);
+                        }
+                    }
+                }
+
+                // Migrate history
+                if (cert.history && cert.history.length > 0) {
+                    for (const h of cert.history) {
+                        insertHistory.run(cert.id, h.type, h.fields ? JSON.stringify(h.fields) : null, h.at || new Date().toISOString());
+                    }
+                }
+            }
+
+            // Migrate reports
+            const insertReport = db.prepare(`INSERT OR IGNORE INTO reports (id, certificate_id, reason, reporter_email, status, created_at) VALUES (?, ?, ?, ?, ?, ?)`);
+            for (const report of Object.values(jsonDb.reports)) {
+                insertReport.run(
+                    report.id, report.certificateId, report.reason,
+                    report.reporterEmail || null, report.status || 'pending',
+                    report.createdAt || new Date().toISOString()
+                );
+            }
+        });
+
+        migrateAll();
+        // Rename old JSON file as backup
+        fs.renameSync(JSON_DB_FILE, JSON_DB_FILE + '.migrated');
+        console.log('Migration complete. Old db.json renamed to db.json.migrated');
+    }
+}
+
+// ============================================================
+// Prepared statements
+// ============================================================
+const stmts = {
+    getArtistById: db.prepare('SELECT * FROM artists WHERE id = ?'),
+    getArtistByEmail: db.prepare('SELECT * FROM artists WHERE email = ?'),
+    getArtistBySlug: db.prepare('SELECT * FROM artists WHERE slug = ?'),
+    getArtistByStripeCustomer: db.prepare('SELECT * FROM artists WHERE stripe_customer_id = ?'),
+    getArtistByResetToken: db.prepare('SELECT * FROM artists WHERE reset_token = ? AND reset_token_expires > ?'),
+    insertArtist: db.prepare(`INSERT INTO artists (id, name, email, password_hash, bio, location, portfolio, slug, plan, plan_status, plan_expires_at, stripe_customer_id, stripe_subscription_id, reset_token, reset_token_expires, created_at)
+        VALUES (@id, @name, @email, @password_hash, @bio, @location, @portfolio, @slug, @plan, @plan_status, @plan_expires_at, @stripe_customer_id, @stripe_subscription_id, @reset_token, @reset_token_expires, @created_at)`),
+    updateArtistProfile: db.prepare('UPDATE artists SET name = ?, bio = ?, location = ?, portfolio = ?, slug = ? WHERE id = ?'),
+    updateArtistPlan: db.prepare('UPDATE artists SET plan = ?, plan_status = ?, plan_expires_at = ? WHERE id = ?'),
+    updateArtistStripeCustomer: db.prepare('UPDATE artists SET stripe_customer_id = ? WHERE id = ?'),
+    updateArtistStripeSubscription: db.prepare('UPDATE artists SET stripe_subscription_id = ? WHERE id = ?'),
+    updateArtistResetToken: db.prepare('UPDATE artists SET reset_token = ?, reset_token_expires = ? WHERE id = ?'),
+    updateArtistPassword: db.prepare('UPDATE artists SET password_hash = ?, reset_token = NULL, reset_token_expires = NULL WHERE id = ?'),
+    deleteArtist: db.prepare('DELETE FROM artists WHERE id = ?'),
+
+    getCertById: db.prepare('SELECT * FROM certificates WHERE id = ?'),
+    getCertsByArtist: db.prepare('SELECT * FROM certificates WHERE artist_id = ? ORDER BY registered_at DESC'),
+    countCertsByArtist: db.prepare('SELECT COUNT(*) as n FROM certificates WHERE artist_id = ?'),
+    insertCert: db.prepare(`INSERT INTO certificates (id, artist_id, artist_name, artist_slug, title, description, medium, creation_date, process_notes, artwork_image, tier, tier_label, evidence_strength, status, report_count, registered_at)
+        VALUES (@id, @artist_id, @artist_name, @artist_slug, @title, @description, @medium, @creation_date, @process_notes, @artwork_image, @tier, @tier_label, @evidence_strength, @status, @report_count, @registered_at)`),
+    updateCert: db.prepare('UPDATE certificates SET title = ?, description = ?, process_notes = ?, tier = ?, tier_label = ?, evidence_strength = ?, artist_name = ? WHERE id = ?'),
+    updateCertReportCount: db.prepare('UPDATE certificates SET report_count = report_count + 1 WHERE id = ?'),
+    deleteCert: db.prepare('DELETE FROM certificates WHERE id = ?'),
+    deleteCertsByArtist: db.prepare('DELETE FROM certificates WHERE artist_id = ?'),
+
+    getEvidenceFiles: db.prepare('SELECT * FROM evidence_files WHERE certificate_id = ?'),
+    insertEvidence: db.prepare('INSERT INTO evidence_files (certificate_id, filename, is_public) VALUES (?, ?, ?)'),
+    deleteEvidenceByArtist: db.prepare('DELETE FROM evidence_files WHERE certificate_id IN (SELECT id FROM certificates WHERE artist_id = ?)'),
+
+    getHistory: db.prepare('SELECT * FROM certificate_history WHERE certificate_id = ? ORDER BY created_at ASC'),
+    insertHistory: db.prepare('INSERT INTO certificate_history (certificate_id, type, fields, created_at) VALUES (?, ?, ?, ?)'),
+    deleteHistoryByArtist: db.prepare('DELETE FROM certificate_history WHERE certificate_id IN (SELECT id FROM certificates WHERE artist_id = ?)'),
+
+    insertReport: db.prepare('INSERT INTO reports (id, certificate_id, reason, reporter_email, status, created_at) VALUES (?, ?, ?, ?, ?, ?)'),
+    deleteReportsByArtist: db.prepare('DELETE FROM reports WHERE certificate_id IN (SELECT id FROM certificates WHERE artist_id = ?)'),
+
+    // Browse queries
+    browseCerts: db.prepare('SELECT * FROM certificates WHERE status = ? ORDER BY registered_at DESC'),
+    browseCertsFilterMedium: db.prepare('SELECT * FROM certificates WHERE status = ? AND medium = ? ORDER BY registered_at DESC'),
+    browseCertsFilterTier: db.prepare('SELECT * FROM certificates WHERE status = ? AND tier = ? ORDER BY registered_at DESC'),
+    browseCertsFilterBoth: db.prepare('SELECT * FROM certificates WHERE status = ? AND medium = ? AND tier = ? ORDER BY registered_at DESC'),
+    allMediums: db.prepare('SELECT DISTINCT medium FROM certificates WHERE medium IS NOT NULL AND medium != \'\' ORDER BY medium'),
+
+    // Stats
+    countArtists: db.prepare('SELECT COUNT(*) as n FROM artists'),
+    countCerts: db.prepare('SELECT COUNT(*) as n FROM certificates'),
+    countTiers: db.prepare('SELECT tier, COUNT(*) as n FROM certificates GROUP BY tier'),
+
+    // Find certificate by artwork image or evidence filename
+    findCertByArtworkImage: db.prepare('SELECT * FROM certificates WHERE artwork_image = ?'),
+    findEvidenceFile: db.prepare('SELECT ef.*, c.artist_id FROM evidence_files ef JOIN certificates c ON ef.certificate_id = c.id WHERE ef.filename = ?'),
+};
+
+// Helper: convert DB row to artist object with camelCase
+function rowToArtist(row) {
+    if (!row) return null;
+    return {
+        id: row.id, name: row.name, email: row.email, passwordHash: row.password_hash,
+        bio: row.bio, location: row.location, portfolio: row.portfolio, slug: row.slug,
+        plan: row.plan, planStatus: row.plan_status, planExpiresAt: row.plan_expires_at,
+        stripeCustomerId: row.stripe_customer_id, stripeSubscriptionId: row.stripe_subscription_id,
+        resetToken: row.reset_token, resetTokenExpires: row.reset_token_expires,
+        createdAt: row.created_at
+    };
+}
+
+// Helper: convert DB row to certificate object with camelCase
+function rowToCert(row) {
+    if (!row) return null;
+    return {
+        id: row.id, artistId: row.artist_id, artistName: row.artist_name, artistSlug: row.artist_slug,
+        title: row.title, description: row.description, medium: row.medium,
+        creationDate: row.creation_date, processNotes: row.process_notes,
+        artworkImage: row.artwork_image, tier: row.tier, tierLabel: row.tier_label,
+        evidenceStrength: row.evidence_strength, status: row.status,
+        reportCount: row.report_count, registeredAt: row.registered_at
+    };
+}
+
+// Helper: get evidence files for a cert, returning the camelCase format
+function getEvidenceForCert(certId) {
+    const rows = stmts.getEvidenceFiles.all(certId);
+    return rows.map(r => ({ filename: r.filename, public: r.is_public === 1 }));
+}
+
+// Helper: get public evidence filenames
+function getPublicEvidence(certId) {
+    return stmts.getEvidenceFiles.all(certId)
+        .filter(r => r.is_public === 1)
+        .map(r => r.filename);
+}
+
+// Helper: get thumbnail for cert
+function getCertThumbnail(cert) {
+    if (cert.artworkImage || cert.artwork_image) return cert.artworkImage || cert.artwork_image;
+    const files = stmts.getEvidenceFiles.all(cert.id);
+    return files.length > 0 ? files[0].filename : null;
+}
+
+// ============================================================
+// Phase 4: Persistent Rate Limiting
+// ============================================================
+function rateLimit(key, maxAttempts, windowMs) {
+    const cutoff = Date.now() - windowMs;
+    db.prepare('DELETE FROM rate_limits WHERE key = ? AND timestamp < ?').run(key, cutoff);
+    const count = db.prepare('SELECT COUNT(*) as n FROM rate_limits WHERE key = ? AND timestamp >= ?').get(key, cutoff).n;
+    if (count >= maxAttempts) return false;
+    db.prepare('INSERT INTO rate_limits (key, timestamp) VALUES (?, ?)').run(key, Date.now());
+    return true;
+}
+
+// Periodic cleanup of expired rate limit entries (every 15 minutes)
+setInterval(() => {
+    db.prepare('DELETE FROM rate_limits WHERE timestamp < ?').run(Date.now() - 3600000);
+}, 900000);
+
+// ============================================================
+// Basic auth gate — set SITE_PASSWORD env var to enable
+// ============================================================
 if (process.env.SITE_PASSWORD) {
     app.use((req, res, next) => {
-        // Allow Stripe webhooks through without auth
         if (req.path === '/api/webhooks/stripe') return next();
-        // Allow embeddable badges/widgets through (they're meant to be public)
         if (req.path.startsWith('/api/badge/') || req.path.startsWith('/api/widget/')) return next();
 
         const auth = req.headers.authorization;
@@ -54,7 +365,7 @@ app.use(helmet({
             upgradeInsecureRequests: []
         }
     },
-    crossOriginEmbedderPolicy: false, // allow embeddable widgets/badges
+    crossOriginEmbedderPolicy: false,
     hsts: {
         maxAge: 31536000,
         includeSubDomains: true,
@@ -85,15 +396,8 @@ function validatePassword(password) {
 
 // Input length limits
 const MAX_LENGTHS = {
-    name: 100,
-    email: 254,
-    bio: 1000,
-    location: 100,
-    portfolio: 500,
-    title: 200,
-    description: 5000,
-    processNotes: 5000,
-    reportReason: 2000
+    name: 100, email: 254, bio: 1000, location: 100, portfolio: 500,
+    title: 200, description: 5000, processNotes: 5000, reportReason: 2000
 };
 
 function truncate(str, max) {
@@ -105,7 +409,9 @@ function truncate(str, max) {
 const stripe = process.env.STRIPE_SECRET_KEY ? Stripe(process.env.STRIPE_SECRET_KEY) : null;
 if (stripe) console.log('Stripe payments enabled');
 
-// Stripe webhook — must be before express.json() for raw body signature verification
+// ============================================================
+// Stripe webhook — must be before express.json()
+// ============================================================
 app.post('/api/webhooks/stripe', express.raw({ type: 'application/json' }), async (req, res) => {
     if (!stripe) return res.status(400).json({ error: 'Stripe not configured' });
 
@@ -118,43 +424,33 @@ app.post('/api/webhooks/stripe', express.raw({ type: 'application/json' }), asyn
         return res.status(400).send('Webhook Error: ' + err.message);
     }
 
-    const db = loadDB();
-
     switch (event.type) {
         case 'invoice.paid': {
             const invoice = event.data.object;
-            const artist = Object.values(db.artists).find(a => a.stripeCustomerId === invoice.customer);
+            const artist = rowToArtist(stmts.getArtistByStripeCustomer.get(invoice.customer));
             if (artist) {
-                artist.plan = 'creator';
-                artist.planStatus = 'active';
-                artist.planExpiresAt = null;
-                saveDB(db);
+                stmts.updateArtistPlan.run('creator', 'active', null, artist.id);
             }
             break;
         }
         case 'customer.subscription.updated': {
             const subscription = event.data.object;
-            const artist = Object.values(db.artists).find(a => a.stripeCustomerId === subscription.customer);
+            const artist = rowToArtist(stmts.getArtistByStripeCustomer.get(subscription.customer));
             if (artist) {
                 if (subscription.cancel_at_period_end) {
-                    artist.planStatus = 'canceling';
-                    artist.planExpiresAt = new Date(subscription.current_period_end * 1000).toISOString();
+                    stmts.updateArtistPlan.run('creator', 'canceling', new Date(subscription.current_period_end * 1000).toISOString(), artist.id);
                 } else {
-                    artist.planStatus = 'active';
-                    artist.planExpiresAt = null;
+                    stmts.updateArtistPlan.run('creator', 'active', null, artist.id);
                 }
-                saveDB(db);
             }
             break;
         }
         case 'customer.subscription.deleted': {
             const subscription = event.data.object;
-            const artist = Object.values(db.artists).find(a => a.stripeCustomerId === subscription.customer);
+            const artist = rowToArtist(stmts.getArtistByStripeCustomer.get(subscription.customer));
             if (artist) {
-                artist.plan = 'free';
-                artist.planStatus = 'expired';
-                artist.stripeSubscriptionId = null;
-                saveDB(db);
+                stmts.updateArtistPlan.run('free', 'expired', null, artist.id);
+                stmts.updateArtistStripeSubscription.run(null, artist.id);
             }
             break;
         }
@@ -163,18 +459,64 @@ app.post('/api/webhooks/stripe', express.raw({ type: 'application/json' }), asyn
     res.json({ received: true });
 });
 
+// ============================================================
 // Middleware
+// ============================================================
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
+
+// ============================================================
+// Phase 2: Server-Side Sessions
+// ============================================================
+app.use(session({
+    store: new SqliteStore({ client: db, expired: { clear: true, intervalMs: 900000 } }),
+    secret: process.env.SESSION_SECRET || 'dev-secret-change-in-production',
+    resave: false,
+    saveUninitialized: false,
+    name: 'oh.sid',
+    cookie: {
+        secure: process.env.NODE_ENV === 'production',
+        httpOnly: true,
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+        sameSite: 'lax'
+    }
+}));
+
+// ============================================================
+// Phase 3: CSRF Protection
+// ============================================================
+const { doubleCsrfProtection, generateCsrfToken } = doubleCsrf({
+    getSecret: () => process.env.SESSION_SECRET || 'dev-secret-change-in-production',
+    getSessionIdentifier: (req) => req.session && req.session.id ? req.session.id : '',
+    cookieName: '__csrf',
+    cookieOptions: { sameSite: 'lax', path: '/', secure: process.env.NODE_ENV === 'production', httpOnly: true },
+    getCsrfTokenFromRequest: (req) => req.headers['x-csrf-token']
+});
+
+// CSRF token endpoint (exempt from CSRF protection itself)
+app.get('/api/csrf-token', (req, res) => {
+    // Ensure session is persisted so the session ID stays stable for CSRF HMAC
+    if (!req.session.csrfInit) req.session.csrfInit = true;
+    res.json({ token: generateCsrfToken(req, res) });
+});
+
+// Auth middleware
+function requireAuth(req, res, next) {
+    if (!req.session.artistId) {
+        return res.status(401).json({ success: false, message: 'Not authenticated' });
+    }
+    next();
+}
 
 // Verify page with Open Graph meta tags for social sharing
 app.get('/verify.html', (req, res, next) => {
     const code = req.query.code;
-    if (!code) return next(); // no code, serve static file
+    if (!code) return next();
 
-    const db = loadDB();
-    const cert = db.certificates[code.toUpperCase()];
-    if (!cert) return next(); // cert not found, let static page handle
+    const row = stmts.getCertById.get(code.toUpperCase());
+    const cert = rowToCert(row);
+    if (!cert) return next();
 
     const host = `${req.protocol}://${req.get('host')}`;
     const verifyUrl = `${host}/verify.html?code=${encodeURIComponent(cert.id)}`;
@@ -198,7 +540,6 @@ app.get('/verify.html', (req, res, next) => {
 
     let html = fs.readFileSync(path.join(__dirname, 'public', 'verify.html'), 'utf8');
     html = html.replace('</head>', ogTags.join('\n    ') + '\n</head>');
-    // Update page title
     html = html.replace(
         '<title>Verify Certificate — Officially Human Art</title>',
         `<title>${escAttr(cert.title)} by ${escAttr(cert.artistName)} — Officially Human Art</title>`
@@ -207,14 +548,9 @@ app.get('/verify.html', (req, res, next) => {
     res.send(html);
 });
 
-// Persistent storage — use /app/persist on Railway, local dirs for dev
-const PERSIST_DIR = fs.existsSync('/app/persist') ? '/app/persist' : '.';
-const DATA_DIR = path.join(PERSIST_DIR, 'data');
-const UPLOADS_DIR = path.join(PERSIST_DIR, 'uploads');
-
 app.use(express.static('public'));
 
-// Controlled file serving — public artwork/evidence served freely, private evidence requires ownership
+// Controlled file serving — public artwork/evidence served freely, private evidence requires session ownership
 app.get('/uploads/:filename', (req, res) => {
     const { filename } = req.params;
     const filePath = path.join(UPLOADS_DIR, path.basename(filename));
@@ -223,57 +559,28 @@ app.get('/uploads/:filename', (req, res) => {
         return res.status(404).json({ success: false, message: 'File not found' });
     }
 
-    // Check if this file is a public artwork image or public evidence
-    const db = loadDB();
-    const certs = Object.values(db.certificates);
+    // Check if artwork image (always public)
+    const certRow = stmts.findCertByArtworkImage.get(filename);
+    if (certRow) {
+        return res.sendFile(filePath);
+    }
 
-    for (const cert of certs) {
-        // Artwork images are always public
-        if (cert.artworkImage === filename) {
+    // Check evidence files
+    const efRow = stmts.findEvidenceFile.get(filename);
+    if (efRow) {
+        if (efRow.is_public === 1) {
             return res.sendFile(filePath);
         }
-        // Check evidence files
-        if (cert.evidenceFiles) {
-            for (const ef of cert.evidenceFiles) {
-                const efName = typeof ef === 'string' ? ef : ef.filename;
-                if (efName === filename) {
-                    // Old format (string) or public files — serve freely
-                    if (typeof ef === 'string' || ef.public) {
-                        return res.sendFile(filePath);
-                    }
-                    // Private evidence — require artistId query param matching owner
-                    const requestArtistId = req.query.artistId;
-                    if (requestArtistId && requestArtistId === cert.artistId) {
-                        return res.sendFile(filePath);
-                    }
-                    return res.status(403).json({ success: false, message: 'This file is private.' });
-                }
-            }
+        // Private evidence — require session match
+        const sessionArtistId = req.session && req.session.artistId;
+        if (sessionArtistId && sessionArtistId === efRow.artist_id) {
+            return res.sendFile(filePath);
         }
+        return res.status(403).json({ success: false, message: 'This file is private.' });
     }
 
-    // File exists on disk but not referenced in any certificate — deny access
     return res.status(403).json({ success: false, message: 'Access denied.' });
 });
-
-// Ensure directories exist
-if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
-if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
-
-// Simple JSON file database
-const DB_FILE = path.join(DATA_DIR, 'db.json');
-function loadDB() {
-    if (!fs.existsSync(DB_FILE)) {
-        return { artists: {}, certificates: {}, reports: {} };
-    }
-    const db = JSON.parse(fs.readFileSync(DB_FILE, 'utf8'));
-    if (!db.reports) db.reports = {};
-    return db;
-}
-
-function saveDB(db) {
-    fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2));
-}
 
 // File upload config
 const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
@@ -308,7 +615,7 @@ function generateCertificateId() {
     return `OH-${year}-${random}`;
 }
 
-// Calculate certification tier based on evidence
+// Calculate certification tier
 function calculateTier(fileCount, description, hasProcessNotes) {
     let score = 0;
     if (description && description.length > 50) score += 1;
@@ -323,7 +630,7 @@ function calculateTier(fileCount, description, hasProcessNotes) {
     return { tier: 'bronze', label: 'Bronze', strength: 40 };
 }
 
-// Plan helpers — determine effective subscription tier
+// Plan helpers
 function getEffectivePlan(artist) {
     if (!artist.plan || artist.plan === 'free') return 'free';
     if (artist.plan === 'creator') {
@@ -340,34 +647,20 @@ function isCreator(artist) {
     return getEffectivePlan(artist) === 'creator';
 }
 
-// Get public evidence files from a certificate (handles old and new format)
-function getPublicEvidence(cert) {
-    if (!cert.evidenceFiles || cert.evidenceFiles.length === 0) return [];
-    if (typeof cert.evidenceFiles[0] === 'string') {
-        return cert.evidenceFiles; // old format: treat all as public
-    }
-    return cert.evidenceFiles.filter(f => f.public).map(f => f.filename);
+// Sanitise artist for client (strip password hash and internal fields)
+function safeArtist(artist) {
+    const { passwordHash, stripeCustomerId, stripeSubscriptionId, resetToken, resetTokenExpires, ...safe } = artist;
+    return safe;
 }
 
-// Get thumbnail file for a certificate (handles old and new format)
-function getCertThumbnail(cert) {
-    if (cert.artworkImage) return cert.artworkImage;
-    if (!cert.evidenceFiles || cert.evidenceFiles.length === 0) return null;
-    if (typeof cert.evidenceFiles[0] === 'string') return cert.evidenceFiles[0];
-    return cert.evidenceFiles[0].filename;
-}
-
-// Email config (set SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS env vars to enable)
+// Email config
 let mailTransporter = null;
 if (process.env.SMTP_HOST) {
     mailTransporter = nodemailer.createTransport({
         host: process.env.SMTP_HOST,
         port: parseInt(process.env.SMTP_PORT) || 587,
         secure: (process.env.SMTP_PORT === '465'),
-        auth: {
-            user: process.env.SMTP_USER,
-            pass: process.env.SMTP_PASS
-        }
+        auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
     });
     console.log('Email enabled via ' + process.env.SMTP_HOST);
 }
@@ -432,35 +725,40 @@ async function sendCertificateEmail(artist, certificate, host) {
 
 // Structured audit logging
 function audit(event, details = {}) {
-    const entry = {
-        timestamp: new Date().toISOString(),
-        event,
-        ...details
-    };
+    const entry = { timestamp: new Date().toISOString(), event, ...details };
     console.log('[AUDIT]', JSON.stringify(entry));
 }
 
-// Simple rate limiting (in-memory)
-const rateLimits = {};
-function rateLimit(key, maxAttempts, windowMs) {
-    const now = Date.now();
-    if (!rateLimits[key]) rateLimits[key] = [];
-    rateLimits[key] = rateLimits[key].filter(t => t > now - windowMs);
-    if (rateLimits[key].length >= maxAttempts) return false;
-    rateLimits[key].push(now);
-    return true;
-}
-
+// ============================================================
 // API Routes
+// ============================================================
 
-// Sanitise artist for client (strip password hash)
-function safeArtist(artist) {
-    const { passwordHash, stripeCustomerId, stripeSubscriptionId, ...safe } = artist;
-    return safe;
-}
+// Session restore endpoint
+app.get('/api/artist/me', (req, res) => {
+    if (!req.session.artistId) {
+        return res.json({ success: false });
+    }
+    const artist = rowToArtist(stmts.getArtistById.get(req.session.artistId));
+    if (!artist) {
+        req.session.destroy(() => {});
+        return res.json({ success: false });
+    }
+    res.json({ success: true, artist: safeArtist(artist) });
+});
+
+// Logout
+app.post('/api/artist/logout', (req, res) => {
+    req.session.destroy((err) => {
+        if (err) {
+            return res.status(500).json({ success: false, message: 'Logout failed' });
+        }
+        res.clearCookie('oh.sid');
+        res.json({ success: true });
+    });
+});
 
 // Register artist
-app.post('/api/artist/register', async (req, res) => {
+app.post('/api/artist/register', doubleCsrfProtection, async (req, res) => {
     const { password } = req.body;
     const name = truncate(req.body.name, MAX_LENGTHS.name);
     const email = truncate(req.body.email, MAX_LENGTHS.email);
@@ -478,40 +776,33 @@ app.post('/api/artist/register', async (req, res) => {
         return res.status(400).json({ success: false, message: pwError });
     }
 
-    const db = loadDB();
-
-    const existingArtist = Object.values(db.artists).find(a => a.email === email);
-    if (existingArtist) {
+    const existing = stmts.getArtistByEmail.get(email);
+    if (existing) {
         return res.status(409).json({ success: false, message: 'An account with this email already exists. Please sign in.' });
     }
 
     const artistId = uuidv4();
     const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
     const passwordHash = await bcrypt.hash(password, 10);
-    const artist = {
-        id: artistId,
-        name,
-        email,
-        portfolio: portfolio && portfolio.trim() && !/^https?:\/\//i.test(portfolio.trim()) ? 'https://' + portfolio.trim() : (portfolio || '').trim(),
-        bio: bio || '',
-        location: location || '',
-        slug,
-        passwordHash,
-        plan: 'free',
-        stripeCustomerId: null,
-        stripeSubscriptionId: null,
-        planStatus: 'active',
-        planExpiresAt: null,
-        createdAt: new Date().toISOString()
-    };
-    db.artists[artistId] = artist;
-    saveDB(db);
-    audit('registration', { artistId, email: artist.email });
+    const portfolioVal = portfolio && portfolio.trim() && !/^https?:\/\//i.test(portfolio.trim()) ? 'https://' + portfolio.trim() : (portfolio || '').trim();
+
+    stmts.insertArtist.run({
+        id: artistId, name, email, password_hash: passwordHash,
+        bio: bio || '', location: location || '', portfolio: portfolioVal,
+        slug, plan: 'free', plan_status: 'active', plan_expires_at: null,
+        stripe_customer_id: null, stripe_subscription_id: null,
+        reset_token: null, reset_token_expires: null,
+        created_at: new Date().toISOString()
+    });
+
+    const artist = rowToArtist(stmts.getArtistById.get(artistId));
+    req.session.artistId = artistId;
+    audit('registration', { artistId, email });
     res.json({ success: true, artist: safeArtist(artist) });
 });
 
 // Sign in artist
-app.post('/api/artist/login', async (req, res) => {
+app.post('/api/artist/login', doubleCsrfProtection, async (req, res) => {
     const { email, password } = req.body;
 
     const ip = req.ip || req.connection.remoteAddress;
@@ -519,15 +810,13 @@ app.post('/api/artist/login', async (req, res) => {
         return res.status(429).json({ success: false, message: 'Too many login attempts. Please wait 15 minutes.' });
     }
 
-    const db = loadDB();
-    const artist = Object.values(db.artists).find(a => a.email === email);
+    const artist = rowToArtist(stmts.getArtistByEmail.get(email));
 
     if (!artist) {
         audit('login_failed', { email, reason: 'not_found' });
         return res.json({ success: false, message: 'No account found with that email.' });
     }
 
-    // Legacy accounts without passwords must set one via password reset
     if (!artist.passwordHash) {
         audit('login_failed', { artistId: artist.id, reason: 'no_password' });
         return res.json({ success: false, message: 'This account needs a password. Please use "Forgot password" to set one.' });
@@ -539,87 +828,88 @@ app.post('/api/artist/login', async (req, res) => {
         return res.json({ success: false, message: 'Incorrect password.' });
     }
 
+    req.session.artistId = artist.id;
     audit('login_success', { artistId: artist.id });
     res.json({ success: true, artist: safeArtist(artist) });
 });
 
-// Update artist profile
-app.put('/api/artist/:artistId', (req, res) => {
+// Update artist profile (session-protected)
+app.put('/api/artist/:artistId', doubleCsrfProtection, requireAuth, (req, res) => {
     const { artistId } = req.params;
-    const db = loadDB();
-    const artist = db.artists[artistId];
+    if (req.session.artistId !== artistId) {
+        return res.status(403).json({ success: false, message: 'Not authorized' });
+    }
 
+    const artist = rowToArtist(stmts.getArtistById.get(artistId));
     if (!artist) {
         return res.status(404).json({ success: false, message: 'Artist not found' });
     }
 
     const { name, bio, location, portfolio } = req.body;
 
+    let newName = artist.name;
+    let newBio = artist.bio;
+    let newLocation = artist.location;
+    let newPortfolio = artist.portfolio;
+    let newSlug = artist.slug;
+
     if (name !== undefined) {
         const trimmed = truncate(name, MAX_LENGTHS.name).trim();
         if (!trimmed) return res.status(400).json({ success: false, message: 'Name cannot be empty.' });
-        artist.name = trimmed;
-        artist.slug = trimmed.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+        newName = trimmed;
+        newSlug = trimmed.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
     }
-    if (bio !== undefined) artist.bio = truncate(bio, MAX_LENGTHS.bio).trim();
-    if (location !== undefined) artist.location = truncate(location, MAX_LENGTHS.location).trim();
+    if (bio !== undefined) newBio = truncate(bio, MAX_LENGTHS.bio).trim();
+    if (location !== undefined) newLocation = truncate(location, MAX_LENGTHS.location).trim();
     if (portfolio !== undefined) {
         let p = truncate(portfolio, MAX_LENGTHS.portfolio).trim();
         if (p && !/^https?:\/\//i.test(p)) p = 'https://' + p;
-        artist.portfolio = p;
+        newPortfolio = p;
     }
 
-    saveDB(db);
+    stmts.updateArtistProfile.run(newName, newBio, newLocation, newPortfolio, newSlug, artistId);
+    const updated = rowToArtist(stmts.getArtistById.get(artistId));
     audit('profile_updated', { artistId });
-    res.json({ success: true, artist: safeArtist(artist) });
+    res.json({ success: true, artist: safeArtist(updated) });
 });
 
-// Get artist public profile by slug
+// Get artist public profile by slug (public)
 app.get('/api/artist/profile/:slug', (req, res) => {
     const { slug } = req.params;
-    const db = loadDB();
-    const artist = Object.values(db.artists).find(a => a.slug === slug);
+    const artist = rowToArtist(stmts.getArtistBySlug.get(slug));
     if (!artist) {
         return res.json({ success: false, message: 'Artist not found' });
     }
 
-    const certificates = Object.values(db.certificates)
-        .filter(c => c.artistId === artist.id)
-        .sort((a, b) => new Date(b.registeredAt) - new Date(a.registeredAt));
+    const certRows = stmts.getCertsByArtist.all(artist.id);
+    const certificates = certRows.map(rowToCert);
 
     res.json({
         success: true,
         artist: {
-            name: artist.name,
-            bio: artist.bio,
-            location: artist.location,
-            portfolio: artist.portfolio,
-            slug: artist.slug,
-            memberSince: artist.createdAt,
-            totalCertificates: certificates.length
+            name: artist.name, bio: artist.bio, location: artist.location,
+            portfolio: artist.portfolio, slug: artist.slug,
+            memberSince: artist.createdAt, totalCertificates: certificates.length
         },
         certificates: certificates.map(c => ({
-            id: c.id,
-            title: c.title,
-            medium: c.medium,
-            tier: c.tier,
-            creationDate: c.creationDate,
-            registeredAt: c.registeredAt,
+            id: c.id, title: c.title, medium: c.medium, tier: c.tier,
+            creationDate: c.creationDate, registeredAt: c.registeredAt,
             thumbnailFile: getCertThumbnail(c)
         }))
     });
 });
 
-// Submit artwork for certification
-app.post('/api/artwork/submit', (req, res, next) => {
+// Submit artwork for certification (session-protected)
+app.post('/api/artwork/submit', requireAuth, (req, res, next) => {
     artworkUpload(req, res, (err) => {
         if (err) {
             return res.status(400).json({ success: false, message: err.message });
         }
         next();
     });
-}, async (req, res) => {
-    const { artistId, creationDate, declaration } = req.body;
+}, doubleCsrfProtection, async (req, res) => {
+    const artistId = req.session.artistId;
+    const { creationDate, declaration } = req.body;
     const title = truncate(req.body.title, MAX_LENGTHS.title);
     const description = truncate(req.body.description, MAX_LENGTHS.description);
     const medium = truncate(req.body.medium, MAX_LENGTHS.title);
@@ -629,17 +919,15 @@ app.post('/api/artwork/submit', (req, res, next) => {
         return res.status(400).json({ success: false, message: 'Declaration required' });
     }
 
-    const db = loadDB();
-    const artist = db.artists[artistId];
-
+    const artist = rowToArtist(stmts.getArtistById.get(artistId));
     if (!artist) {
         return res.status(404).json({ success: false, message: 'Artist not found' });
     }
 
     // Check work limit for Free tier
     if (!isCreator(artist)) {
-        const existingCerts = Object.values(db.certificates).filter(c => c.artistId === artistId);
-        if (existingCerts.length >= 3) {
+        const certCount = stmts.countCertsByArtist.get(artistId).n;
+        if (certCount >= 3) {
             return res.status(403).json({
                 success: false,
                 message: 'Free plan limited to 3 works. Upgrade to Creator for unlimited certificates.',
@@ -655,88 +943,77 @@ app.post('/api/artwork/submit', (req, res, next) => {
     // Evidence files with per-file visibility
     const rawEvidence = req.files && req.files['evidence'] ? req.files['evidence'] : [];
     let visibility = [];
-    try {
-        visibility = JSON.parse(req.body.evidenceVisibility || '[]');
-    } catch (e) { /* default to empty */ }
-
-    const evidenceFiles = rawEvidence.map((f, i) => ({
-        filename: f.filename,
-        public: visibility[i] === true
-    }));
+    try { visibility = JSON.parse(req.body.evidenceVisibility || '[]'); } catch (e) { /* default */ }
 
     const fileCount = (artworkImage ? 1 : 0) + rawEvidence.length;
     const tierResult = calculateTier(fileCount, description, !!processNotes);
     const certificateId = generateCertificateId();
 
-    const certificate = {
-        id: certificateId,
-        artistId,
-        artistName: artist.name,
-        artistSlug: artist.slug,
-        title,
-        description,
-        medium,
-        creationDate,
-        processNotes: processNotes || '',
-        artworkImage,
-        evidenceFiles,
-        tier: tierResult.tier,
-        tierLabel: tierResult.label,
-        evidenceStrength: tierResult.strength,
-        registeredAt: new Date().toISOString(),
-        status: 'verified'
-    };
+    // Insert certificate + evidence in a transaction
+    const insertAll = db.transaction(() => {
+        stmts.insertCert.run({
+            id: certificateId, artist_id: artistId, artist_name: artist.name,
+            artist_slug: artist.slug, title, description: description || '',
+            medium: medium || '', creation_date: creationDate || '',
+            process_notes: processNotes || '', artwork_image: artworkImage,
+            tier: tierResult.tier, tier_label: tierResult.label,
+            evidence_strength: tierResult.strength, status: 'verified',
+            report_count: 0, registered_at: new Date().toISOString()
+        });
 
-    db.certificates[certificateId] = certificate;
-    saveDB(db);
+        for (let i = 0; i < rawEvidence.length; i++) {
+            stmts.insertEvidence.run(certificateId, rawEvidence[i].filename, visibility[i] === true ? 1 : 0);
+        }
+    });
+    insertAll();
+
     audit('certificate_created', { artistId, certificateId, tier: tierResult.tier });
+
+    // Build response certificate object
+    const cert = rowToCert(stmts.getCertById.get(certificateId));
+    cert.evidenceFiles = getEvidenceForCert(certificateId);
 
     // Send certificate email (non-blocking)
     const host = `${req.protocol}://${req.get('host')}`;
-    sendCertificateEmail(artist, certificate, host);
+    sendCertificateEmail(artist, cert, host);
 
-    res.json({ success: true, certificate });
+    res.json({ success: true, certificate: cert });
 });
 
-// Get certificates for an artist
-app.get('/api/artist/:artistId/certificates', (req, res) => {
-    const { artistId } = req.params;
-    const db = loadDB();
-
-    const certificates = Object.values(db.certificates)
-        .filter(c => c.artistId === artistId)
-        .sort((a, b) => new Date(b.registeredAt) - new Date(a.registeredAt));
-
+// Get certificates for current session artist (session-protected)
+app.get('/api/artist/:artistId/certificates', requireAuth, (req, res) => {
+    const artistId = req.session.artistId;
+    const certRows = stmts.getCertsByArtist.all(artistId);
+    const certificates = certRows.map(row => {
+        const cert = rowToCert(row);
+        cert.evidenceFiles = getEvidenceForCert(cert.id);
+        return cert;
+    });
     res.json({ success: true, certificates });
 });
 
 // Verify certificate (public)
 app.get('/api/verify/:certificateId', (req, res) => {
     const { certificateId } = req.params;
-    const db = loadDB();
-    const certificate = db.certificates[certificateId.toUpperCase()];
+    const row = stmts.getCertById.get(certificateId.toUpperCase());
+    const certificate = rowToCert(row);
 
     if (certificate) {
+        const evidenceFiles = getEvidenceForCert(certificate.id);
         res.json({
             success: true,
             verified: true,
             certificate: {
-                id: certificate.id,
-                artistName: certificate.artistName,
-                artistSlug: certificate.artistSlug,
-                title: certificate.title,
-                description: certificate.description,
-                medium: certificate.medium,
-                creationDate: certificate.creationDate,
-                registeredAt: certificate.registeredAt,
-                status: certificate.status,
-                tier: certificate.tier,
-                tierLabel: certificate.tierLabel,
-                evidenceStrength: certificate.evidenceStrength,
-                evidenceCount: certificate.evidenceFiles ? certificate.evidenceFiles.length : 0,
+                id: certificate.id, artistName: certificate.artistName,
+                artistSlug: certificate.artistSlug, title: certificate.title,
+                description: certificate.description, medium: certificate.medium,
+                creationDate: certificate.creationDate, registeredAt: certificate.registeredAt,
+                status: certificate.status, tier: certificate.tier,
+                tierLabel: certificate.tierLabel, evidenceStrength: certificate.evidenceStrength,
+                evidenceCount: evidenceFiles.length,
                 hasProcessNotes: !!certificate.processNotes,
                 artworkImage: certificate.artworkImage || null,
-                publicEvidenceFiles: getPublicEvidence(certificate),
+                publicEvidenceFiles: getPublicEvidence(certificate.id),
                 processNotes: certificate.processNotes || ''
             }
         });
@@ -752,8 +1029,7 @@ app.get('/api/qr/:certificateId', async (req, res) => {
 
     try {
         const qrDataUrl = await QRCode.toDataURL(verifyUrl, {
-            width: 200,
-            margin: 2,
+            width: 200, margin: 2,
             color: { dark: '#1a365d', light: '#fffef0' }
         });
         res.json({ success: true, qrCode: qrDataUrl, verifyUrl });
@@ -762,11 +1038,10 @@ app.get('/api/qr/:certificateId', async (req, res) => {
     }
 });
 
-// Embeddable badge — returns an SVG badge for a certificate
+// Embeddable badge (public)
 app.get('/api/badge/:certificateId', (req, res) => {
     const { certificateId } = req.params;
-    const db = loadDB();
-    const cert = db.certificates[certificateId.toUpperCase()];
+    const cert = rowToCert(stmts.getCertById.get(certificateId.toUpperCase()));
 
     if (!cert) {
         return res.status(404).send('Certificate not found');
@@ -793,11 +1068,10 @@ app.get('/api/badge/:certificateId', (req, res) => {
     res.send(svg);
 });
 
-// Embeddable widget — serves a self-contained HTML card
+// Embeddable widget (public)
 app.get('/api/widget/:certificateId', (req, res) => {
     const { certificateId } = req.params;
-    const db = loadDB();
-    const cert = db.certificates[certificateId.toUpperCase()];
+    const cert = rowToCert(stmts.getCertById.get(certificateId.toUpperCase()));
 
     if (!cert) {
         res.setHeader('Content-Type', 'text/html');
@@ -864,7 +1138,7 @@ a{text-decoration:none;color:inherit}
     res.send(html);
 });
 
-// Embed code endpoint
+// Embed code endpoint (public)
 app.get('/api/embed/:certificateId', (req, res) => {
     const { certificateId } = req.params;
     const host = `${req.protocol}://${req.get('host')}`;
@@ -877,32 +1151,26 @@ app.get('/api/embed/:certificateId', (req, res) => {
         html: `<a href="${verifyUrl}" target="_blank" rel="noopener"><img src="${badgeUrl}" alt="Verified Officially Human Art" style="height:36px"></a>`,
         markdown: `[![Verified Officially Human Art](${badgeUrl})](${verifyUrl})`,
         widget: `<iframe src="${widgetUrl}" width="340" height="160" style="border:none;border-radius:10px;" loading="lazy"></iframe>`,
-        badgeUrl,
-        verifyUrl,
-        widgetUrl
+        badgeUrl, verifyUrl, widgetUrl
     });
 });
 
-// Stripe config (publishable key for frontend)
+// Stripe config (public)
 app.get('/api/config', (req, res) => {
-    res.json({
-        stripePublishableKey: process.env.STRIPE_PUBLISHABLE_KEY || null
-    });
+    res.json({ stripePublishableKey: process.env.STRIPE_PUBLISHABLE_KEY || null });
 });
 
-// Get artist plan info
-app.get('/api/artist/plan/:artistId', (req, res) => {
-    const { artistId } = req.params;
-    const db = loadDB();
-    const artist = db.artists[artistId];
+// Get artist plan info (session-protected)
+app.get('/api/artist/plan/:artistId', requireAuth, (req, res) => {
+    const artistId = req.session.artistId;
+    const artist = rowToArtist(stmts.getArtistById.get(artistId));
     if (!artist) return res.status(404).json({ success: false, message: 'Artist not found' });
 
-    const certCount = Object.values(db.certificates).filter(c => c.artistId === artistId).length;
+    const certCount = stmts.countCertsByArtist.get(artistId).n;
     const plan = getEffectivePlan(artist);
 
     res.json({
-        success: true,
-        plan,
+        success: true, plan,
         planStatus: artist.planStatus || 'active',
         planExpiresAt: artist.planExpiresAt || null,
         certificateCount: certCount,
@@ -910,26 +1178,23 @@ app.get('/api/artist/plan/:artistId', (req, res) => {
     });
 });
 
-// Create Stripe subscription
-app.post('/api/stripe/create-subscription', async (req, res) => {
+// Create Stripe subscription (session-protected)
+app.post('/api/stripe/create-subscription', doubleCsrfProtection, requireAuth, async (req, res) => {
     if (!stripe) return res.status(400).json({ success: false, message: 'Payments not configured' });
 
-    const { artistId } = req.body;
-    const db = loadDB();
-    const artist = db.artists[artistId];
+    const artistId = req.session.artistId;
+    const artist = rowToArtist(stmts.getArtistById.get(artistId));
     if (!artist) return res.status(404).json({ success: false, message: 'Artist not found' });
 
     try {
         let customerId = artist.stripeCustomerId;
         if (!customerId) {
             const customer = await stripe.customers.create({
-                email: artist.email,
-                name: artist.name,
+                email: artist.email, name: artist.name,
                 metadata: { artistId: artist.id }
             });
             customerId = customer.id;
-            artist.stripeCustomerId = customerId;
-            saveDB(db);
+            stmts.updateArtistStripeCustomer.run(customerId, artistId);
         }
 
         const subscription = await stripe.subscriptions.create({
@@ -940,8 +1205,7 @@ app.post('/api/stripe/create-subscription', async (req, res) => {
             expand: ['latest_invoice.payment_intent']
         });
 
-        artist.stripeSubscriptionId = subscription.id;
-        saveDB(db);
+        stmts.updateArtistStripeSubscription.run(subscription.id, artistId);
 
         res.json({
             success: true,
@@ -954,13 +1218,12 @@ app.post('/api/stripe/create-subscription', async (req, res) => {
     }
 });
 
-// Cancel Stripe subscription
-app.post('/api/stripe/cancel-subscription', async (req, res) => {
+// Cancel Stripe subscription (session-protected)
+app.post('/api/stripe/cancel-subscription', doubleCsrfProtection, requireAuth, async (req, res) => {
     if (!stripe) return res.status(400).json({ success: false, message: 'Payments not configured' });
 
-    const { artistId } = req.body;
-    const db = loadDB();
-    const artist = db.artists[artistId];
+    const artistId = req.session.artistId;
+    const artist = rowToArtist(stmts.getArtistById.get(artistId));
     if (!artist || !artist.stripeSubscriptionId) {
         return res.status(400).json({ success: false, message: 'No active subscription found' });
     }
@@ -970,14 +1233,12 @@ app.post('/api/stripe/cancel-subscription', async (req, res) => {
             cancel_at_period_end: true
         });
 
-        artist.planStatus = 'canceling';
-        artist.planExpiresAt = new Date(subscription.current_period_end * 1000).toISOString();
-        saveDB(db);
+        stmts.updateArtistPlan.run('creator', 'canceling', new Date(subscription.current_period_end * 1000).toISOString(), artistId);
 
         res.json({
             success: true,
             message: 'Subscription will cancel at end of billing period',
-            planExpiresAt: artist.planExpiresAt
+            planExpiresAt: new Date(subscription.current_period_end * 1000).toISOString()
         });
     } catch (err) {
         console.error('Stripe cancel error:', err.message);
@@ -985,22 +1246,15 @@ app.post('/api/stripe/cancel-subscription', async (req, res) => {
     }
 });
 
-// Delete certificate
-app.delete('/api/artwork/:certificateId', (req, res) => {
+// Delete certificate (session-protected)
+app.delete('/api/artwork/:certificateId', doubleCsrfProtection, requireAuth, (req, res) => {
     const { certificateId } = req.params;
-    const { artistId } = req.body;
+    const artistId = req.session.artistId;
 
-    if (!artistId) {
-        return res.status(400).json({ success: false, message: 'Artist ID required' });
-    }
-
-    const db = loadDB();
-    const cert = db.certificates[certificateId.toUpperCase()];
-
+    const cert = rowToCert(stmts.getCertById.get(certificateId.toUpperCase()));
     if (!cert) {
         return res.status(404).json({ success: false, message: 'Certificate not found' });
     }
-
     if (cert.artistId !== artistId) {
         return res.status(403).json({ success: false, message: 'Not authorized' });
     }
@@ -1010,76 +1264,72 @@ app.delete('/api/artwork/:certificateId', (req, res) => {
         const artPath = path.join(UPLOADS_DIR, cert.artworkImage);
         if (fs.existsSync(artPath)) fs.unlinkSync(artPath);
     }
-    if (cert.evidenceFiles && cert.evidenceFiles.length > 0) {
-        cert.evidenceFiles.forEach(ef => {
-            const fPath = path.join(UPLOADS_DIR, ef.filename);
-            if (fs.existsSync(fPath)) fs.unlinkSync(fPath);
-        });
-    }
+    const evidenceFiles = getEvidenceForCert(cert.id);
+    evidenceFiles.forEach(ef => {
+        const fPath = path.join(UPLOADS_DIR, ef.filename);
+        if (fs.existsSync(fPath)) fs.unlinkSync(fPath);
+    });
 
-    delete db.certificates[certificateId.toUpperCase()];
-    saveDB(db);
+    stmts.deleteCert.run(certificateId.toUpperCase());
     audit('certificate_deleted', { artistId, certificateId: certificateId.toUpperCase() });
-
     res.json({ success: true, message: 'Certificate deleted' });
 });
 
-// Edit certificate (text fields only)
-app.put('/api/artwork/:certificateId', (req, res) => {
+// Edit certificate (session-protected)
+app.put('/api/artwork/:certificateId', doubleCsrfProtection, requireAuth, (req, res) => {
     const { certificateId } = req.params;
-    const { artistId } = req.body;
+    const artistId = req.session.artistId;
     const title = req.body.title !== undefined ? truncate(req.body.title, MAX_LENGTHS.title) : undefined;
     const description = req.body.description !== undefined ? truncate(req.body.description, MAX_LENGTHS.description) : undefined;
     const processNotes = req.body.processNotes !== undefined ? truncate(req.body.processNotes, MAX_LENGTHS.processNotes) : undefined;
 
-    if (!artistId) {
-        return res.status(400).json({ success: false, message: 'Artist ID required' });
-    }
-
-    const db = loadDB();
-    const cert = db.certificates[certificateId.toUpperCase()];
-
+    const cert = rowToCert(stmts.getCertById.get(certificateId.toUpperCase()));
     if (!cert) {
         return res.status(404).json({ success: false, message: 'Certificate not found' });
     }
-
     if (cert.artistId !== artistId) {
         return res.status(403).json({ success: false, message: 'Not authorized' });
     }
 
-    // Track history
-    if (!cert.history) cert.history = [];
+    // Track changes
     const changes = [];
     if (title !== undefined && title.trim() && title.trim() !== cert.title) changes.push('title');
     if (description !== undefined && description.trim() !== (cert.description || '')) changes.push('description');
     if (processNotes !== undefined && processNotes.trim() !== (cert.processNotes || '')) changes.push('process notes');
+
     if (changes.length > 0) {
-        cert.history.push({ type: 'edited', fields: changes, at: new Date().toISOString() });
+        stmts.insertHistory.run(cert.id, 'edited', JSON.stringify(changes), new Date().toISOString());
     }
 
-    // Only update provided fields
+    // Update fields
+    let newTitle = cert.title;
+    let newDescription = cert.description;
+    let newProcessNotes = cert.processNotes;
+    let newArtistName = cert.artistName;
+
     if (title !== undefined && title.trim()) {
-        cert.title = title.trim();
-        cert.artistName = db.artists[artistId]?.name || cert.artistName;
+        newTitle = title.trim();
+        const artist = rowToArtist(stmts.getArtistById.get(artistId));
+        newArtistName = artist ? artist.name : cert.artistName;
     }
-    if (description !== undefined) cert.description = description.trim();
-    if (processNotes !== undefined) cert.processNotes = processNotes.trim();
+    if (description !== undefined) newDescription = description.trim();
+    if (processNotes !== undefined) newProcessNotes = processNotes.trim();
 
-    // Recalculate tier based on updated fields
-    const fileCount = (cert.artworkImage ? 1 : 0) + (cert.evidenceFiles ? cert.evidenceFiles.length : 0);
-    const tierResult = calculateTier(fileCount, cert.description, !!cert.processNotes);
-    cert.tier = tierResult.tier;
-    cert.tierLabel = tierResult.label;
-    cert.evidenceStrength = tierResult.strength;
+    // Recalculate tier
+    const evidenceFiles = getEvidenceForCert(cert.id);
+    const fileCount = (cert.artworkImage ? 1 : 0) + evidenceFiles.length;
+    const tierResult = calculateTier(fileCount, newDescription, !!newProcessNotes);
 
-    saveDB(db);
+    stmts.updateCert.run(newTitle, newDescription, newProcessNotes, tierResult.tier, tierResult.label, tierResult.strength, newArtistName, cert.id);
     audit('certificate_edited', { artistId, certificateId: certificateId.toUpperCase(), fields: changes });
 
-    res.json({ success: true, certificate: cert });
+    const updated = rowToCert(stmts.getCertById.get(cert.id));
+    updated.evidenceFiles = evidenceFiles;
+    res.json({ success: true, certificate: updated });
 });
 
-// Report/dispute a certificate
-app.post('/api/report/:certificateId', (req, res) => {
+// Report/dispute a certificate (public, CSRF-protected)
+app.post('/api/report/:certificateId', doubleCsrfProtection, (req, res) => {
     const { certificateId } = req.params;
     const reason = truncate(req.body.reason, MAX_LENGTHS.reportReason);
     const email = truncate(req.body.email, MAX_LENGTHS.email);
@@ -1088,45 +1338,37 @@ app.post('/api/report/:certificateId', (req, res) => {
         return res.status(400).json({ success: false, message: 'Please provide a reason (at least 10 characters).' });
     }
 
-    const db = loadDB();
-    const cert = db.certificates[certificateId.toUpperCase()];
+    const cert = rowToCert(stmts.getCertById.get(certificateId.toUpperCase()));
     if (!cert) {
         return res.status(404).json({ success: false, message: 'Certificate not found' });
     }
 
     const reportId = uuidv4();
-    db.reports[reportId] = {
-        id: reportId,
-        certificateId: certificateId.toUpperCase(),
-        reason: reason.trim(),
-        reporterEmail: email || null,
-        status: 'pending',
-        createdAt: new Date().toISOString()
-    };
+    stmts.insertReport.run(reportId, certificateId.toUpperCase(), reason.trim(), email || null, 'pending', new Date().toISOString());
+    stmts.insertHistory.run(certificateId.toUpperCase(), 'reported', null, new Date().toISOString());
+    stmts.updateCertReportCount.run(certificateId.toUpperCase());
 
-    // Add to certificate history
-    if (!cert.history) cert.history = [];
-    cert.history.push({ type: 'reported', at: new Date().toISOString() });
-    cert.reportCount = (cert.reportCount || 0) + 1;
-
-    saveDB(db);
     audit('certificate_reported', { certificateId: certificateId.toUpperCase(), reportId });
     res.json({ success: true, message: 'Report submitted. We will review this certificate.' });
 });
 
-// Get certificate history/timeline
+// Get certificate history/timeline (public)
 app.get('/api/artwork/:certificateId/history', (req, res) => {
     const { certificateId } = req.params;
-    const db = loadDB();
-    const cert = db.certificates[certificateId.toUpperCase()];
+    const cert = rowToCert(stmts.getCertById.get(certificateId.toUpperCase()));
     if (!cert) {
         return res.status(404).json({ success: false, message: 'Certificate not found' });
     }
 
+    const historyRows = stmts.getHistory.all(certificateId.toUpperCase());
     const timeline = [{ type: 'issued', at: cert.registeredAt }];
-    if (cert.history) {
-        cert.history.forEach(h => timeline.push(h));
-    }
+    historyRows.forEach(h => {
+        const entry = { type: h.type, at: h.created_at };
+        if (h.fields) {
+            try { entry.fields = JSON.parse(h.fields); } catch (e) {}
+        }
+        timeline.push(entry);
+    });
     timeline.sort((a, b) => new Date(a.at) - new Date(b.at));
 
     res.json({ success: true, timeline });
@@ -1134,52 +1376,42 @@ app.get('/api/artwork/:certificateId/history', (req, res) => {
 
 // Browse all certificates (public)
 app.get('/api/browse', (req, res) => {
-    const db = loadDB();
     const { medium, tier, page } = req.query;
     const pageNum = parseInt(page) || 1;
     const perPage = 24;
 
-    let certs = Object.values(db.certificates)
-        .filter(c => c.status === 'verified')
-        .sort((a, b) => new Date(b.registeredAt) - new Date(a.registeredAt));
+    let certs;
+    const hasMedium = medium && medium !== 'all';
+    const hasTier = tier && tier !== 'all';
 
-    // Filter by medium
-    if (medium && medium !== 'all') {
-        certs = certs.filter(c => c.medium === medium);
-    }
-    // Filter by tier
-    if (tier && tier !== 'all') {
-        certs = certs.filter(c => c.tier === tier);
+    if (hasMedium && hasTier) {
+        certs = stmts.browseCertsFilterBoth.all('verified', medium, tier);
+    } else if (hasMedium) {
+        certs = stmts.browseCertsFilterMedium.all('verified', medium);
+    } else if (hasTier) {
+        certs = stmts.browseCertsFilterTier.all('verified', tier);
+    } else {
+        certs = stmts.browseCerts.all('verified');
     }
 
     const total = certs.length;
     const totalPages = Math.ceil(total / perPage);
     const paginated = certs.slice((pageNum - 1) * perPage, pageNum * perPage);
-
-    // Get unique mediums for filter dropdown
-    const mediums = [...new Set(Object.values(db.certificates).map(c => c.medium).filter(Boolean))].sort();
+    const mediums = stmts.allMediums.all().map(r => r.medium);
 
     res.json({
         success: true,
         certificates: paginated.map(c => ({
-            id: c.id,
-            title: c.title,
-            artistName: c.artistName,
-            artistSlug: c.artistSlug,
-            medium: c.medium,
-            tier: c.tier,
-            registeredAt: c.registeredAt,
-            artworkImage: c.artworkImage || null
+            id: c.id, title: c.title, artistName: c.artist_name,
+            artistSlug: c.artist_slug, medium: c.medium, tier: c.tier,
+            registeredAt: c.registered_at, artworkImage: c.artwork_image || null
         })),
-        mediums,
-        page: pageNum,
-        totalPages,
-        total
+        mediums, page: pageNum, totalPages, total
     });
 });
 
-// Password reset — request token
-app.post('/api/artist/forgot-password', async (req, res) => {
+// Password reset — request token (CSRF-protected)
+app.post('/api/artist/forgot-password', doubleCsrfProtection, async (req, res) => {
     const { email } = req.body;
 
     const ip = req.ip || req.connection.remoteAddress;
@@ -1191,21 +1423,14 @@ app.post('/api/artist/forgot-password', async (req, res) => {
         return res.status(400).json({ success: false, message: 'Email is required.' });
     }
 
-    const db = loadDB();
-    const artist = Object.values(db.artists).find(a => a.email === email);
-
-    // Always return success to prevent email enumeration
+    const artist = rowToArtist(stmts.getArtistByEmail.get(email));
     if (!artist) {
         return res.json({ success: true, message: 'If an account exists with that email, a reset link has been sent.' });
     }
 
-    // Generate reset token (valid for 1 hour)
     const token = uuidv4();
-    artist.resetToken = token;
-    artist.resetTokenExpires = new Date(Date.now() + 3600000).toISOString();
-    saveDB(db);
+    stmts.updateArtistResetToken.run(token, new Date(Date.now() + 3600000).toISOString(), artist.id);
 
-    // Send reset email
     if (mailTransporter) {
         const host = `${req.protocol}://${req.get('host')}`;
         const resetUrl = `${host}/register.html#reset=${token}`;
@@ -1240,8 +1465,8 @@ app.post('/api/artist/forgot-password', async (req, res) => {
     res.json({ success: true, message: 'If an account exists with that email, a reset link has been sent.' });
 });
 
-// Password reset — set new password
-app.post('/api/artist/reset-password', async (req, res) => {
+// Password reset — set new password (CSRF-protected)
+app.post('/api/artist/reset-password', doubleCsrfProtection, async (req, res) => {
     const { token, password } = req.body;
 
     if (!token || !password) {
@@ -1252,53 +1477,46 @@ app.post('/api/artist/reset-password', async (req, res) => {
         return res.status(400).json({ success: false, message: pwError });
     }
 
-    const db = loadDB();
-    const artist = Object.values(db.artists).find(a =>
-        a.resetToken === token && a.resetTokenExpires && new Date(a.resetTokenExpires) > new Date()
-    );
-
+    const artist = rowToArtist(stmts.getArtistByResetToken.get(token, new Date().toISOString()));
     if (!artist) {
         return res.status(400).json({ success: false, message: 'Invalid or expired reset link. Please request a new one.' });
     }
 
-    artist.passwordHash = await bcrypt.hash(password, 10);
-    delete artist.resetToken;
-    delete artist.resetTokenExpires;
-    saveDB(db);
+    const passwordHash = await bcrypt.hash(password, 10);
+    stmts.updateArtistPassword.run(passwordHash, artist.id);
     audit('password_reset', { artistId: artist.id });
 
     res.json({ success: true, message: 'Password updated successfully. You can now sign in.' });
 });
 
-// Stats endpoint
+// Stats endpoint (public)
 app.get('/api/stats', (req, res) => {
-    const db = loadDB();
-    const artists = Object.keys(db.artists).length;
-    const certificates = Object.keys(db.certificates).length;
+    const artists = stmts.countArtists.get().n;
+    const certificates = stmts.countCerts.get().n;
     const tiers = { gold: 0, silver: 0, bronze: 0 };
-    Object.values(db.certificates).forEach(c => {
-        if (tiers[c.tier] !== undefined) tiers[c.tier]++;
+    stmts.countTiers.all().forEach(r => {
+        if (tiers[r.tier] !== undefined) tiers[r.tier] = r.n;
     });
     res.json({ success: true, artists, certificates, tiers });
 });
 
-// Delete account
-app.delete('/api/artist/:artistId', async (req, res) => {
+// Delete account (session-protected)
+app.delete('/api/artist/:artistId', doubleCsrfProtection, requireAuth, async (req, res) => {
     const { artistId } = req.params;
-    const { password } = req.body;
+    if (req.session.artistId !== artistId) {
+        return res.status(403).json({ success: false, message: 'Not authorized' });
+    }
 
+    const { password } = req.body;
     if (!password) {
         return res.status(400).json({ success: false, message: 'Password is required to delete your account.' });
     }
 
-    const db = loadDB();
-    const artist = db.artists[artistId];
-
+    const artist = rowToArtist(stmts.getArtistById.get(artistId));
     if (!artist) {
         return res.status(404).json({ success: false, message: 'Account not found.' });
     }
 
-    // Verify password
     if (artist.passwordHash) {
         const match = await bcrypt.compare(password, artist.passwordHash);
         if (!match) {
@@ -1308,42 +1526,39 @@ app.delete('/api/artist/:artistId', async (req, res) => {
 
     // Cancel Stripe subscription if active
     if (stripe && artist.stripeSubscriptionId) {
-        try {
-            await stripe.subscriptions.cancel(artist.stripeSubscriptionId);
-        } catch (err) {
+        try { await stripe.subscriptions.cancel(artist.stripeSubscriptionId); } catch (err) {
             console.error('Stripe cancel on account delete:', err.message);
         }
     }
 
-    // Delete all certificates and their files
-    const artistCerts = Object.values(db.certificates).filter(c => c.artistId === artistId);
-    artistCerts.forEach(cert => {
-        if (cert.artworkImage) {
-            const artPath = path.join(UPLOADS_DIR, cert.artworkImage);
+    // Delete files from disk
+    const certRows = stmts.getCertsByArtist.all(artistId);
+    certRows.forEach(row => {
+        if (row.artwork_image) {
+            const artPath = path.join(UPLOADS_DIR, row.artwork_image);
             if (fs.existsSync(artPath)) fs.unlinkSync(artPath);
         }
-        if (cert.evidenceFiles && cert.evidenceFiles.length > 0) {
-            cert.evidenceFiles.forEach(ef => {
-                const filename = typeof ef === 'string' ? ef : ef.filename;
-                const fPath = path.join(UPLOADS_DIR, filename);
-                if (fs.existsSync(fPath)) fs.unlinkSync(fPath);
-            });
-        }
-        delete db.certificates[cert.id];
+        const evidenceFiles = stmts.getEvidenceFiles.all(row.id);
+        evidenceFiles.forEach(ef => {
+            const fPath = path.join(UPLOADS_DIR, ef.filename);
+            if (fs.existsSync(fPath)) fs.unlinkSync(fPath);
+        });
     });
 
-    // Delete associated reports
-    Object.keys(db.reports).forEach(reportId => {
-        if (artistCerts.some(c => c.id === db.reports[reportId].certificateId)) {
-            delete db.reports[reportId];
-        }
+    // Delete all data in a transaction (cascading)
+    const deleteAll = db.transaction(() => {
+        stmts.deleteReportsByArtist.run(artistId);
+        stmts.deleteHistoryByArtist.run(artistId);
+        stmts.deleteEvidenceByArtist.run(artistId);
+        stmts.deleteCertsByArtist.run(artistId);
+        stmts.deleteArtist.run(artistId);
     });
+    deleteAll();
 
-    // Delete artist
-    delete db.artists[artistId];
-    saveDB(db);
-    audit('account_deleted', { artistId, certificatesDeleted: artistCerts.length });
+    audit('account_deleted', { artistId, certificatesDeleted: certRows.length });
 
+    req.session.destroy(() => {});
+    res.clearCookie('oh.sid');
     res.json({ success: true, message: 'Account and all associated data have been permanently deleted.' });
 });
 

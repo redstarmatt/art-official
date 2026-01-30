@@ -1492,6 +1492,7 @@
         var evidenceVisibility = [];
         var currentPlan = null;
         var stripeInstance = null;
+        var csrfToken = null;
         var stripeElements = null;
 
         // ---- DOM Helpers ----
@@ -1500,6 +1501,13 @@
             var d = document.createElement('div');
             d.textContent = s || '';
             return d.innerHTML;
+        }
+
+        function csrfHeaders(contentType) {
+            var h = {};
+            if (contentType) h['Content-Type'] = contentType;
+            if (csrfToken) h['X-CSRF-Token'] = csrfToken;
+            return h;
         }
 
         // ---- Tab System ----
@@ -1538,6 +1546,11 @@
         }
 
         function signOut() {
+            fetch('/api/artist/logout', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: csrfHeaders()
+            }).catch(function() {});
             currentArtist = null;
             selectedFiles = [];
             $('user-bar').classList.remove('show');
@@ -1581,7 +1594,8 @@
 
             fetch('/api/artist/login', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                credentials: 'same-origin',
+                headers: csrfHeaders('application/json'),
                 body: JSON.stringify({ email: email, password: password })
             })
                 .then(function(res) { return res.json(); })
@@ -1629,7 +1643,8 @@
 
             fetch('/api/artist/register', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                credentials: 'same-origin',
+                headers: csrfHeaders('application/json'),
                 body: JSON.stringify(body)
             })
             .then(function(res) { return res.json(); })
@@ -1893,7 +1908,6 @@
             hideAlert('submit-alert');
 
             var formData = new FormData();
-            formData.append('artistId', currentArtist.id);
             formData.append('title', $('art-title').value.trim());
             formData.append('medium', $('art-medium').value);
             formData.append('creationDate', $('art-date').value);
@@ -1911,6 +1925,8 @@
 
             fetch('/api/artwork/submit', {
                 method: 'POST',
+                credentials: 'same-origin',
+                headers: csrfToken ? { 'X-CSRF-Token': csrfToken } : {},
                 body: formData
             })
             .then(function(res) { return res.json().then(function(d) { d._status = res.status; return d; }); })
@@ -2410,8 +2426,8 @@
 
             fetch('/api/artwork/' + encodeURIComponent(deleteCertId), {
                 method: 'DELETE',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ artistId: currentArtist.id })
+                credentials: 'same-origin',
+                headers: csrfHeaders()
             })
             .then(function(res) { return res.json(); })
             .then(function(data) {
@@ -2464,9 +2480,9 @@
 
             fetch('/api/artwork/' + encodeURIComponent(editCertId), {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
+                credentials: 'same-origin',
+                headers: csrfHeaders('application/json'),
                 body: JSON.stringify({
-                    artistId: currentArtist.id,
                     title: title,
                     description: $('edit-description').value.trim(),
                     processNotes: $('edit-process-notes').value.trim()
@@ -2518,7 +2534,8 @@
 
             fetch('/api/artist/' + encodeURIComponent(currentArtist.id), {
                 method: 'DELETE',
-                headers: { 'Content-Type': 'application/json' },
+                credentials: 'same-origin',
+                headers: csrfHeaders('application/json'),
                 body: JSON.stringify({ password: password })
             })
             .then(function(res) { return res.json(); })
@@ -2658,8 +2675,9 @@
 
             fetch('/api/stripe/create-subscription', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ artistId: currentArtist.id })
+                credentials: 'same-origin',
+                headers: csrfHeaders('application/json'),
+                body: JSON.stringify({})
             })
             .then(function(res) { return res.json(); })
             .then(function(data) {
@@ -2707,8 +2725,9 @@
 
             fetch('/api/stripe/cancel-subscription', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ artistId: currentArtist.id })
+                credentials: 'same-origin',
+                headers: csrfHeaders('application/json'),
+                body: JSON.stringify({})
             })
             .then(function(res) { return res.json(); })
             .then(function(data) {
@@ -2726,6 +2745,26 @@
                 btn.textContent = 'Cancel Plan';
             });
         });
+
+        // ---- Session Restore ----
+        function fetchCsrfToken() {
+            return fetch('/api/csrf-token', { credentials: 'same-origin' })
+                .then(function(res) { return res.json(); })
+                .then(function(data) { if (data.token) csrfToken = data.token; });
+        }
+
+        function restoreSession() {
+            fetch('/api/artist/me', { credentials: 'same-origin' })
+                .then(function(res) { return res.json(); })
+                .then(function(data) {
+                    if (data.success && data.artist) {
+                        setLoggedIn(data.artist);
+                    }
+                })
+                .catch(function() {});
+        }
+
+        fetchCsrfToken().then(restoreSession);
 
         // ---- Init ----
         updateStrength();
@@ -2759,7 +2798,8 @@
 
             fetch('/api/artist/forgot-password', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                credentials: 'same-origin',
+                headers: csrfHeaders('application/json'),
                 body: JSON.stringify({ email: email })
             })
             .then(function(res) { return res.json(); })
@@ -2807,7 +2847,8 @@
 
             fetch('/api/artist/reset-password', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                credentials: 'same-origin',
+                headers: csrfHeaders('application/json'),
                 body: JSON.stringify({ token: token, password: pw })
             })
             .then(function(res) { return res.json(); })

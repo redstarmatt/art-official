@@ -15,7 +15,12 @@
   "license": "ISC",
   "dependencies": {
     "bcryptjs": "^3.0.3",
+    "better-sqlite3": "^12.6.2",
+    "better-sqlite3-session-store": "^0.1.0",
+    "cookie-parser": "^1.4.7",
+    "csrf-csrf": "^4.0.3",
     "express": "^5.2.1",
+    "express-session": "^1.19.0",
     "helmet": "^8.1.0",
     "multer": "^2.0.2",
     "nodemailer": "^7.0.13",
