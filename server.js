@@ -718,11 +718,15 @@ function safeArtist(artist) {
 // Email config
 let mailTransporter = null;
 if (process.env.SMTP_HOST) {
+    const smtpPort = parseInt(process.env.SMTP_PORT) || 587;
     mailTransporter = nodemailer.createTransport({
         host: process.env.SMTP_HOST,
-        port: parseInt(process.env.SMTP_PORT) || 587,
-        secure: (process.env.SMTP_PORT === '465'),
-        auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
+        port: smtpPort,
+        secure: smtpPort === 465,
+        auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
+        connectionTimeout: 10000,
+        greetingTimeout: 10000,
+        socketTimeout: 15000
     });
     console.log('Email enabled via ' + process.env.SMTP_HOST);
 }
