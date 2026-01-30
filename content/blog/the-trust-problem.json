@@ -6,21 +6,27 @@
     "keywords": "prove art is not AI, human made art certificate, how to prove I didn't use AI, art authenticity verification",
     "published": true,
     "body": [
-        "A freelance illustrator lands their dream commission. Weeks of work. The client loves it. Then comes the email: 'Our legal team needs confirmation this wasn't AI-generated. Can you provide proof?'",
+        "When you buy organic food, you don't just take the farmer's word for it. There's a label, a certification body, and a set of standards behind it. The label doesn't mean non-organic food is bad \u2014 it means that if this distinction matters to you, there's a reliable way to know what you're getting.",
 
-        "There's no standard for that. No answer. And increasingly, 'trust me' isn't good enough.",
+        "Creative work doesn't have that yet. But it needs to.",
 
-        { "type": "heading", "text": "Why existing solutions fail" },
+        { "type": "heading", "text": "A missing label" },
+
+        "AI-generated content has become indistinguishable from human-made work in many contexts. That's not necessarily a problem \u2014 AI tools have legitimate uses. The problem is that there's no reliable way to tell the difference when it matters.",
+
+        "Some buyers want to support human creators. Some collectors care about provenance. Some clients need to know a real person made the work they're commissioning. Right now, all they have to go on is a verbal promise. And in a market where anyone can claim anything, that's not enough.",
+
+        { "type": "heading", "text": "Why detection doesn't work" },
 
         "AI detection tools are unreliable \u2014 they flag genuine human work as AI-generated and miss obvious machine output. They treat every artist as a suspect. Verbal declarations aren't much better: anyone can say 'I didn't use AI', and there's no way for a buyer to verify it.",
 
-        "The gap is clear: there's no trusted, verifiable standard for proving human creation.",
+        "What's missing isn't better detection. It's a standard \u2014 like the organic label \u2014 that creators can opt into and buyers can trust.",
 
         { "type": "heading", "text": "Evidence over detection" },
 
-        "The question isn't 'how do we detect AI?' \u2014 it's 'how do we demonstrate human process?' Human creation leaves traces: sketches, work-in-progress photos, timelapses, notes, physical materials. AI can generate a finished image in seconds, but it can't produce a plausible three-hour timelapse of painting it.",
+        "Human creation leaves traces: sketches, work-in-progress photos, timelapses, notes, physical materials. AI can generate a finished image in seconds, but it can't produce a plausible three-hour timelapse of painting it.",
 
-        "That's the asymmetry we need. Not detection \u2014 documentation.",
+        "That's the foundation for a certification that actually means something. Not detection \u2014 documentation.",
 
         { "type": "heading", "text": "How it works" },
 
@@ -32,7 +38,7 @@
             "Gold \u2014 rich documentation (timelapse, dated files, extensive process evidence)"
         ]},
 
-        "Each certified work gets a verification page, an embeddable badge, and a QR code. Anyone can check the tier and see the evidence behind it. More evidence means more trust \u2014 and buyers can decide what level they need.",
+        "Each certified work gets a verification page, an embeddable badge, and a QR code \u2014 like a quality mark you can display wherever your work is sold. More evidence means a higher tier, and buyers can decide what level of assurance they need.",
 
         { "type": "heading", "text": "What you can do today" },
 
