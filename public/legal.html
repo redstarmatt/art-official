@@ -8,12 +8,14 @@
     <style>
         :root {
             --navy: #1a365d;
+            --navy-light: #2c5282;
             --cream: #fffef0;
             --cream-dark: #f7f5e6;
             --gold: #b7960b;
             --ink: #2d3748;
             --ink-light: #4a5568;
             --ink-faint: #718096;
+            --error: #c53030;
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -82,6 +84,169 @@
         }
         footer a { color: var(--ink-faint); text-decoration: none; margin: 0 0.75rem; }
         footer a:hover { color: var(--navy); }
+
+        /* Auth Area */
+        .auth-area {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.75rem;
+            position: relative;
+            margin-left: 1.5rem;
+        }
+
+        .auth-area[data-state="loading"] .auth-login-btn,
+        .auth-area[data-state="loading"] .auth-user-name,
+        .auth-area[data-state="loading"] .auth-signout-btn { display: none; }
+
+        .auth-area[data-state="signed-out"] .auth-user-name,
+        .auth-area[data-state="signed-out"] .auth-signout-btn { display: none; }
+
+        .auth-area[data-state="signed-in"] .auth-login-btn { display: none; }
+        .auth-area[data-state="signed-in"] .auth-dropdown { display: none !important; }
+
+        .auth-btn {
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+
+        .auth-login-btn {
+            padding: 0.45rem 1rem;
+            background: transparent;
+            border: 1.5px solid var(--navy);
+            color: var(--navy);
+        }
+
+        .auth-login-btn:hover {
+            background: var(--navy);
+            color: #fffef0;
+        }
+
+        .auth-user-name {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--navy);
+        }
+
+        .auth-signout-btn {
+            padding: 0.4rem 0.85rem;
+            background: transparent;
+            color: var(--ink-faint);
+            font-size: 0.8rem;
+        }
+
+        .auth-signout-btn:hover { color: var(--error); }
+
+        .auth-dropdown {
+            display: none;
+            position: absolute;
+            top: calc(100% + 0.75rem);
+            right: 0;
+            width: 320px;
+            background: white;
+            border-radius: 12px;
+            border: 1px solid rgba(26, 54, 93, 0.1);
+            box-shadow: 0 12px 40px rgba(26, 54, 93, 0.15);
+            padding: 1.5rem;
+            z-index: 200;
+            animation: authSlideDown 0.2s ease;
+        }
+
+        .auth-dropdown.open { display: block; }
+
+        @keyframes authSlideDown {
+            from { opacity: 0; transform: translateY(-8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .auth-dropdown h3 {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.25rem;
+            color: var(--navy);
+            margin-bottom: 1rem;
+        }
+
+        .auth-error {
+            display: none;
+            padding: 0.6rem 0.85rem;
+            background: rgba(197, 48, 48, 0.08);
+            color: var(--error);
+            border-radius: 6px;
+            font-size: 0.82rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .auth-error.show { display: block; }
+
+        .auth-field { margin-bottom: 0.85rem; }
+
+        .auth-field label {
+            display: block;
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: var(--ink-light);
+            margin-bottom: 0.3rem;
+        }
+
+        .auth-field input {
+            width: 100%;
+            padding: 0.6rem 0.85rem;
+            border: 1.5px solid rgba(26, 54, 93, 0.18);
+            border-radius: 6px;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.9rem;
+            color: var(--ink);
+            background: var(--cream);
+            transition: border-color 0.2s;
+        }
+
+        .auth-field input:focus {
+            outline: none;
+            border-color: var(--navy);
+        }
+
+        .auth-submit-btn {
+            width: 100%;
+            padding: 0.7rem;
+            background: var(--navy);
+            color: #fffef0;
+            border: none;
+            border-radius: 6px;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .auth-submit-btn:hover { background: var(--navy-light); }
+        .auth-submit-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+        .auth-footer {
+            margin-top: 1rem;
+            text-align: center;
+            font-size: 0.82rem;
+            color: var(--ink-faint);
+        }
+
+        .auth-footer a {
+            color: var(--navy);
+            font-weight: 600;
+            text-decoration: none;
+        }
+
+        .auth-footer a:hover { text-decoration: underline; }
+
+        @media (max-width: 480px) {
+            .auth-dropdown {
+                width: calc(100vw - 2rem);
+                right: -1rem;
+            }
+        }
     </style>
 </head>
 <body>
@@ -92,6 +257,29 @@
                 <a href="/">Home</a>
                 <a href="register.html">For Creators</a>
                 <a href="verify.html">Verify</a>
+                <div class="auth-area" id="auth-area" data-state="loading">
+                    <button type="button" class="auth-btn auth-login-btn" id="auth-login-toggle">Log In</button>
+                    <span class="auth-user-name" id="auth-user-name"></span>
+                    <button type="button" class="auth-btn auth-signout-btn" id="auth-signout-btn">Sign Out</button>
+                    <div class="auth-dropdown" id="auth-dropdown">
+                        <h3>Sign In</h3>
+                        <div class="auth-error" id="auth-error"></div>
+                        <form id="auth-login-form">
+                            <div class="auth-field">
+                                <label for="auth-email">Email</label>
+                                <input type="email" id="auth-email" required autocomplete="email">
+                            </div>
+                            <div class="auth-field">
+                                <label for="auth-password">Password</label>
+                                <input type="password" id="auth-password" required autocomplete="current-password">
+                            </div>
+                            <button type="submit" class="auth-submit-btn" id="auth-submit-btn">Sign In</button>
+                        </form>
+                        <div class="auth-footer">
+                            Don't have an account? <a href="register.html">Create one</a>
+                        </div>
+                    </div>
+                </div>
             </nav>
         </div>
     </header>
@@ -236,5 +424,103 @@
             <p style="margin-top:0.75rem;">&copy; 2026 Officially Human Art</p>
         </div>
     </footer>
+    <script>
+    (function() {
+        'use strict';
+        var authCsrf = null;
+        var authArea = document.getElementById('auth-area');
+        var authDropdown = document.getElementById('auth-dropdown');
+        var authLoginToggle = document.getElementById('auth-login-toggle');
+        var authSignoutBtn = document.getElementById('auth-signout-btn');
+        var authUserName = document.getElementById('auth-user-name');
+        var authLoginForm = document.getElementById('auth-login-form');
+        var authError = document.getElementById('auth-error');
+        var authSubmitBtn = document.getElementById('auth-submit-btn');
+
+        function showAuthError(msg) {
+            authError.textContent = msg;
+            authError.classList.add('show');
+        }
+        function hideAuthError() { authError.classList.remove('show'); }
+
+        fetch('/api/csrf-token', { credentials: 'same-origin' })
+            .then(function(r) { return r.json(); })
+            .then(function(d) { if (d.token) authCsrf = d.token; })
+            .catch(function() {});
+
+        fetch('/api/artist/me', { credentials: 'same-origin' })
+            .then(function(r) { return r.json(); })
+            .then(function(d) {
+                if (d.success && d.artist) {
+                    authUserName.textContent = d.artist.name;
+                    authArea.setAttribute('data-state', 'signed-in');
+                } else {
+                    authArea.setAttribute('data-state', 'signed-out');
+                }
+            })
+            .catch(function() { authArea.setAttribute('data-state', 'signed-out'); });
+
+        authLoginToggle.addEventListener('click', function(e) {
+            e.stopPropagation();
+            authDropdown.classList.toggle('open');
+            hideAuthError();
+        });
+
+        document.addEventListener('click', function(e) {
+            if (!authDropdown.contains(e.target) && e.target !== authLoginToggle) {
+                authDropdown.classList.remove('open');
+            }
+        });
+
+        authLoginForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            hideAuthError();
+            var email = document.getElementById('auth-email').value.trim();
+            var password = document.getElementById('auth-password').value;
+            if (!email || !password) return;
+
+            authSubmitBtn.disabled = true;
+            authSubmitBtn.textContent = 'Signing in...';
+
+            var headers = { 'Content-Type': 'application/json' };
+            if (authCsrf) headers['X-CSRF-Token'] = authCsrf;
+
+            fetch('/api/artist/login', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: headers,
+                body: JSON.stringify({ email: email, password: password })
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(d) {
+                if (d.success && d.artist) {
+                    authUserName.textContent = d.artist.name;
+                    authArea.setAttribute('data-state', 'signed-in');
+                    authDropdown.classList.remove('open');
+                    authLoginForm.reset();
+                } else {
+                    showAuthError(d.message || 'Invalid email or password.');
+                }
+            })
+            .catch(function() { showAuthError('Connection error. Please try again.'); })
+            .finally(function() {
+                authSubmitBtn.disabled = false;
+                authSubmitBtn.textContent = 'Sign In';
+            });
+        });
+
+        authSignoutBtn.addEventListener('click', function() {
+            var headers = {};
+            if (authCsrf) headers['X-CSRF-Token'] = authCsrf;
+            fetch('/api/artist/logout', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: headers
+            }).catch(function() {});
+            authArea.setAttribute('data-state', 'signed-out');
+            authUserName.textContent = '';
+        });
+    })();
+    </script>
 </body>
 </html>

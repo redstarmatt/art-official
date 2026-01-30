@@ -355,16 +355,22 @@
 
         .file-thumb {
             position: relative;
-            aspect-ratio: 1;
             border-radius: 8px;
-            overflow: hidden;
             border: 1px solid rgba(26, 54, 93, 0.1);
             background: var(--cream-dark);
+        }
+
+        .file-thumb .thumb-preview {
+            aspect-ratio: 1;
+            border-radius: 8px 8px 0 0;
+            overflow: hidden;
+            position: relative;
         }
 
         .file-thumb img {
             width: 100%; height: 100%;
             object-fit: cover;
+            display: block;
         }
 
         .file-thumb .file-icon {
@@ -1018,6 +1024,168 @@
             .page-header { padding: 2rem 0 1.5rem; }
             .footer-inner { flex-direction: column; text-align: center; }
         }
+
+        /* Auth Area */
+        .auth-area {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            position: relative;
+        }
+
+        .auth-area[data-state="loading"] .auth-login-btn,
+        .auth-area[data-state="loading"] .auth-user-name,
+        .auth-area[data-state="loading"] .auth-signout-btn { display: none; }
+
+        .auth-area[data-state="signed-out"] .auth-user-name,
+        .auth-area[data-state="signed-out"] .auth-signout-btn { display: none; }
+
+        .auth-area[data-state="signed-in"] .auth-login-btn { display: none; }
+        .auth-area[data-state="signed-in"] .auth-dropdown { display: none !important; }
+
+        .auth-btn {
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+
+        .auth-login-btn {
+            padding: 0.45rem 1rem;
+            background: transparent;
+            border: 1.5px solid var(--navy);
+            color: var(--navy);
+        }
+
+        .auth-login-btn:hover {
+            background: var(--navy);
+            color: var(--cream);
+        }
+
+        .auth-user-name {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--navy);
+        }
+
+        .auth-signout-btn {
+            padding: 0.4rem 0.85rem;
+            background: transparent;
+            color: var(--ink-faint);
+            font-size: 0.8rem;
+        }
+
+        .auth-signout-btn:hover { color: var(--error); }
+
+        .auth-dropdown {
+            display: none;
+            position: absolute;
+            top: calc(100% + 0.75rem);
+            right: 0;
+            width: 320px;
+            background: white;
+            border-radius: 12px;
+            border: 1px solid rgba(26, 54, 93, 0.1);
+            box-shadow: 0 12px 40px rgba(26, 54, 93, 0.15);
+            padding: 1.5rem;
+            z-index: 200;
+            animation: authSlideDown 0.2s ease;
+        }
+
+        .auth-dropdown.open { display: block; }
+
+        @keyframes authSlideDown {
+            from { opacity: 0; transform: translateY(-8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .auth-dropdown h3 {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.25rem;
+            color: var(--navy);
+            margin-bottom: 1rem;
+        }
+
+        .auth-error {
+            display: none;
+            padding: 0.6rem 0.85rem;
+            background: rgba(197, 48, 48, 0.08);
+            color: var(--error);
+            border-radius: 6px;
+            font-size: 0.82rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .auth-error.show { display: block; }
+
+        .auth-field { margin-bottom: 0.85rem; }
+
+        .auth-field label {
+            display: block;
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: var(--ink-light);
+            margin-bottom: 0.3rem;
+        }
+
+        .auth-field input {
+            width: 100%;
+            padding: 0.6rem 0.85rem;
+            border: 1.5px solid rgba(26, 54, 93, 0.18);
+            border-radius: 6px;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.9rem;
+            color: var(--ink);
+            background: var(--cream);
+            transition: border-color 0.2s;
+        }
+
+        .auth-field input:focus {
+            outline: none;
+            border-color: var(--navy);
+        }
+
+        .auth-submit-btn {
+            width: 100%;
+            padding: 0.7rem;
+            background: var(--navy);
+            color: var(--cream);
+            border: none;
+            border-radius: 6px;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .auth-submit-btn:hover { background: var(--navy-light); }
+        .auth-submit-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+        .auth-footer {
+            margin-top: 1rem;
+            text-align: center;
+            font-size: 0.82rem;
+            color: var(--ink-faint);
+        }
+
+        .auth-footer a {
+            color: var(--navy);
+            font-weight: 600;
+            text-decoration: none;
+        }
+
+        .auth-footer a:hover { text-decoration: underline; }
+
+        @media (max-width: 480px) {
+            .auth-dropdown {
+                width: calc(100vw - 2rem);
+                right: -1rem;
+            }
+        }
     </style>
 </head>
 <body>
@@ -1027,6 +1195,29 @@
             <nav>
                 <a href="verify.html">Verify</a>
                 <a href="/">Home</a>
+                <div class="auth-area" id="auth-area" data-state="loading">
+                    <button type="button" class="auth-btn auth-login-btn" id="auth-login-toggle">Log In</button>
+                    <span class="auth-user-name" id="auth-user-name"></span>
+                    <button type="button" class="auth-btn auth-signout-btn" id="auth-signout-btn">Sign Out</button>
+                    <div class="auth-dropdown" id="auth-dropdown">
+                        <h3>Sign In</h3>
+                        <div class="auth-error" id="auth-error"></div>
+                        <form id="auth-login-form">
+                            <div class="auth-field">
+                                <label for="auth-email">Email</label>
+                                <input type="email" id="auth-email" required autocomplete="email">
+                            </div>
+                            <div class="auth-field">
+                                <label for="auth-password">Password</label>
+                                <input type="password" id="auth-password" required autocomplete="current-password">
+                            </div>
+                            <button type="submit" class="auth-submit-btn" id="auth-submit-btn">Sign In</button>
+                        </form>
+                        <div class="auth-footer">
+                            Don't have an account? <a href="register.html">Create one</a>
+                        </div>
+                    </div>
+                </div>
             </nav>
         </div>
     </header>
@@ -1542,6 +1733,13 @@
             loadPlanInfo(artist.id);
             var dangerZone = $('account-danger-zone');
             if (dangerZone) dangerZone.style.display = '';
+            // Sync header auth area
+            var ha = $('auth-area');
+            if (ha) {
+                ha.setAttribute('data-state', 'signed-in');
+                var un = $('auth-user-name');
+                if (un) un.textContent = artist.name;
+            }
             switchTab('submit');
         }
 
@@ -1567,10 +1765,21 @@
             $('success-card').classList.remove('show');
             var dangerZone = $('account-danger-zone');
             if (dangerZone) dangerZone.style.display = 'none';
+            // Sync header auth area
+            var ha = $('auth-area');
+            if (ha) {
+                ha.setAttribute('data-state', 'signed-out');
+                var un = $('auth-user-name');
+                if (un) un.textContent = '';
+            }
             updateStrength();
         }
 
         $('signout-btn').addEventListener('click', signOut);
+
+        // Expose for header auth IIFE
+        window._pageSetLoggedIn = setLoggedIn;
+        window._pageSignOut = signOut;
 
         // ---- Alerts ----
         function showAlert(id, msg) {
@@ -1770,11 +1979,14 @@
                 var thumb = document.createElement('div');
                 thumb.className = 'file-thumb';
 
+                var preview = document.createElement('div');
+                preview.className = 'thumb-preview';
+
                 if (file.type && file.type.startsWith('image/')) {
                     var img = document.createElement('img');
                     img.src = URL.createObjectURL(file);
                     img.alt = file.name;
-                    thumb.appendChild(img);
+                    preview.appendChild(img);
                 } else {
                     var icon = document.createElement('div');
                     icon.className = 'file-icon';
@@ -1783,7 +1995,7 @@
                     icon.appendChild(sym);
                     var ext = file.name.split('.').pop().toUpperCase();
                     icon.appendChild(document.createTextNode(ext));
-                    thumb.appendChild(icon);
+                    preview.appendChild(icon);
                 }
 
                 var removeBtn = document.createElement('button');
@@ -1794,11 +2006,12 @@
                 removeBtn.addEventListener('click', function() {
                     removeFile(parseInt(this.getAttribute('data-index'), 10));
                 });
-                thumb.appendChild(removeBtn);
+                preview.appendChild(removeBtn);
+                thumb.appendChild(preview);
 
                 // Visibility toggle
                 var toggle = document.createElement('label');
-                toggle.style.cssText = 'display:flex;align-items:center;gap:0.3rem;font-size:0.7rem;color:#718096;margin-top:0.3rem;cursor:pointer;';
+                toggle.style.cssText = 'display:flex;align-items:center;gap:0.3rem;font-size:0.7rem;color:#718096;padding:0.35rem 0.25rem;cursor:pointer;';
                 var cb = document.createElement('input');
                 cb.type = 'checkbox';
                 cb.checked = evidenceVisibility[i];
@@ -2889,6 +3102,115 @@
             forgotWrap.style.display = 'none';
             resetWrap.style.display = 'block';
         }
+    })();
+    </script>
+
+    <script>
+    (function() {
+        'use strict';
+        var authCsrf = null;
+        var authArea = document.getElementById('auth-area');
+        var authDropdown = document.getElementById('auth-dropdown');
+        var authLoginToggle = document.getElementById('auth-login-toggle');
+        var authSignoutBtn = document.getElementById('auth-signout-btn');
+        var authUserName = document.getElementById('auth-user-name');
+        var authLoginForm = document.getElementById('auth-login-form');
+        var authError = document.getElementById('auth-error');
+        var authSubmitBtn = document.getElementById('auth-submit-btn');
+
+        function showAuthError(msg) {
+            authError.textContent = msg;
+            authError.classList.add('show');
+        }
+        function hideAuthError() { authError.classList.remove('show'); }
+
+        fetch('/api/csrf-token', { credentials: 'same-origin' })
+            .then(function(r) { return r.json(); })
+            .then(function(d) { if (d.token) authCsrf = d.token; })
+            .catch(function() {});
+
+        fetch('/api/artist/me', { credentials: 'same-origin' })
+            .then(function(r) { return r.json(); })
+            .then(function(d) {
+                if (d.success && d.artist) {
+                    authUserName.textContent = d.artist.name;
+                    authArea.setAttribute('data-state', 'signed-in');
+                } else {
+                    authArea.setAttribute('data-state', 'signed-out');
+                }
+            })
+            .catch(function() { authArea.setAttribute('data-state', 'signed-out'); });
+
+        authLoginToggle.addEventListener('click', function(e) {
+            e.stopPropagation();
+            authDropdown.classList.toggle('open');
+            hideAuthError();
+        });
+
+        document.addEventListener('click', function(e) {
+            if (!authDropdown.contains(e.target) && e.target !== authLoginToggle) {
+                authDropdown.classList.remove('open');
+            }
+        });
+
+        authLoginForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            hideAuthError();
+            var email = document.getElementById('auth-email').value.trim();
+            var password = document.getElementById('auth-password').value;
+            if (!email || !password) return;
+
+            authSubmitBtn.disabled = true;
+            authSubmitBtn.textContent = 'Signing in...';
+
+            var headers = { 'Content-Type': 'application/json' };
+            if (authCsrf) headers['X-CSRF-Token'] = authCsrf;
+
+            fetch('/api/artist/login', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: headers,
+                body: JSON.stringify({ email: email, password: password })
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(d) {
+                if (d.success && d.artist) {
+                    authDropdown.classList.remove('open');
+                    authLoginForm.reset();
+                    // Sync with page auth
+                    if (typeof window._pageSetLoggedIn === 'function') {
+                        window._pageSetLoggedIn(d.artist);
+                    } else {
+                        authUserName.textContent = d.artist.name;
+                        authArea.setAttribute('data-state', 'signed-in');
+                    }
+                } else {
+                    showAuthError(d.message || 'Invalid email or password.');
+                }
+            })
+            .catch(function() { showAuthError('Connection error. Please try again.'); })
+            .finally(function() {
+                authSubmitBtn.disabled = false;
+                authSubmitBtn.textContent = 'Sign In';
+            });
+        });
+
+        authSignoutBtn.addEventListener('click', function() {
+            // Sync with page auth (signOut handles the logout fetch)
+            if (typeof window._pageSignOut === 'function') {
+                window._pageSignOut();
+            } else {
+                var headers = {};
+                if (authCsrf) headers['X-CSRF-Token'] = authCsrf;
+                fetch('/api/artist/logout', {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: headers
+                }).catch(function() {});
+                authArea.setAttribute('data-state', 'signed-out');
+                authUserName.textContent = '';
+            }
+        });
     })();
     </script>
 </body>
