@@ -1237,7 +1237,7 @@
 
         <!-- User bar -->
         <div class="user-bar" id="user-bar">
-            <span>Signed in as <strong id="user-name"></strong> <span id="plan-badge"></span></span>
+            <span>Signed in as <strong id="user-name"></strong> <span style="color:#718096;font-size:0.85em;" id="user-email"></span> <span id="plan-badge"></span></span>
             <button type="button" id="signout-btn">Sign out</button>
         </div>
 
@@ -1731,6 +1731,7 @@
             currentArtist = artist;
             $('user-bar').classList.add('show');
             $('user-name').textContent = artist.name;
+            $('user-email').textContent = '(' + artist.email + ')';
             $('tab-submit').classList.remove('hidden');
             $('tab-dashboard').classList.remove('hidden');
             $('tab-signin').classList.add('hidden');

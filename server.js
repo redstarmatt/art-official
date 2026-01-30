@@ -716,8 +716,14 @@ function safeArtist(artist) {
 }
 
 // Email config
+let emailEnabled = false;
 let mailTransporter = null;
-if (process.env.SMTP_HOST) {
+const useResendApi = process.env.SMTP_HOST === 'smtp.resend.com' && process.env.SMTP_PASS;
+
+if (useResendApi) {
+    emailEnabled = true;
+    console.log('Email enabled via Resend API');
+} else if (process.env.SMTP_HOST) {
     const smtpPort = parseInt(process.env.SMTP_PORT) || 587;
     mailTransporter = nodemailer.createTransport({
         host: process.env.SMTP_HOST,
@@ -728,11 +734,37 @@ if (process.env.SMTP_HOST) {
         greetingTimeout: 10000,
         socketTimeout: 15000
     });
+    emailEnabled = true;
     console.log('Email enabled via ' + process.env.SMTP_HOST);
 }
 
+async function sendEmail({ from, to, subject, html, text }) {
+    if (useResendApi) {
+        const res = await fetch('https://api.resend.com/emails', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${process.env.SMTP_PASS}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                from: from || process.env.SMTP_FROM || process.env.SMTP_USER,
+                to: Array.isArray(to) ? to : [to],
+                subject,
+                ...(html ? { html } : { text })
+            })
+        });
+        if (!res.ok) {
+            const body = await res.text();
+            throw new Error(`Resend API error ${res.status}: ${body}`);
+        }
+        return await res.json();
+    } else if (mailTransporter) {
+        return mailTransporter.sendMail({ from, to, subject, html, text });
+    }
+}
+
 async function sendCertificateEmail(artist, certificate, host) {
-    if (!mailTransporter) return;
+    if (!emailEnabled) return;
 
     const verifyUrl = `${host}/verify.html?code=${certificate.id}`;
     const tierColors = { gold: '#b7960b', silver: '#718096', bronze: '#9c6b30' };
@@ -778,7 +810,7 @@ async function sendCertificateEmail(artist, certificate, host) {
     </div>`;
 
     try {
-        await mailTransporter.sendMail({
+        await sendEmail({
             from: process.env.SMTP_FROM || process.env.SMTP_USER,
             to: artist.email,
             subject: `Your Officially Human Art Certificate: ${certificate.title} (${certificate.id})`,
@@ -790,10 +822,10 @@ async function sendCertificateEmail(artist, certificate, host) {
 }
 
 async function sendVerificationEmail(artist, token, host) {
-    if (!mailTransporter) return;
+    if (!emailEnabled) return;
     const verifyUrl = `${host}/api/artist/verify-email?token=${encodeURIComponent(token)}`;
     try {
-        await mailTransporter.sendMail({
+        await sendEmail({
             from: process.env.SMTP_FROM || process.env.SMTP_USER,
             to: artist.email,
             subject: 'Verify your email — Officially Human Art',
@@ -821,9 +853,9 @@ async function sendVerificationEmail(artist, token, host) {
 }
 
 async function sendRetentionWarningEmail(artist) {
-    if (!mailTransporter) return;
+    if (!emailEnabled) return;
     try {
-        await mailTransporter.sendMail({
+        await sendEmail({
             from: process.env.SMTP_FROM || process.env.SMTP_USER,
             to: artist.email,
             subject: 'Your Officially Human Art account will be deleted',
@@ -1830,8 +1862,8 @@ app.post('/api/report/:certificateId', doubleCsrfProtection, (req, res) => {
     audit('certificate_reported', { certificateId: certificateId.toUpperCase(), reportId });
 
     // Notify admin via email
-    if (mailTransporter) {
-        mailTransporter.sendMail({
+    if (emailEnabled) {
+        sendEmail({
             from: process.env.SMTP_FROM || process.env.SMTP_USER,
             to: process.env.ADMIN_EMAIL || 'matt@mattlewsey.com',
             subject: `Certificate Report: ${certificateId.toUpperCase()}`,
@@ -1921,11 +1953,11 @@ app.post('/api/artist/forgot-password', doubleCsrfProtection, async (req, res) =
     const token = uuidv4();
     stmts.updateArtistResetToken.run(token, new Date(Date.now() + 3600000).toISOString(), artist.id);
 
-    if (mailTransporter) {
+    if (emailEnabled) {
         const host = `${req.protocol}://${req.get('host')}`;
         const resetUrl = `${host}/register.html#reset=${token}`;
         try {
-            await mailTransporter.sendMail({
+            await sendEmail({
                 from: process.env.SMTP_FROM || process.env.SMTP_USER,
                 to: artist.email,
                 subject: 'Officially Human Art — Password Reset',
@@ -2081,8 +2113,8 @@ app.post('/api/takedown', doubleCsrfProtection, (req, res) => {
     audit('copyright_takedown_filed', { reportId, certificateId: certificateId.toUpperCase(), claimantEmail });
 
     // Notify admin via email if configured
-    if (mailTransporter && process.env.ADMIN_EMAIL) {
-        mailTransporter.sendMail({
+    if (emailEnabled && process.env.ADMIN_EMAIL) {
+        sendEmail({
             from: process.env.SMTP_FROM || process.env.SMTP_USER,
             to: process.env.ADMIN_EMAIL,
             subject: `Copyright Takedown Request: ${certificateId}`,
