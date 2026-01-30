@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin — Officially Human Art</title>
+    <link rel="stylesheet" href="/fonts/fonts.css">
+    <style>
+        :root {
+            --navy: #1a365d;
+            --navy-light: #2c5282;
+            --cream: #fffef0;
+            --cream-dark: #f7f5e6;
+            --gold: #b7960b;
+            --ink: #2d3748;
+            --ink-light: #4a5568;
+            --ink-faint: #718096;
+            --error: #c53030;
+            --success: #276749;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: var(--cream);
+            color: var(--ink);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+        }
+        .container { max-width: 960px; margin: 0 auto; padding: 0 2rem; }
+        header {
+            padding: 1rem 0;
+            background: rgba(255, 254, 240, 0.92);
+            backdrop-filter: blur(16px);
+            border-bottom: 1px solid rgba(26, 54, 93, 0.06);
+        }
+        .header-inner { display: flex; justify-content: space-between; align-items: center; max-width: 960px; margin: 0 auto; padding: 0 2rem; }
+        .logo { font-family: 'Cormorant Garamond', serif; font-size: 1.5rem; font-weight: 700; color: var(--navy); text-decoration: none; }
+        .logo span { color: var(--gold); }
+        main { padding: 2rem 0 4rem; }
+        h1 { font-family: 'Cormorant Garamond', serif; font-size: 2rem; font-weight: 700; color: var(--navy); margin-bottom: 1.5rem; }
+        h2 { font-family: 'Cormorant Garamond', serif; font-size: 1.4rem; font-weight: 600; color: var(--navy); margin: 2rem 0 1rem; }
+
+        /* Login form */
+        #login-section { max-width: 400px; margin: 4rem auto; text-align: center; }
+        #login-section input {
+            width: 100%; padding: 0.7rem 1rem; border: 1.5px solid rgba(26,54,93,0.18);
+            border-radius: 6px; font-family: inherit; font-size: 0.9rem; margin-bottom: 1rem;
+            background: var(--cream);
+        }
+        .btn {
+            padding: 0.6rem 1.5rem; border: none; border-radius: 6px;
+            font-family: inherit; font-size: 0.88rem; font-weight: 600;
+            cursor: pointer; transition: all 0.2s;
+        }
+        .btn-navy { background: var(--navy); color: #fffef0; }
+        .btn-navy:hover { background: var(--navy-light); }
+        .btn-error { background: var(--error); color: #fff; }
+        .btn-error:hover { opacity: 0.9; }
+        .btn-sm { padding: 0.35rem 0.85rem; font-size: 0.8rem; }
+        .btn-outline { background: transparent; border: 1px solid rgba(26,54,93,0.2); color: var(--ink-light); }
+
+        /* Stats cards */
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+        .stat-card {
+            background: #fff; border-radius: 10px; padding: 1.25rem;
+            border: 1px solid rgba(26,54,93,0.08);
+            text-align: center;
+        }
+        .stat-value { font-size: 1.75rem; font-weight: 700; color: var(--navy); }
+        .stat-label { font-size: 0.78rem; color: var(--ink-faint); text-transform: uppercase; letter-spacing: 0.06em; }
+
+        /* Reports table */
+        .report-card {
+            background: #fff; border-radius: 10px; padding: 1.25rem;
+            border: 1px solid rgba(26,54,93,0.08); margin-bottom: 1rem;
+        }
+        .report-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; flex-wrap: wrap; }
+        .report-meta { font-size: 0.82rem; color: var(--ink-faint); margin-top: 0.5rem; }
+        .report-reason { margin-top: 0.75rem; font-size: 0.9rem; color: var(--ink-light); background: var(--cream-dark); padding: 0.75rem; border-radius: 6px; }
+        .report-actions { margin-top: 0.75rem; display: flex; gap: 0.5rem; flex-wrap: wrap; }
+        .badge {
+            display: inline-block; padding: 0.15rem 0.55rem; border-radius: 100px;
+            font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
+        }
+        .badge-pending { background: #fef3c7; color: #92400e; }
+        .badge-resolved { background: #d1fae5; color: #065f46; }
+        .badge-dismissed { background: #e5e7eb; color: #4b5563; }
+        .badge-copyright { background: #fce7f3; color: #9d174d; }
+
+        #admin-panel { display: none; }
+        .error-msg { color: var(--error); font-size: 0.88rem; margin-top: 0.5rem; }
+        .empty-msg { text-align: center; padding: 2rem; color: var(--ink-faint); font-size: 0.9rem; }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-inner">
+            <a href="/" class="logo">Officially <span>Human</span> Art</a>
+            <span style="font-size:0.85rem;color:var(--ink-faint);">Admin Panel</span>
+        </div>
+    </header>
+
+    <main>
+        <div class="container">
+            <!-- Login -->
+            <div id="login-section">
+                <h1>Admin Access</h1>
+                <p style="color:var(--ink-faint);margin-bottom:1.5rem;">Enter the admin key to continue.</p>
+                <input type="password" id="admin-key-input" placeholder="Admin Key">
+                <div id="login-error" class="error-msg" style="display:none;"></div>
+                <br>
+                <button type="button" class="btn btn-navy" id="admin-login-btn">Sign In</button>
+            </div>
+
+            <!-- Admin Panel -->
+            <div id="admin-panel">
+                <h1>Admin Dashboard</h1>
+
+                <!-- Stats -->
+                <div class="stats-grid" id="stats-grid"></div>
+
+                <!-- Quick Actions -->
+                <div style="margin-bottom:2rem;">
+                    <button type="button" class="btn btn-sm btn-outline" id="backup-btn">Run Backup</button>
+                    <span id="backup-status" style="margin-left:0.5rem;font-size:0.82rem;color:var(--ink-faint);"></span>
+                </div>
+
+                <!-- Reports -->
+                <h2>Reports</h2>
+                <div style="margin-bottom:1rem;">
+                    <button type="button" class="btn btn-sm btn-outline filter-btn active" data-filter="all">All</button>
+                    <button type="button" class="btn btn-sm btn-outline filter-btn" data-filter="pending">Pending</button>
+                    <button type="button" class="btn btn-sm btn-outline filter-btn" data-filter="resolved">Resolved</button>
+                </div>
+                <div id="reports-list"></div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+    (function() {
+        'use strict';
+        var adminKey = sessionStorage.getItem('oh_admin_key') || '';
+        var currentFilter = 'all';
+
+        function $(id) { return document.getElementById(id); }
+        function escHtml(s) { var d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
+
+        function apiHeaders() {
+            return { 'X-Admin-Key': adminKey, 'Content-Type': 'application/json' };
+        }
+
+        function apiFetch(url, opts) {
+            opts = opts || {};
+            opts.headers = Object.assign(apiHeaders(), opts.headers || {});
+            return fetch(url, opts).then(function(r) { return r.json(); });
+        }
+
+        // Login
+        function tryLogin() {
+            var key = $('admin-key-input').value.trim();
+            if (!key) return;
+            adminKey = key;
+            apiFetch('/api/admin/stats')
+                .then(function(d) {
+                    if (d.success) {
+                        sessionStorage.setItem('oh_admin_key', key);
+                        $('login-section').style.display = 'none';
+                        $('admin-panel').style.display = 'block';
+                        loadDashboard();
+                    } else {
+                        $('login-error').textContent = d.message || 'Invalid admin key';
+                        $('login-error').style.display = 'block';
+                    }
+                })
+                .catch(function() {
+                    $('login-error').textContent = 'Connection error';
+                    $('login-error').style.display = 'block';
+                });
+        }
+
+        $('admin-login-btn').addEventListener('click', tryLogin);
+        $('admin-key-input').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') tryLogin();
+        });
+
+        // Auto-login if key stored
+        if (adminKey) {
+            apiFetch('/api/admin/stats').then(function(d) {
+                if (d.success) {
+                    $('login-section').style.display = 'none';
+                    $('admin-panel').style.display = 'block';
+                    loadDashboard();
+                } else {
+                    sessionStorage.removeItem('oh_admin_key');
+                    adminKey = '';
+                }
+            }).catch(function() {});
+        }
+
+        function loadDashboard() {
+            loadStats();
+            loadReports();
+        }
+
+        function loadStats() {
+            apiFetch('/api/admin/stats').then(function(d) {
+                if (!d.success) return;
+                $('stats-grid').innerHTML =
+                    '<div class="stat-card"><div class="stat-value">' + d.artists + '</div><div class="stat-label">Artists</div></div>' +
+                    '<div class="stat-card"><div class="stat-value">' + d.certificates + '</div><div class="stat-label">Certificates</div></div>' +
+                    '<div class="stat-card"><div class="stat-value">' + d.pendingReports + '</div><div class="stat-label">Pending Reports</div></div>' +
+                    '<div class="stat-card"><div class="stat-value">' + d.totalReports + '</div><div class="stat-label">Total Reports</div></div>' +
+                    '<div class="stat-card"><div class="stat-value">' + (d.tiers.gold || 0) + '</div><div class="stat-label">Gold</div></div>' +
+                    '<div class="stat-card"><div class="stat-value">' + (d.tiers.silver || 0) + '</div><div class="stat-label">Silver</div></div>' +
+                    '<div class="stat-card"><div class="stat-value">' + (d.tiers.bronze || 0) + '</div><div class="stat-label">Bronze</div></div>';
+            });
+        }
+
+        function loadReports() {
+            apiFetch('/api/admin/reports').then(function(d) {
+                if (!d.success) return;
+                renderReports(d.reports);
+            });
+        }
+
+        function renderReports(reports) {
+            var container = $('reports-list');
+            var filtered = reports;
+            if (currentFilter !== 'all') {
+                filtered = reports.filter(function(r) {
+                    if (currentFilter === 'pending') return r.status === 'pending';
+                    return r.status !== 'pending';
+                });
+            }
+
+            if (filtered.length === 0) {
+                container.innerHTML = '<div class="empty-msg">No reports found.</div>';
+                return;
+            }
+
+            container.innerHTML = filtered.map(function(r) {
+                var badgeClass = r.status === 'pending' ? 'badge-pending' : (r.status === 'dismissed' ? 'badge-dismissed' : 'badge-resolved');
+                var typeBadge = r.type === 'copyright_takedown' ? ' <span class="badge badge-copyright">Copyright</span>' : '';
+                return '<div class="report-card" data-id="' + r.id + '">' +
+                    '<div class="report-header">' +
+                        '<div>' +
+                            '<strong>' + escHtml(r.certTitle) + '</strong> <span style="color:var(--ink-faint);font-size:0.82rem;">(' + escHtml(r.certificateId) + ')</span>' +
+                            typeBadge +
+                            '<div class="report-meta">By ' + escHtml(r.artistName) + ' &middot; Reported ' + new Date(r.createdAt).toLocaleDateString() +
+                            (r.reporterEmail ? ' &middot; ' + escHtml(r.reporterEmail) : '') + '</div>' +
+                        '</div>' +
+                        '<span class="badge ' + badgeClass + '">' + escHtml(r.status) + '</span>' +
+                    '</div>' +
+                    '<div class="report-reason">' + escHtml(r.reason) + '</div>' +
+                    (r.status === 'pending' ?
+                        '<div class="report-actions">' +
+                            '<button class="btn btn-sm btn-navy resolve-btn" data-id="' + r.id + '" data-action="upheld">Uphold</button>' +
+                            '<button class="btn btn-sm btn-outline resolve-btn" data-id="' + r.id + '" data-action="dismissed">Dismiss</button>' +
+                            '<button class="btn btn-sm btn-error revoke-btn" data-cert="' + r.certificateId + '">Revoke Certificate</button>' +
+                        '</div>' : (r.resolution ? '<div class="report-meta">Resolution: ' + escHtml(r.resolution) + ' on ' + new Date(r.resolvedAt).toLocaleDateString() + '</div>' : '')) +
+                '</div>';
+            }).join('');
+
+            // Bind resolve buttons
+            container.querySelectorAll('.resolve-btn').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    var id = btn.dataset.id;
+                    var action = btn.dataset.action;
+                    apiFetch('/api/admin/reports/' + id, {
+                        method: 'PUT',
+                        body: JSON.stringify({ resolution: action })
+                    }).then(function(d) {
+                        if (d.success) loadReports();
+                    });
+                });
+            });
+
+            // Bind revoke buttons
+            container.querySelectorAll('.revoke-btn').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    if (!confirm('Revoke certificate ' + btn.dataset.cert + '? This cannot be undone.')) return;
+                    apiFetch('/api/admin/certificates/' + btn.dataset.cert + '/revoke', { method: 'PUT' })
+                        .then(function(d) {
+                            if (d.success) { alert('Certificate revoked.'); loadReports(); loadStats(); }
+                        });
+                });
+            });
+        }
+
+        // Filter buttons
+        document.querySelectorAll('.filter-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.filter-btn').forEach(function(b) { b.classList.remove('active'); });
+                btn.classList.add('active');
+                currentFilter = btn.dataset.filter;
+                loadReports();
+            });
+        });
+
+        // Backup button
+        $('backup-btn').addEventListener('click', function() {
+            $('backup-status').textContent = 'Running...';
+            apiFetch('/api/admin/backup').then(function(d) {
+                $('backup-status').textContent = d.success ? 'Backup complete.' : (d.message || 'Failed.');
+            }).catch(function() { $('backup-status').textContent = 'Error.'; });
+        });
+    })();
+    </script>
+</body>
+</html>

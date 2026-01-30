@@ -1228,6 +1228,13 @@
             <p>Register your work. Prove it's officially human.</p>
         </div>
 
+        <!-- Email verification banner -->
+        <div id="verify-email-banner" style="display:none;background:#fef3c7;border:1px solid #f59e0b;border-radius:8px;padding:1rem 1.25rem;margin-bottom:1rem;font-size:0.9rem;color:#92400e;">
+            <strong>Please verify your email.</strong> Check your inbox for a verification link. You won't be able to submit artwork until your email is verified.
+            <button type="button" id="resend-verification-btn" style="margin-left:0.75rem;background:#1a365d;color:#fffef0;border:none;padding:0.35rem 0.85rem;border-radius:5px;font-size:0.82rem;font-weight:600;cursor:pointer;">Resend Email</button>
+            <span id="resend-status" style="margin-left:0.5rem;font-size:0.82rem;"></span>
+        </div>
+
         <!-- User bar -->
         <div class="user-bar" id="user-bar">
             <span>Signed in as <strong id="user-name"></strong> <span id="plan-badge"></span></span>
@@ -1733,6 +1740,11 @@
             loadPlanInfo(artist.id);
             var dangerZone = $('account-danger-zone');
             if (dangerZone) dangerZone.style.display = '';
+            // Show email verification banner if not verified
+            var banner = $('verify-email-banner');
+            if (banner) {
+                banner.style.display = artist.emailVerified ? 'none' : 'block';
+            }
             // Sync header auth area
             var ha = $('auth-area');
             if (ha) {
@@ -1780,6 +1792,35 @@
         // Expose for header auth IIFE
         window._pageSetLoggedIn = setLoggedIn;
         window._pageSignOut = signOut;
+
+        // Resend verification email
+        $('resend-verification-btn').addEventListener('click', function() {
+            var btn = $('resend-verification-btn');
+            var status = $('resend-status');
+            btn.disabled = true;
+            status.textContent = 'Sending...';
+            fetch('/api/artist/resend-verification', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: csrfHeaders('application/json')
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(d) {
+                status.textContent = d.success ? 'Sent! Check your inbox.' : (d.message || 'Failed to send.');
+            })
+            .catch(function() { status.textContent = 'Error. Please try again.'; })
+            .finally(function() { btn.disabled = false; });
+        });
+
+        // Check for email-verified hash
+        if (window.location.hash === '#email-verified' && currentArtist) {
+            var banner = $('verify-email-banner');
+            if (banner) banner.style.display = 'none';
+            // Refresh artist data
+            fetch('/api/artist/me', { credentials: 'same-origin' })
+                .then(function(r) { return r.json(); })
+                .then(function(d) { if (d.success && d.artist) setLoggedIn(d.artist); });
+        }
 
         // ---- Alerts ----
         function showAlert(id, msg) {

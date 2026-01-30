@@ -294,6 +294,7 @@
                 <a href="#privacy">Privacy Policy</a>
                 <a href="#disclaimer">Disclaimer</a>
                 <a href="#copyright">Copyright</a>
+                <a href="#takedown">Copyright Takedown</a>
             </div>
 
             <!-- TERMS OF SERVICE -->
@@ -405,10 +406,52 @@
             <p>By submitting work to Officially Human Art, creators grant Officially Human Art a limited, non-exclusive licence to display submitted images and evidence on certificate verification pages and artist profiles for the purpose of operating the Service. This licence does not extend to any commercial use of the work and may be revoked by the creator by deleting their account.</p>
 
             <h3>Takedown Requests</h3>
-            <p>If you believe your copyrighted work has been submitted to Officially Human Art without your permission, please contact us to request its removal.</p>
+            <p>If you believe your copyrighted work has been submitted to Officially Human Art without your permission, please use the takedown form below or contact us to request its removal.</p>
 
             <h3>Officially Human Art Branding</h3>
             <p>The Officially Human Art name, logo, and badge designs are the property of Officially Human Art. Certificate badges and embed codes are provided for use by certified creators to display on their own websites and platforms.</p>
+
+            <!-- COPYRIGHT TAKEDOWN -->
+            <h2 id="takedown">Copyright Takedown</h2>
+
+            <h3>Policy</h3>
+            <p>Officially Human Art respects copyright and intellectual property rights. If you believe that a work registered on our platform infringes your copyright, you may submit a takedown request using the form below.</p>
+            <p>Upon receiving a valid takedown request, we will:</p>
+            <ul>
+                <li>Review the claim promptly</li>
+                <li>Notify the certificate holder of the claim</li>
+                <li>Revoke the certificate if the claim is upheld</li>
+                <li>Remove associated content from public display</li>
+            </ul>
+            <p>False or misleading takedown requests may result in legal liability. By submitting a takedown request, you confirm that the information provided is accurate and that you are authorised to act on behalf of the copyright owner.</p>
+
+            <h3>Submit a Takedown Request</h3>
+            <div id="takedown-alert" style="display:none;padding:0.75rem 1rem;border-radius:6px;margin-bottom:1rem;font-size:0.9rem;"></div>
+            <form id="takedown-form" style="background:#fff;border:1px solid rgba(26,54,93,0.1);border-radius:10px;padding:1.5rem;margin-top:1rem;">
+                <div style="margin-bottom:1rem;">
+                    <label for="td-name" style="display:block;font-size:0.85rem;font-weight:600;color:var(--ink-light);margin-bottom:0.3rem;">Your Full Name <span style="color:var(--error);">*</span></label>
+                    <input type="text" id="td-name" required style="width:100%;padding:0.6rem 0.85rem;border:1.5px solid rgba(26,54,93,0.18);border-radius:6px;font-family:inherit;font-size:0.9rem;background:var(--cream-dark);">
+                </div>
+                <div style="margin-bottom:1rem;">
+                    <label for="td-email" style="display:block;font-size:0.85rem;font-weight:600;color:var(--ink-light);margin-bottom:0.3rem;">Email Address <span style="color:var(--error);">*</span></label>
+                    <input type="email" id="td-email" required style="width:100%;padding:0.6rem 0.85rem;border:1.5px solid rgba(26,54,93,0.18);border-radius:6px;font-family:inherit;font-size:0.9rem;background:var(--cream-dark);">
+                </div>
+                <div style="margin-bottom:1rem;">
+                    <label for="td-cert-id" style="display:block;font-size:0.85rem;font-weight:600;color:var(--ink-light);margin-bottom:0.3rem;">Certificate ID <span style="color:var(--error);">*</span></label>
+                    <input type="text" id="td-cert-id" placeholder="e.g. OH-2026-ABC123" required style="width:100%;padding:0.6rem 0.85rem;border:1.5px solid rgba(26,54,93,0.18);border-radius:6px;font-family:inherit;font-size:0.9rem;background:var(--cream-dark);">
+                </div>
+                <div style="margin-bottom:1rem;">
+                    <label for="td-work" style="display:block;font-size:0.85rem;font-weight:600;color:var(--ink-light);margin-bottom:0.3rem;">Description of Copyrighted Work <span style="color:var(--error);">*</span></label>
+                    <textarea id="td-work" rows="3" required style="width:100%;padding:0.6rem 0.85rem;border:1.5px solid rgba(26,54,93,0.18);border-radius:6px;font-family:inherit;font-size:0.9rem;background:var(--cream-dark);resize:vertical;"></textarea>
+                </div>
+                <div style="margin-bottom:1.25rem;">
+                    <label style="display:flex;align-items:flex-start;gap:0.5rem;font-size:0.88rem;color:var(--ink-light);cursor:pointer;">
+                        <input type="checkbox" id="td-sworn" required style="margin-top:0.25rem;">
+                        <span>I declare under penalty of perjury that I am the copyright owner or am authorised to act on behalf of the owner, and that the information in this notice is accurate. I understand that filing a false claim may result in legal liability.</span>
+                    </label>
+                </div>
+                <button type="submit" id="td-submit-btn" style="padding:0.65rem 1.5rem;background:var(--navy);color:#fffef0;border:none;border-radius:6px;font-family:inherit;font-size:0.9rem;font-weight:600;cursor:pointer;">Submit Takedown Request</button>
+            </form>
         </div>
     </main>
 
@@ -520,6 +563,61 @@
             authArea.setAttribute('data-state', 'signed-out');
             authUserName.textContent = '';
         });
+
+        // Takedown form
+        var takedownForm = document.getElementById('takedown-form');
+        if (takedownForm) {
+            takedownForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                var alert = document.getElementById('takedown-alert');
+                var btn = document.getElementById('td-submit-btn');
+                btn.disabled = true;
+                btn.textContent = 'Submitting...';
+                alert.style.display = 'none';
+
+                var headers = { 'Content-Type': 'application/json' };
+                if (authCsrf) headers['X-CSRF-Token'] = authCsrf;
+
+                fetch('/api/takedown', {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: headers,
+                    body: JSON.stringify({
+                        claimantName: document.getElementById('td-name').value.trim(),
+                        claimantEmail: document.getElementById('td-email').value.trim(),
+                        certificateId: document.getElementById('td-cert-id').value.trim(),
+                        copyrightedWork: document.getElementById('td-work').value.trim(),
+                        swornStatement: document.getElementById('td-sworn').checked ? 'true' : ''
+                    })
+                })
+                .then(function(r) { return r.json(); })
+                .then(function(d) {
+                    alert.style.display = 'block';
+                    if (d.success) {
+                        alert.style.background = '#d1fae5';
+                        alert.style.color = '#065f46';
+                        alert.style.borderColor = '#6ee7b7';
+                        alert.textContent = d.message || 'Takedown request submitted successfully.';
+                        takedownForm.reset();
+                    } else {
+                        alert.style.background = 'rgba(197,48,48,0.08)';
+                        alert.style.color = '#c53030';
+                        alert.style.borderColor = '#c53030';
+                        alert.textContent = d.message || 'Submission failed. Please try again.';
+                    }
+                })
+                .catch(function() {
+                    alert.style.display = 'block';
+                    alert.style.background = 'rgba(197,48,48,0.08)';
+                    alert.style.color = '#c53030';
+                    alert.textContent = 'Connection error. Please try again.';
+                })
+                .finally(function() {
+                    btn.disabled = false;
+                    btn.textContent = 'Submit Takedown Request';
+                });
+            });
+        }
     })();
     </script>
 </body>

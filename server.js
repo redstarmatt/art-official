@@ -27,9 +27,12 @@ const PERSIST_DIR = fs.existsSync('/app/persist') ? '/app/persist' : '.';
 const DATA_DIR = path.join(PERSIST_DIR, 'data');
 const UPLOADS_DIR = path.join(PERSIST_DIR, 'uploads');
 
+const BACKUPS_DIR = path.join(PERSIST_DIR, 'backups');
+
 // Ensure directories exist
 if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+if (!fs.existsSync(BACKUPS_DIR)) fs.mkdirSync(BACKUPS_DIR, { recursive: true });
 
 // ============================================================
 // Phase 1: SQLite Database
@@ -115,6 +118,21 @@ CREATE TABLE IF NOT EXISTS sessions (
   expire TEXT NOT NULL
 );
 `);
+
+// Add columns for email verification, retention, reports — safe to re-run (ALTER TABLE IF NOT EXISTS pattern)
+const addColumnIfMissing = (table, column, type) => {
+    const cols = db.prepare(`PRAGMA table_info(${table})`).all().map(c => c.name);
+    if (!cols.includes(column)) {
+        db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${type}`);
+    }
+};
+addColumnIfMissing('artists', 'email_verified', 'INTEGER DEFAULT 0');
+addColumnIfMissing('artists', 'verification_token', 'TEXT');
+addColumnIfMissing('artists', 'last_login_at', 'TEXT');
+addColumnIfMissing('artists', 'deletion_warning_sent_at', 'TEXT');
+addColumnIfMissing('reports', 'resolution', 'TEXT');
+addColumnIfMissing('reports', 'resolved_at', 'TEXT');
+addColumnIfMissing('reports', 'type', "TEXT DEFAULT 'dispute'");
 
 // Create indexes (IF NOT EXISTS)
 db.exec(`
@@ -263,6 +281,24 @@ const stmts = {
     // Find certificate by artwork image or evidence filename
     findCertByArtworkImage: db.prepare('SELECT * FROM certificates WHERE artwork_image = ?'),
     findEvidenceFile: db.prepare('SELECT ef.*, c.artist_id FROM evidence_files ef JOIN certificates c ON ef.certificate_id = c.id WHERE ef.filename = ?'),
+
+    // Email verification
+    updateArtistVerification: db.prepare('UPDATE artists SET email_verified = ?, verification_token = ? WHERE id = ?'),
+    getArtistByVerificationToken: db.prepare('SELECT * FROM artists WHERE verification_token = ?'),
+
+    // Login tracking
+    updateLastLogin: db.prepare('UPDATE artists SET last_login_at = ? WHERE id = ?'),
+
+    // Data retention
+    getInactiveAccounts: db.prepare(`SELECT a.* FROM artists a LEFT JOIN certificates c ON c.artist_id = a.id WHERE a.last_login_at < ? AND c.id IS NULL GROUP BY a.id`),
+
+    // Admin: reports
+    getAllReports: db.prepare(`SELECT r.*, c.title AS cert_title, c.artist_id, c.artist_name FROM reports r JOIN certificates c ON r.certificate_id = c.id ORDER BY r.created_at DESC`),
+    getReportById: db.prepare('SELECT * FROM reports WHERE id = ?'),
+    updateReportResolution: db.prepare('UPDATE reports SET resolution = ?, resolved_at = ?, status = ? WHERE id = ?'),
+
+    // Admin: certificate revocation
+    updateCertStatus: db.prepare('UPDATE certificates SET status = ? WHERE id = ?'),
 };
 
 // Helper: convert DB row to artist object with camelCase
@@ -274,7 +310,11 @@ function rowToArtist(row) {
         plan: row.plan, planStatus: row.plan_status, planExpiresAt: row.plan_expires_at,
         stripeCustomerId: row.stripe_customer_id, stripeSubscriptionId: row.stripe_subscription_id,
         resetToken: row.reset_token, resetTokenExpires: row.reset_token_expires,
-        createdAt: row.created_at
+        createdAt: row.created_at,
+        emailVerified: row.email_verified === 1,
+        verificationToken: row.verification_token,
+        lastLoginAt: row.last_login_at,
+        deletionWarningSentAt: row.deletion_warning_sent_at
     };
 }
 
@@ -494,6 +534,21 @@ const { doubleCsrfProtection, generateCsrfToken } = doubleCsrf({
     getCsrfTokenFromRequest: (req) => req.headers['x-csrf-token']
 });
 
+// Slow request logging
+app.use((req, res, next) => {
+    const start = Date.now();
+    res.on('finish', () => {
+        const duration = Date.now() - start;
+        if (duration > 1000) {
+            console.log(`[SLOW] ${req.method} ${req.path} took ${duration}ms`);
+        }
+        if (res.statusCode >= 500) {
+            errorCount5xx++;
+        }
+    });
+    next();
+});
+
 // CSRF token endpoint (exempt from CSRF protection itself)
 app.get('/api/csrf-token', (req, res) => {
     // Ensure session is persisted so the session ID stays stable for CSRF HMAC
@@ -649,7 +704,7 @@ function isCreator(artist) {
 
 // Sanitise artist for client (strip password hash and internal fields)
 function safeArtist(artist) {
-    const { passwordHash, stripeCustomerId, stripeSubscriptionId, resetToken, resetTokenExpires, ...safe } = artist;
+    const { passwordHash, stripeCustomerId, stripeSubscriptionId, resetToken, resetTokenExpires, verificationToken, deletionWarningSentAt, ...safe } = artist;
     return safe;
 }
 
@@ -723,6 +778,64 @@ async function sendCertificateEmail(artist, certificate, host) {
     }
 }
 
+async function sendVerificationEmail(artist, token, host) {
+    if (!mailTransporter) return;
+    const verifyUrl = `${host}/api/artist/verify-email?token=${encodeURIComponent(token)}`;
+    try {
+        await mailTransporter.sendMail({
+            from: process.env.SMTP_FROM || process.env.SMTP_USER,
+            to: artist.email,
+            subject: 'Verify your email — Officially Human Art',
+            html: `
+            <div style="font-family:'Helvetica Neue',Arial,sans-serif;max-width:600px;margin:0 auto;background:#fffef0;">
+                <div style="background:#1a365d;color:#fffef0;padding:2rem;text-align:center;">
+                    <div style="font-family:Georgia,serif;font-size:1.75rem;font-weight:bold;">Officially <span style="color:#d4af37;">Human</span> Art</div>
+                </div>
+                <div style="padding:2rem;">
+                    <p style="color:#4a5568;margin-bottom:1.5rem;">Hi ${artist.name},</p>
+                    <p style="color:#4a5568;margin-bottom:1.5rem;">Please verify your email address to start submitting artwork for certification.</p>
+                    <div style="text-align:center;margin-bottom:1.5rem;">
+                        <a href="${verifyUrl}" style="display:inline-block;padding:0.75rem 2rem;background:#1a365d;color:#fffef0;text-decoration:none;border-radius:6px;font-weight:600;font-size:0.9rem;">Verify Email</a>
+                    </div>
+                    <p style="color:#718096;font-size:0.82rem;">If you didn't create an account, you can safely ignore this email.</p>
+                </div>
+                <div style="background:#f7f5e6;padding:1.25rem;text-align:center;font-size:0.75rem;color:#a0aec0;border-top:1px solid rgba(26,54,93,0.06);">
+                    <p style="margin:0;">&copy; 2026 Officially Human Art</p>
+                </div>
+            </div>`
+        });
+    } catch (err) {
+        console.error('Failed to send verification email:', err.message);
+    }
+}
+
+async function sendRetentionWarningEmail(artist) {
+    if (!mailTransporter) return;
+    try {
+        await mailTransporter.sendMail({
+            from: process.env.SMTP_FROM || process.env.SMTP_USER,
+            to: artist.email,
+            subject: 'Your Officially Human Art account will be deleted',
+            html: `
+            <div style="font-family:'Helvetica Neue',Arial,sans-serif;max-width:600px;margin:0 auto;background:#fffef0;">
+                <div style="background:#1a365d;color:#fffef0;padding:2rem;text-align:center;">
+                    <div style="font-family:Georgia,serif;font-size:1.75rem;font-weight:bold;">Officially <span style="color:#d4af37;">Human</span> Art</div>
+                </div>
+                <div style="padding:2rem;">
+                    <p style="color:#4a5568;margin-bottom:1.5rem;">Hi ${artist.name},</p>
+                    <p style="color:#4a5568;margin-bottom:1.5rem;">Your account has been inactive for over 24 months and has no certificates. It will be permanently deleted in 30 days unless you log in.</p>
+                    <p style="color:#718096;font-size:0.82rem;">If you'd like to keep your account, simply log in before the deletion date.</p>
+                </div>
+                <div style="background:#f7f5e6;padding:1.25rem;text-align:center;font-size:0.75rem;color:#a0aec0;border-top:1px solid rgba(26,54,93,0.06);">
+                    <p style="margin:0;">&copy; 2026 Officially Human Art</p>
+                </div>
+            </div>`
+        });
+    } catch (err) {
+        console.error('Failed to send retention warning email:', err.message);
+    }
+}
+
 // Structured audit logging
 function audit(event, details = {}) {
     const entry = { timestamp: new Date().toISOString(), event, ...details };
@@ -730,8 +843,234 @@ function audit(event, details = {}) {
 }
 
 // ============================================================
+// Automated Backup
+// ============================================================
+function backupDatabase() {
+    try {
+        db.pragma('wal_checkpoint(TRUNCATE)');
+        const dateStr = new Date().toISOString().slice(0, 10);
+        const backupPath = path.join(BACKUPS_DIR, `backup-${dateStr}.db`);
+        fs.copyFileSync(DB_PATH, backupPath);
+
+        // Prune backups older than 7 days
+        const files = fs.readdirSync(BACKUPS_DIR).filter(f => f.startsWith('backup-') && f.endsWith('.db'));
+        const cutoff = new Date();
+        cutoff.setDate(cutoff.getDate() - 7);
+        for (const file of files) {
+            const dateMatch = file.match(/backup-(\d{4}-\d{2}-\d{2})\.db/);
+            if (dateMatch && new Date(dateMatch[1]) < cutoff) {
+                fs.unlinkSync(path.join(BACKUPS_DIR, file));
+            }
+        }
+
+        audit('backup_completed', { backupPath, date: dateStr });
+    } catch (err) {
+        console.error('Backup failed:', err.message);
+    }
+}
+
+// Run backup on startup and every 24 hours
+backupDatabase();
+setInterval(backupDatabase, 24 * 60 * 60 * 1000);
+
+// ============================================================
+// Data Retention Cleanup
+// ============================================================
+function runRetentionCleanup() {
+    try {
+        const cutoff24Months = new Date();
+        cutoff24Months.setMonth(cutoff24Months.getMonth() - 24);
+        const cutoffStr = cutoff24Months.toISOString();
+
+        const inactive = stmts.getInactiveAccounts.all(cutoffStr);
+
+        for (const row of inactive) {
+            const artist = rowToArtist(row);
+            if (!artist.deletionWarningSentAt) {
+                // Send warning, set timestamp
+                db.prepare('UPDATE artists SET deletion_warning_sent_at = ? WHERE id = ?')
+                    .run(new Date().toISOString(), artist.id);
+                sendRetentionWarningEmail(artist);
+                audit('retention_warning_sent', { artistId: artist.id, email: artist.email });
+            } else {
+                // Check if 30 days have passed since warning
+                const warnDate = new Date(artist.deletionWarningSentAt);
+                const gracePeriod = new Date(warnDate);
+                gracePeriod.setDate(gracePeriod.getDate() + 30);
+
+                if (new Date() > gracePeriod) {
+                    // Delete the account
+                    const deleteAll = db.transaction(() => {
+                        db.prepare('DELETE FROM reports WHERE certificate_id IN (SELECT id FROM certificates WHERE artist_id = ?)').run(artist.id);
+                        db.prepare('DELETE FROM certificate_history WHERE certificate_id IN (SELECT id FROM certificates WHERE artist_id = ?)').run(artist.id);
+                        db.prepare('DELETE FROM evidence_files WHERE certificate_id IN (SELECT id FROM certificates WHERE artist_id = ?)').run(artist.id);
+                        db.prepare('DELETE FROM certificates WHERE artist_id = ?').run(artist.id);
+                        db.prepare('DELETE FROM artists WHERE id = ?').run(artist.id);
+                    });
+                    deleteAll();
+                    audit('retention_account_deleted', { artistId: artist.id, email: artist.email });
+                }
+            }
+        }
+    } catch (err) {
+        console.error('Retention cleanup error:', err.message);
+    }
+}
+
+// Run retention cleanup daily (alongside backup)
+runRetentionCleanup();
+setInterval(runRetentionCleanup, 24 * 60 * 60 * 1000);
+
+// ============================================================
+// Admin Auth Middleware
+// ============================================================
+function requireAdmin(req, res, next) {
+    const adminKey = process.env.ADMIN_KEY;
+    if (!adminKey) {
+        return res.status(503).json({ success: false, message: 'Admin not configured' });
+    }
+    const provided = req.headers['x-admin-key'] || req.query.adminKey;
+    if (provided !== adminKey) {
+        return res.status(403).json({ success: false, message: 'Invalid admin key' });
+    }
+    next();
+}
+
+// ============================================================
+// Monitoring: Error count and slow request tracking
+// ============================================================
+let errorCount5xx = 0;
+
+// ============================================================
 // API Routes
 // ============================================================
+
+// ---- Health / Monitoring ----
+app.get('/api/health', (req, res) => {
+    let dbStatus = 'connected';
+    try {
+        db.prepare('SELECT 1').get();
+    } catch (e) {
+        dbStatus = 'error';
+    }
+
+    // Disk usage of data + uploads
+    let diskUsage = 0;
+    try {
+        const sumDir = (dir) => {
+            if (!fs.existsSync(dir)) return 0;
+            return fs.readdirSync(dir).reduce((sum, f) => {
+                const fp = path.join(dir, f);
+                try { return sum + fs.statSync(fp).size; } catch (e) { return sum; }
+            }, 0);
+        };
+        diskUsage = sumDir(DATA_DIR) + sumDir(UPLOADS_DIR);
+    } catch (e) { /* ignore */ }
+
+    // Last backup
+    let lastBackup = null;
+    try {
+        const backups = fs.readdirSync(BACKUPS_DIR).filter(f => f.startsWith('backup-') && f.endsWith('.db')).sort();
+        if (backups.length > 0) {
+            const match = backups[backups.length - 1].match(/backup-(\d{4}-\d{2}-\d{2})\.db/);
+            if (match) lastBackup = match[1];
+        }
+    } catch (e) { /* ignore */ }
+
+    const artistCount = stmts.countArtists.get().n;
+    const certificateCount = stmts.countCerts.get().n;
+
+    const status = dbStatus === 'connected' ? 'ok' : 'degraded';
+
+    res.json({
+        status,
+        uptime: Math.floor(process.uptime()),
+        database: dbStatus,
+        diskUsage,
+        lastBackup,
+        artistCount,
+        certificateCount,
+        errorCount5xx
+    });
+});
+
+// ---- Admin: Manual Backup ----
+app.get('/api/admin/backup', requireAdmin, (req, res) => {
+    try {
+        backupDatabase();
+        res.json({ success: true, message: 'Backup completed' });
+    } catch (err) {
+        res.status(500).json({ success: false, message: 'Backup failed: ' + err.message });
+    }
+});
+
+// ---- Admin: Stats ----
+app.get('/api/admin/stats', requireAdmin, (req, res) => {
+    const artists = stmts.countArtists.get().n;
+    const certificates = stmts.countCerts.get().n;
+    const pendingReports = db.prepare("SELECT COUNT(*) as n FROM reports WHERE status = 'pending'").get().n;
+    const totalReports = db.prepare('SELECT COUNT(*) as n FROM reports').get().n;
+    const tiers = { gold: 0, silver: 0, bronze: 0 };
+    stmts.countTiers.all().forEach(r => {
+        if (tiers[r.tier] !== undefined) tiers[r.tier] = r.n;
+    });
+
+    res.json({ success: true, artists, certificates, tiers, pendingReports, totalReports });
+});
+
+// ---- Admin: List Reports ----
+app.get('/api/admin/reports', requireAdmin, (req, res) => {
+    const reports = stmts.getAllReports.all();
+    res.json({
+        success: true,
+        reports: reports.map(r => ({
+            id: r.id,
+            certificateId: r.certificate_id,
+            certTitle: r.cert_title,
+            artistId: r.artist_id,
+            artistName: r.artist_name,
+            reason: r.reason,
+            reporterEmail: r.reporter_email,
+            type: r.type || 'dispute',
+            status: r.status,
+            resolution: r.resolution,
+            resolvedAt: r.resolved_at,
+            createdAt: r.created_at
+        }))
+    });
+});
+
+// ---- Admin: Resolve Report ----
+app.put('/api/admin/reports/:reportId', requireAdmin, express.json(), (req, res) => {
+    const { reportId } = req.params;
+    const { resolution } = req.body;
+
+    const report = stmts.getReportById.get(reportId);
+    if (!report) {
+        return res.status(404).json({ success: false, message: 'Report not found' });
+    }
+
+    const status = resolution === 'dismissed' ? 'dismissed' : 'resolved';
+    stmts.updateReportResolution.run(resolution, new Date().toISOString(), status, reportId);
+    audit('report_resolved', { reportId, resolution, status });
+
+    res.json({ success: true, message: 'Report updated' });
+});
+
+// ---- Admin: Revoke Certificate ----
+app.put('/api/admin/certificates/:certId/revoke', requireAdmin, (req, res) => {
+    const { certId } = req.params;
+    const cert = stmts.getCertById.get(certId.toUpperCase());
+    if (!cert) {
+        return res.status(404).json({ success: false, message: 'Certificate not found' });
+    }
+
+    stmts.updateCertStatus.run('revoked', certId.toUpperCase());
+    stmts.insertHistory.run(certId.toUpperCase(), 'revoked', null, new Date().toISOString());
+    audit('certificate_revoked', { certificateId: certId.toUpperCase() });
+
+    res.json({ success: true, message: 'Certificate revoked' });
+});
 
 // Session restore endpoint
 app.get('/api/artist/me', (req, res) => {
@@ -786,6 +1125,8 @@ app.post('/api/artist/register', doubleCsrfProtection, async (req, res) => {
     const passwordHash = await bcrypt.hash(password, 10);
     const portfolioVal = portfolio && portfolio.trim() && !/^https?:\/\//i.test(portfolio.trim()) ? 'https://' + portfolio.trim() : (portfolio || '').trim();
 
+    const verificationToken = uuidv4();
+
     stmts.insertArtist.run({
         id: artistId, name, email, password_hash: passwordHash,
         bio: bio || '', location: location || '', portfolio: portfolioVal,
@@ -795,9 +1136,18 @@ app.post('/api/artist/register', doubleCsrfProtection, async (req, res) => {
         created_at: new Date().toISOString()
     });
 
+    // Set email verification fields
+    stmts.updateArtistVerification.run(0, verificationToken, artistId);
+    stmts.updateLastLogin.run(new Date().toISOString(), artistId);
+
     const artist = rowToArtist(stmts.getArtistById.get(artistId));
     req.session.artistId = artistId;
     audit('registration', { artistId, email });
+
+    // Send verification email (non-blocking)
+    const host = `${req.protocol}://${req.get('host')}`;
+    sendVerificationEmail(artist, verificationToken, host);
+
     res.json({ success: true, artist: safeArtist(artist) });
 });
 
@@ -829,8 +1179,51 @@ app.post('/api/artist/login', doubleCsrfProtection, async (req, res) => {
     }
 
     req.session.artistId = artist.id;
+    stmts.updateLastLogin.run(new Date().toISOString(), artist.id);
     audit('login_success', { artistId: artist.id });
     res.json({ success: true, artist: safeArtist(artist) });
+});
+
+// Verify email
+app.get('/api/artist/verify-email', (req, res) => {
+    const { token } = req.query;
+    if (!token) {
+        return res.status(400).json({ success: false, message: 'Missing verification token' });
+    }
+
+    const row = stmts.getArtistByVerificationToken.get(token);
+    if (!row) {
+        return res.status(400).json({ success: false, message: 'Invalid or expired verification token' });
+    }
+
+    stmts.updateArtistVerification.run(1, null, row.id);
+    audit('email_verified', { artistId: row.id });
+
+    // Redirect to register page with success indicator
+    res.redirect('/register.html#email-verified');
+});
+
+// Resend verification email
+app.post('/api/artist/resend-verification', doubleCsrfProtection, requireAuth, async (req, res) => {
+    const artist = rowToArtist(stmts.getArtistById.get(req.session.artistId));
+    if (!artist) {
+        return res.status(404).json({ success: false, message: 'Artist not found' });
+    }
+    if (artist.emailVerified) {
+        return res.json({ success: true, message: 'Email already verified' });
+    }
+
+    const ip = req.ip || req.connection.remoteAddress;
+    if (!rateLimit('resend-verification:' + ip, 3, 3600000)) {
+        return res.status(429).json({ success: false, message: 'Too many requests. Please try again later.' });
+    }
+
+    const token = uuidv4();
+    stmts.updateArtistVerification.run(0, token, artist.id);
+    const host = `${req.protocol}://${req.get('host')}`;
+    await sendVerificationEmail(artist, token, host);
+
+    res.json({ success: true, message: 'Verification email sent' });
 });
 
 // Update artist profile (session-protected)
@@ -899,6 +1292,76 @@ app.get('/api/artist/profile/:slug', (req, res) => {
     });
 });
 
+// Data export (GDPR Art. 15/20)
+app.get('/api/artist/:artistId/export', requireAuth, (req, res) => {
+    const { artistId } = req.params;
+    if (req.session.artistId !== artistId) {
+        return res.status(403).json({ success: false, message: 'Not authorized' });
+    }
+
+    const artist = rowToArtist(stmts.getArtistById.get(artistId));
+    if (!artist) {
+        return res.status(404).json({ success: false, message: 'Artist not found' });
+    }
+
+    const certRows = stmts.getCertsByArtist.all(artistId);
+    const certificates = certRows.map(row => {
+        const cert = rowToCert(row);
+        cert.evidenceFiles = getEvidenceForCert(cert.id);
+        cert.history = stmts.getHistory.all(cert.id).map(h => ({
+            type: h.type,
+            fields: h.fields ? JSON.parse(h.fields) : null,
+            createdAt: h.created_at
+        }));
+        return cert;
+    });
+
+    // Reports against this artist's certificates
+    const reports = [];
+    for (const cert of certificates) {
+        const reportRows = db.prepare('SELECT * FROM reports WHERE certificate_id = ?').all(cert.id);
+        for (const r of reportRows) {
+            reports.push({
+                id: r.id,
+                certificateId: r.certificate_id,
+                reason: r.reason,
+                reporterEmail: r.reporter_email,
+                type: r.type,
+                status: r.status,
+                resolution: r.resolution,
+                resolvedAt: r.resolved_at,
+                createdAt: r.created_at
+            });
+        }
+    }
+
+    const exportData = {
+        exportDate: new Date().toISOString(),
+        artist: {
+            id: artist.id,
+            name: artist.name,
+            email: artist.email,
+            bio: artist.bio,
+            location: artist.location,
+            portfolio: artist.portfolio,
+            slug: artist.slug,
+            plan: artist.plan,
+            planStatus: artist.planStatus,
+            emailVerified: artist.emailVerified,
+            createdAt: artist.createdAt,
+            lastLoginAt: artist.lastLoginAt
+        },
+        certificates,
+        reports
+    };
+
+    audit('data_export', { artistId });
+
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Content-Disposition', 'attachment; filename="data-export.json"');
+    res.json(exportData);
+});
+
 // Submit artwork for certification (session-protected)
 app.post('/api/artwork/submit', requireAuth, (req, res, next) => {
     artworkUpload(req, res, (err) => {
@@ -922,6 +1385,11 @@ app.post('/api/artwork/submit', requireAuth, (req, res, next) => {
     const artist = rowToArtist(stmts.getArtistById.get(artistId));
     if (!artist) {
         return res.status(404).json({ success: false, message: 'Artist not found' });
+    }
+
+    // Check email verification
+    if (!artist.emailVerified) {
+        return res.status(403).json({ success: false, message: 'Please verify your email address before submitting artwork.' });
     }
 
     // Check work limit for Free tier
@@ -1562,6 +2030,62 @@ app.delete('/api/artist/:artistId', doubleCsrfProtection, requireAuth, async (re
     res.json({ success: true, message: 'Account and all associated data have been permanently deleted.' });
 });
 
-app.listen(PORT, () => {
-    console.log(`Officially Human Art server running at http://localhost:${PORT}`);
+// Copyright takedown request
+app.post('/api/takedown', doubleCsrfProtection, (req, res) => {
+    const { claimantName, claimantEmail, copyrightedWork, certificateId, swornStatement } = req.body;
+
+    if (!claimantName || !claimantEmail || !copyrightedWork || !certificateId || !swornStatement) {
+        return res.status(400).json({ success: false, message: 'All fields are required for a takedown request.' });
+    }
+
+    const ip = req.ip || req.connection.remoteAddress;
+    if (!rateLimit('takedown:' + ip, 3, 3600000)) {
+        return res.status(429).json({ success: false, message: 'Too many takedown requests. Please try again later.' });
+    }
+
+    const cert = stmts.getCertById.get(certificateId.toUpperCase());
+    if (!cert) {
+        return res.status(404).json({ success: false, message: 'Certificate not found.' });
+    }
+
+    const reportId = uuidv4();
+    const reason = `COPYRIGHT TAKEDOWN\nClaimant: ${claimantName} (${claimantEmail})\nCopyrighted Work: ${copyrightedWork}\nSworn Statement: ${swornStatement}`;
+
+    db.prepare('INSERT INTO reports (id, certificate_id, reason, reporter_email, status, type, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)')
+        .run(reportId, certificateId.toUpperCase(), reason, claimantEmail, 'pending', 'copyright_takedown', new Date().toISOString());
+
+    stmts.insertHistory.run(certificateId.toUpperCase(), 'copyright_takedown', null, new Date().toISOString());
+
+    audit('copyright_takedown_filed', { reportId, certificateId: certificateId.toUpperCase(), claimantEmail });
+
+    // Notify admin via email if configured
+    if (mailTransporter && process.env.ADMIN_EMAIL) {
+        mailTransporter.sendMail({
+            from: process.env.SMTP_FROM || process.env.SMTP_USER,
+            to: process.env.ADMIN_EMAIL,
+            subject: `Copyright Takedown Request: ${certificateId}`,
+            text: `A copyright takedown request has been filed.\n\nClaimant: ${claimantName}\nEmail: ${claimantEmail}\nCertificate: ${certificateId}\nCopyrighted Work: ${copyrightedWork}\nSworn Statement: ${swornStatement}`
+        }).catch(err => console.error('Failed to send takedown notification:', err.message));
+    }
+
+    res.json({ success: true, message: 'Takedown request submitted. We will review it promptly.' });
 });
+
+// Global error handler — return JSON for API errors (including CSRF failures)
+app.use((err, req, res, next) => {
+    if (req.path.startsWith('/api/')) {
+        const status = err.status || err.statusCode || 500;
+        console.error(`[API Error] ${req.method} ${req.path}: ${err.message}`);
+        return res.status(status).json({ success: false, message: err.message || 'Internal server error' });
+    }
+    next(err);
+});
+
+// Export for testing — only listen when run directly
+if (require.main === module) {
+    app.listen(PORT, () => {
+        console.log(`Officially Human Art server running at http://localhost:${PORT}`);
+    });
+}
+
+module.exports = { app, db };
