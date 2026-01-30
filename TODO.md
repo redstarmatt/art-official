@@ -39,5 +39,5 @@
   - Create Product + £5/month Price in Stripe dashboard, set up webhook endpoint
 - [ ] Add custom domain and verify in Resend so emails send from @officiallyhuman.art (or similar)
   - Buy domain, add DNS records (SPF, DKIM), update SMTP_FROM env var on Railway
-- [ ] Data protection risk assessment
-- [ ] General risk assessment
+- [x] Data protection risk assessment
+- [x] General risk assessment
