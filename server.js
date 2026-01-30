@@ -54,7 +54,7 @@ app.use(helmet({
             connectSrc: ["'self'", "https://api.stripe.com"],
             frameSrc: ["'self'", "https://js.stripe.com"],
             objectSrc: ["'none'"],
-            upgradeInsecureRequests: process.env.NODE_ENV === 'production' ? [] : null
+            upgradeInsecureRequests: []
         }
     },
     crossOriginEmbedderPolicy: false, // allow embeddable widgets/badges
