@@ -32,16 +32,6 @@
 - [x] Password reset flow (forgot password + email reset link)
 - [x] Rate limiting on login, registration, and password reset endpoints
 - [x] Account deletion on demand (password-confirmed, deletes all data + files + Stripe sub)
-
-## Pending
-- [ ] Review "Date of Creation" label — consider "Date Created" or "Date Completed"
-- [ ] Configure Stripe for production (set STRIPE_SECRET_KEY, STRIPE_PUBLISHABLE_KEY, STRIPE_WEBHOOK_SECRET, STRIPE_CREATOR_PRICE_ID on Railway)
-  - Create Product + £5/month Price in Stripe dashboard, set up webhook endpoint
-- [ ] Set up custom domain email via GoDaddy
-  - Buy domain on GoDaddy, add GoDaddy Workspace Email (or Microsoft 365)
-  - Create mailbox e.g. noreply@officiallyhuman.art
-  - Set Railway env vars: SMTP_HOST=smtpout.secureserver.net, SMTP_PORT=465, SMTP_USER=noreply@officiallyhuman.art, SMTP_PASS=<mailbox password>, SMTP_FROM=noreply@officiallyhuman.art
-  - GoDaddy handles SPF/DKIM automatically for its own email
 - [x] Data protection risk assessment
 - [x] General risk assessment
 - [x] Security headers (helmet — CSP, HSTS, X-Frame-Options, X-Content-Type-Options, Referrer-Policy)
@@ -56,12 +46,21 @@
 - [x] Audit logging (structured JSON logs for auth, certificates, reports, account deletion)
 - [x] Profile editing endpoint (PUT /api/artist/:artistId)
 - [x] Input length limits on all text fields
+- [x] Server-side session management (express-session with SQLite store)
+- [x] CSRF protection on state-changing endpoints (double-submit cookie via csrf-csrf)
+- [x] Persistent rate limiting (SQLite-backed, survives server restarts)
+- [x] Migrate from JSON file to SQLite
+- [x] Renamed "Date of Creation" label to "Date Registered" (defaults to today)
+- [x] Unified auth header (Log In / Sign Out) on all pages
 
-### Still pending (from risk assessments)
-- [ ] Server-side session management (signed cookies or JWT — replaces artistId-as-auth)
-- [ ] CSRF protection on state-changing endpoints
-- [ ] Persistent rate limiting (Redis — survives server restarts)
-- [ ] Migrate from JSON file to SQLite or PostgreSQL
+## Pending
+- [ ] Configure Stripe for production (set STRIPE_SECRET_KEY, STRIPE_PUBLISHABLE_KEY, STRIPE_WEBHOOK_SECRET, STRIPE_CREATOR_PRICE_ID on Railway)
+  - Create Product + £5/month Price in Stripe dashboard, set up webhook endpoint
+- [ ] Set up custom domain email via GoDaddy
+  - Buy domain on GoDaddy, add GoDaddy Workspace Email (or Microsoft 365)
+  - Create mailbox e.g. noreply@officiallyhuman.art
+  - Set Railway env vars: SMTP_HOST=smtpout.secureserver.net, SMTP_PORT=465, SMTP_USER=noreply@officiallyhuman.art, SMTP_PASS=<mailbox password>, SMTP_FROM=noreply@officiallyhuman.art
+  - GoDaddy handles SPF/DKIM automatically for its own email
 - [ ] Automated backup strategy for database and uploads
 - [ ] Monitoring and alerting (uptime, errors, disk space)
 - [ ] Email verification on registration
