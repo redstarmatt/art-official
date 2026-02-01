@@ -5,22 +5,28 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin — Officially Human Art</title>
     <link rel="stylesheet" href="/fonts/fonts.css">
+    <link rel="icon" type="image/svg+xml" href="/fingerprint-favicon.svg">
     <style>
         :root {
-            --navy: #1a365d;
-            --navy-light: #2c5282;
-            --cream: #fffef0;
-            --cream-dark: #f7f5e6;
-            --gold: #b7960b;
-            --ink: #2d3748;
-            --ink-light: #4a5568;
-            --ink-faint: #718096;
-            --error: #c53030;
+            --navy: #2a2520;
+            --navy-light: #3d3630;
+            --navy-dark: #1a1510;
+            --cream: #f5f0e8;
+            --cream-dark: #ebe5da;
+            --gold: #3d3427;
+            --gold-light: #4a4035;
+            --gold-pale: #f0e6d2;
+            --ink: #1a1a1a;
+            --ink-light: #555555;
+            --ink-faint: #888888;
             --success: #276749;
+            --error: #c53030;
+            --bronze: #c4935a;
+            --silver: #9ca3af;
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: 'DM Sans', sans-serif;
+            font-family: 'Inter', sans-serif;
             background: var(--cream);
             color: var(--ink);
             line-height: 1.6;
@@ -29,21 +35,21 @@
         .container { max-width: 960px; margin: 0 auto; padding: 0 2rem; }
         header {
             padding: 1rem 0;
-            background: rgba(255, 254, 240, 0.92);
+            background: rgba(245, 240, 232, 0.92);
             backdrop-filter: blur(16px);
-            border-bottom: 1px solid rgba(26, 54, 93, 0.06);
+            border-bottom: 1px solid rgba(26, 26, 26, 0.06);
         }
         .header-inner { display: flex; justify-content: space-between; align-items: center; max-width: 960px; margin: 0 auto; padding: 0 2rem; }
-        .logo { font-family: 'Cormorant Garamond', serif; font-size: 1.5rem; font-weight: 700; color: var(--navy); text-decoration: none; }
+        .logo { font-family: 'Inter', sans-serif; font-size: 1.5rem; font-weight: 700; color: var(--navy); text-decoration: none; }
         .logo span { color: var(--gold); }
         main { padding: 2rem 0 4rem; }
-        h1 { font-family: 'Cormorant Garamond', serif; font-size: 2rem; font-weight: 700; color: var(--navy); margin-bottom: 1.5rem; }
-        h2 { font-family: 'Cormorant Garamond', serif; font-size: 1.4rem; font-weight: 600; color: var(--navy); margin: 2rem 0 1rem; }
+        h1 { font-family: 'Fraunces', serif; font-size: 2rem; font-weight: 700; color: var(--navy); margin-bottom: 1.5rem; }
+        h2 { font-family: 'Fraunces', serif; font-size: 1.4rem; font-weight: 600; color: var(--navy); margin: 2rem 0 1rem; }
 
         /* Login form */
         #login-section { max-width: 400px; margin: 4rem auto; text-align: center; }
         #login-section input {
-            width: 100%; padding: 0.7rem 1rem; border: 1.5px solid rgba(26,54,93,0.18);
+            width: 100%; padding: 0.7rem 1rem; border: 1.5px solid rgba(26,26,26,0.18);
             border-radius: 6px; font-family: inherit; font-size: 0.9rem; margin-bottom: 1rem;
             background: var(--cream);
         }
@@ -52,18 +58,18 @@
             font-family: inherit; font-size: 0.88rem; font-weight: 600;
             cursor: pointer; transition: all 0.2s;
         }
-        .btn-navy { background: var(--navy); color: #fffef0; }
+        .btn-navy { background: var(--navy); color: #f5f0e8; }
         .btn-navy:hover { background: var(--navy-light); }
         .btn-error { background: var(--error); color: #fff; }
         .btn-error:hover { opacity: 0.9; }
         .btn-sm { padding: 0.35rem 0.85rem; font-size: 0.8rem; }
-        .btn-outline { background: transparent; border: 1px solid rgba(26,54,93,0.2); color: var(--ink-light); }
+        .btn-outline { background: transparent; border: 1px solid rgba(26,26,26,0.2); color: var(--ink-light); }
 
         /* Stats cards */
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
         .stat-card {
             background: #fff; border-radius: 10px; padding: 1.25rem;
-            border: 1px solid rgba(26,54,93,0.08);
+            border: 1px solid rgba(26,26,26,0.08);
             text-align: center;
         }
         .stat-value { font-size: 1.75rem; font-weight: 700; color: var(--navy); }
@@ -72,7 +78,7 @@
         /* Reports table */
         .report-card {
             background: #fff; border-radius: 10px; padding: 1.25rem;
-            border: 1px solid rgba(26,54,93,0.08); margin-bottom: 1rem;
+            border: 1px solid rgba(26,26,26,0.08); margin-bottom: 1rem;
         }
         .report-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; flex-wrap: wrap; }
         .report-meta { font-size: 0.82rem; color: var(--ink-faint); margin-top: 0.5rem; }
@@ -95,7 +101,21 @@
 <body>
     <header>
         <div class="header-inner">
-            <a href="/" class="logo">Officially <span>Human</span> Art</a>
+            <a href="/" class="logo" style="display:flex;align-items:center;gap:12px;text-decoration:none;font-family:'Inter',sans-serif;">
+    <svg viewBox="0 0 70 85" fill="none" stroke="currentColor" stroke-width="1.2" xmlns="http://www.w3.org/2000/svg" style="width:36px;height:44px;color:#1a1a1a;">
+        <path d="M35 5 C15 5 5 22 5 42 C5 62 15 80 35 80" stroke-linecap="round"/>
+        <path d="M35 12 C20 12 12 26 12 42 C12 58 20 72 35 72 C50 72 58 58 58 42" stroke-linecap="round"/>
+        <path d="M35 19 C24 19 18 30 18 42 C18 54 24 65 35 65 C46 65 52 54 52 42 C52 30 46 19 35 19" stroke-linecap="round"/>
+        <path d="M35 26 C28 26 24 33 24 42 C24 51 28 58 35 58 C42 58 46 51 46 42" stroke-linecap="round"/>
+        <path d="M35 33 C31 33 29 37 29 42 C29 47 31 51 35 51 C39 51 41 47 41 42 C41 37 39 33 35 33" stroke-linecap="round"/>
+        <path d="M65 42 C65 22 55 5 35 5" stroke-linecap="round"/>
+        <path d="M58 42 C58 26 50 12 35 12" stroke-linecap="round"/>
+    </svg>
+    <span style="display:flex;flex-direction:column;line-height:1.1;">
+        <span style="font-size:14px;"><span style="font-weight:300;color:#666666;">officially</span><span style="font-weight:600;color:#1a1a1a;">human</span></span>
+        <span style="font-size:24px;font-weight:700;color:#1a1a1a;margin-top:-2px;">.art</span>
+    </span>
+</a>
             <span style="font-size:0.85rem;color:var(--ink-faint);">Admin Panel</span>
         </div>
     </header>

@@ -5,29 +5,30 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Verify Certificate — Officially Human Art</title>
     <link rel="stylesheet" href="/fonts/fonts.css">
+    <link rel="icon" type="image/svg+xml" href="/fingerprint-favicon.svg">
     <style>
         :root {
-            --navy: #1a365d;
-            --navy-light: #2c5282;
-            --navy-dark: #12284a;
-            --cream: #fffef0;
-            --cream-dark: #f7f5e6;
-            --gold: #b7960b;
-            --gold-light: #d4af37;
-            --gold-pale: #f5efd0;
-            --ink: #2d3748;
-            --ink-light: #4a5568;
-            --ink-faint: #718096;
+            --navy: #2a2520;
+            --navy-light: #3d3630;
+            --navy-dark: #1a1510;
+            --cream: #f5f0e8;
+            --cream-dark: #ebe5da;
+            --gold: #3d3427;
+            --gold-light: #4a4035;
+            --gold-pale: #f0e6d2;
+            --ink: #1a1a1a;
+            --ink-light: #555555;
+            --ink-faint: #888888;
             --success: #276749;
             --error: #c53030;
-            --bronze: #9c6b30;
-            --silver: #718096;
+            --bronze: #c4935a;
+            --silver: #9ca3af;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            font-family: 'DM Sans', sans-serif;
+            font-family: 'Inter', sans-serif;
             background: var(--cream);
             color: var(--ink);
             line-height: 1.6;
@@ -51,10 +52,10 @@
             padding: 1.25rem 0;
             position: sticky;
             top: 0;
-            background: rgba(255, 254, 240, 0.92);
+            background: rgba(245, 240, 232, 0.92);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
-            border-bottom: 1px solid rgba(26, 54, 93, 0.08);
+            border-bottom: 1px solid rgba(26, 26, 26, 0.08);
             z-index: 100;
         }
 
@@ -68,7 +69,7 @@
         }
 
         .logo {
-            font-family: 'Cormorant Garamond', serif;
+            font-family: 'Inter', sans-serif;
             font-size: 1.75rem;
             font-weight: 700;
             color: var(--navy);
@@ -105,7 +106,7 @@
         }
 
         .page-header h1 {
-            font-family: 'Cormorant Garamond', serif;
+            font-family: 'Fraunces', serif;
             font-size: clamp(2rem, 4vw, 2.75rem);
             font-weight: 500;
             color: var(--navy);
@@ -130,10 +131,10 @@
             max-width: 580px;
             margin: 0 auto;
             background: white;
-            border: 1px solid rgba(26, 54, 93, 0.1);
+            border: 1px solid rgba(26, 26, 26, 0.1);
             border-radius: 12px;
             padding: 1.75rem 2rem;
-            box-shadow: 0 4px 20px rgba(26, 54, 93, 0.04);
+            box-shadow: 0 4px 20px rgba(26, 26, 26, 0.04);
         }
 
         .search-form {
@@ -148,7 +149,7 @@
             font-size: 1rem;
             letter-spacing: 0.06em;
             color: var(--ink);
-            border: 1.5px solid rgba(26, 54, 93, 0.18);
+            border: 1.5px solid rgba(26, 26, 26, 0.18);
             border-radius: 6px;
             background: var(--cream);
             text-transform: uppercase;
@@ -158,13 +159,13 @@
         .search-input:focus {
             outline: none;
             border-color: var(--navy);
-            box-shadow: 0 0 0 3px rgba(26, 54, 93, 0.08);
+            box-shadow: 0 0 0 3px rgba(26, 26, 26, 0.08);
         }
 
         .search-input::placeholder {
             text-transform: none;
             letter-spacing: normal;
-            font-family: 'DM Sans', sans-serif;
+            font-family: 'Inter', sans-serif;
             color: var(--ink-faint);
         }
 
@@ -177,7 +178,7 @@
             background: var(--navy);
             color: var(--cream);
             text-decoration: none;
-            font-family: 'DM Sans', sans-serif;
+            font-family: 'Inter', sans-serif;
             font-size: 0.95rem;
             font-weight: 600;
             border-radius: 6px;
@@ -187,7 +188,7 @@
             white-space: nowrap;
         }
 
-        .btn:hover { background: var(--navy-light); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(26, 54, 93, 0.2); }
+        .btn:hover { background: var(--navy-light); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(26, 26, 26, 0.2); }
         .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
         .btn-sm { padding: 0.5rem 1rem; font-size: 0.8rem; }
         .btn-outline { background: transparent; border: 1.5px solid var(--navy); color: var(--navy); }
@@ -207,7 +208,7 @@
         .spinner {
             display: inline-block;
             width: 28px; height: 28px;
-            border: 3px solid rgba(26, 54, 93, 0.12);
+            border: 3px solid rgba(26, 26, 26, 0.12);
             border-top-color: var(--navy);
             border-radius: 50%;
             animation: spin 0.7s linear infinite;
@@ -254,10 +255,10 @@
             border-radius: 14px;
             overflow: hidden;
             box-shadow:
-                0 1px 3px rgba(26, 54, 93, 0.04),
-                0 8px 24px rgba(26, 54, 93, 0.08),
-                0 24px 72px rgba(26, 54, 93, 0.12);
-            border: 1px solid rgba(26, 54, 93, 0.06);
+                0 1px 3px rgba(26, 26, 26, 0.04),
+                0 8px 24px rgba(26, 26, 26, 0.08),
+                0 24px 72px rgba(26, 26, 26, 0.12);
+            border: 1px solid rgba(26, 26, 26, 0.06);
         }
 
         /* Gold decorative top border */
@@ -265,7 +266,7 @@
             content: '';
             display: block;
             height: 3px;
-            background: linear-gradient(90deg, var(--gold), var(--gold-light), var(--gold));
+            background: linear-gradient(90deg, #c5a030, #d4af37, #c5a030);
         }
 
         /* Certificate Header */
@@ -293,7 +294,7 @@
             content: '';
             position: absolute;
             top: 0.6rem; left: 0.6rem; right: 0.6rem; bottom: 0.6rem;
-            border: 1px solid rgba(255, 254, 240, 0.12);
+            border: 1px solid rgba(245, 240, 232, 0.12);
             pointer-events: none;
         }
 
@@ -305,15 +306,15 @@
         .cert-seal {
             width: 72px; height: 72px;
             margin: 0 auto 1rem;
-            background: radial-gradient(circle at 35% 35%, var(--gold-light), var(--gold));
+            background: radial-gradient(circle at 35% 35%, #d4af37, #c5a030);
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-family: 'Cormorant Garamond', serif;
+            font-family: 'Fraunces', serif;
             font-size: 1.6rem;
             font-weight: 700;
-            color: var(--navy);
+            color: #2a2520;
             box-shadow:
                 0 2px 8px rgba(0, 0, 0, 0.25),
                 0 0 0 3px rgba(212, 175, 55, 0.2),
@@ -350,7 +351,7 @@
         }
 
         .cert-title-main {
-            font-family: 'Cormorant Garamond', serif;
+            font-family: 'Fraunces', serif;
             font-size: 1.6rem;
             font-weight: 500;
             color: var(--cream);
@@ -362,8 +363,7 @@
             font-family: 'DM Mono', 'SF Mono', 'Fira Code', monospace;
             font-size: 0.95rem;
             letter-spacing: 0.15em;
-            color: var(--gold-light);
-            opacity: 0.9;
+            color: rgba(245, 240, 232, 0.7);
         }
 
         /* Certificate Body */
@@ -372,7 +372,7 @@
         }
 
         .cert-artwork-title {
-            font-family: 'Cormorant Garamond', serif;
+            font-family: 'Fraunces', serif;
             font-size: clamp(1.75rem, 3.5vw, 2.25rem);
             font-weight: 600;
             color: var(--navy);
@@ -392,7 +392,7 @@
             color: var(--navy);
             text-decoration: none;
             font-weight: 600;
-            border-bottom: 1px solid rgba(26, 54, 93, 0.2);
+            border-bottom: 1px solid rgba(26, 26, 26, 0.2);
             transition: all 0.2s;
         }
 
@@ -409,7 +409,7 @@
             padding: 1.5rem;
             background: var(--cream);
             border-radius: 10px;
-            border: 1px solid rgba(26, 54, 93, 0.04);
+            border: 1px solid rgba(26, 26, 26, 0.04);
             margin-bottom: 1.75rem;
         }
 
@@ -451,7 +451,7 @@
             padding: 1.5rem;
             background: var(--cream);
             border-radius: 10px;
-            border: 1px solid rgba(26, 54, 93, 0.04);
+            border: 1px solid rgba(26, 26, 26, 0.04);
             margin-bottom: 1.75rem;
         }
 
@@ -477,21 +477,21 @@
         }
 
         .tier-badge-large.tier-gold {
-            background: linear-gradient(135deg, var(--gold-pale), #ede4b5);
-            color: var(--gold);
-            box-shadow: 0 2px 8px rgba(183, 150, 11, 0.15);
+            background: linear-gradient(135deg, #faf3e0, #f0e4b8);
+            color: #a08530;
+            box-shadow: 0 2px 8px rgba(160, 133, 48, 0.2);
         }
 
         .tier-badge-large.tier-silver {
-            background: linear-gradient(135deg, #e8edf2, #dce3ed);
-            color: var(--silver);
-            box-shadow: 0 2px 8px rgba(113, 128, 150, 0.15);
+            background: linear-gradient(135deg, #edf0f4, #dce3ed);
+            color: #6b7280;
+            box-shadow: 0 2px 8px rgba(107, 114, 128, 0.15);
         }
 
         .tier-badge-large.tier-bronze {
-            background: linear-gradient(135deg, #f0e6d8, #e8d9c4);
-            color: var(--bronze);
-            box-shadow: 0 2px 8px rgba(156, 107, 48, 0.15);
+            background: linear-gradient(135deg, #f5ebe0, #ebdac4);
+            color: #a0764a;
+            box-shadow: 0 2px 8px rgba(160, 118, 74, 0.2);
         }
 
         .tier-badge-large .tier-icon {
@@ -510,9 +510,9 @@
             letter-spacing: 0.06em;
         }
 
-        .tier-badge-small.tier-gold { background: var(--gold-pale); color: var(--gold); }
-        .tier-badge-small.tier-silver { background: #e8edf2; color: var(--silver); }
-        .tier-badge-small.tier-bronze { background: #f0e6d8; color: var(--bronze); }
+        .tier-badge-small.tier-gold { background: #faf3e0; color: #a08530; }
+        .tier-badge-small.tier-silver { background: #edf0f4; color: #6b7280; }
+        .tier-badge-small.tier-bronze { background: #f5ebe0; color: #a0764a; }
 
         /* Evidence strength bar */
         .evidence-bar-wrap {
@@ -543,7 +543,7 @@
         .evidence-bar-track {
             width: 100%;
             height: 8px;
-            background: rgba(26, 54, 93, 0.08);
+            background: rgba(26, 26, 26, 0.08);
             border-radius: 100px;
             overflow: hidden;
         }
@@ -554,9 +554,9 @@
             transition: width 0.6s ease;
         }
 
-        .evidence-bar-fill.tier-gold { background: linear-gradient(90deg, var(--gold), var(--gold-light)); }
-        .evidence-bar-fill.tier-silver { background: linear-gradient(90deg, #8a9bb0, var(--silver)); }
-        .evidence-bar-fill.tier-bronze { background: linear-gradient(90deg, var(--bronze), #b8863e); }
+        .evidence-bar-fill.tier-gold { background: linear-gradient(90deg, #c5a55a, #d4af37); }
+        .evidence-bar-fill.tier-silver { background: linear-gradient(90deg, #8a9bb0, #9ca3af); }
+        .evidence-bar-fill.tier-bronze { background: linear-gradient(90deg, #c4935a, #d4a06a); }
 
         .evidence-summary {
             display: flex;
@@ -579,14 +579,14 @@
         }
 
         .ev-dot-yes { background: var(--success); }
-        .ev-dot-no { background: rgba(26, 54, 93, 0.15); }
+        .ev-dot-no { background: rgba(26, 26, 26, 0.15); }
 
         /* Description */
         .cert-description {
             padding: 1.5rem;
             background: var(--cream);
             border-radius: 10px;
-            border: 1px solid rgba(26, 54, 93, 0.04);
+            border: 1px solid rgba(26, 26, 26, 0.04);
             margin-bottom: 1.75rem;
         }
 
@@ -610,7 +610,7 @@
         .cert-qr {
             text-align: center;
             padding: 1.75rem 0;
-            border-top: 1px solid rgba(26, 54, 93, 0.06);
+            border-top: 1px solid rgba(26, 26, 26, 0.06);
         }
 
         .cert-qr img {
@@ -627,7 +627,7 @@
         /* Share Section */
         .cert-share {
             padding: 1.75rem 0 0;
-            border-top: 1px solid rgba(26, 54, 93, 0.06);
+            border-top: 1px solid rgba(26, 26, 26, 0.06);
         }
 
         .cert-share-label {
@@ -654,10 +654,10 @@
             gap: 0.4rem;
             padding: 0.6rem 1.1rem;
             background: transparent;
-            border: 1.5px solid rgba(26, 54, 93, 0.15);
+            border: 1.5px solid rgba(26, 26, 26, 0.15);
             border-radius: 6px;
             color: var(--ink-light);
-            font-family: 'DM Sans', sans-serif;
+            font-family: 'Inter', sans-serif;
             font-size: 0.82rem;
             font-weight: 500;
             cursor: pointer;
@@ -667,7 +667,7 @@
         .share-btn:hover {
             border-color: var(--navy);
             color: var(--navy);
-            background: rgba(26, 54, 93, 0.03);
+            background: rgba(26, 26, 26, 0.03);
         }
 
         .share-btn.copied {
@@ -686,7 +686,7 @@
             display: none;
             margin-top: 1rem;
             background: var(--cream);
-            border: 1px solid rgba(26, 54, 93, 0.08);
+            border: 1px solid rgba(26, 26, 26, 0.08);
             border-radius: 10px;
             padding: 1.5rem;
             animation: fadeIn 0.3s ease;
@@ -695,7 +695,7 @@
         .embed-panel.show { display: block; }
 
         .embed-panel-title {
-            font-family: 'Cormorant Garamond', serif;
+            font-family: 'Fraunces', serif;
             font-size: 1.1rem;
             color: var(--navy);
             margin-bottom: 1rem;
@@ -726,7 +726,7 @@
             padding: 0.75rem;
             padding-right: 3.5rem;
             background: white;
-            border: 1px solid rgba(26, 54, 93, 0.08);
+            border: 1px solid rgba(26, 26, 26, 0.08);
             border-radius: 6px;
             font-family: 'DM Mono', 'SF Mono', monospace;
             font-size: 0.72rem;
@@ -748,7 +748,7 @@
             border: none;
             border-radius: 4px;
             cursor: pointer;
-            font-family: 'DM Sans', sans-serif;
+            font-family: 'Inter', sans-serif;
             transition: background 0.2s;
         }
 
@@ -767,7 +767,7 @@
             border: 1px solid rgba(197, 48, 48, 0.12);
             border-radius: 12px;
             animation: slideUp 0.4s ease;
-            box-shadow: 0 4px 20px rgba(26, 54, 93, 0.04);
+            box-shadow: 0 4px 20px rgba(26, 26, 26, 0.04);
             margin-bottom: 2rem;
         }
 
@@ -786,7 +786,7 @@
         }
 
         .not-found h2 {
-            font-family: 'Cormorant Garamond', serif;
+            font-family: 'Fraunces', serif;
             font-size: 1.6rem;
             color: var(--error);
             margin-bottom: 0.5rem;
@@ -807,13 +807,13 @@
             padding: 2rem;
             background: var(--cream-dark);
             border-radius: 12px;
-            border: 1px solid rgba(26, 54, 93, 0.04);
+            border: 1px solid rgba(26, 26, 26, 0.04);
             text-align: center;
             margin-bottom: 2rem;
         }
 
         .instructions h3 {
-            font-family: 'Cormorant Garamond', serif;
+            font-family: 'Fraunces', serif;
             font-size: 1.3rem;
             color: var(--navy);
             margin-bottom: 0.75rem;
@@ -829,7 +829,7 @@
             display: inline-block;
             padding: 0.15rem 0.5rem;
             background: white;
-            border: 1px solid rgba(26, 54, 93, 0.1);
+            border: 1px solid rgba(26, 26, 26, 0.1);
             border-radius: 4px;
             font-family: 'DM Mono', 'SF Mono', monospace;
             font-size: 0.85rem;
@@ -840,7 +840,7 @@
         /* Footer */
         footer {
             padding: 3rem 0;
-            border-top: 1px solid rgba(26, 54, 93, 0.08);
+            border-top: 1px solid rgba(26, 26, 26, 0.08);
             margin-top: 1rem;
         }
 
@@ -879,7 +879,7 @@
         .auth-area[data-state="signed-in"] .auth-dropdown { display: none !important; }
 
         .auth-btn {
-            font-family: 'DM Sans', sans-serif;
+            font-family: 'Inter', sans-serif;
             font-size: 0.85rem;
             font-weight: 600;
             border: none;
@@ -923,8 +923,8 @@
             width: 320px;
             background: white;
             border-radius: 12px;
-            border: 1px solid rgba(26, 54, 93, 0.1);
-            box-shadow: 0 12px 40px rgba(26, 54, 93, 0.15);
+            border: 1px solid rgba(26, 26, 26, 0.1);
+            box-shadow: 0 12px 40px rgba(26, 26, 26, 0.15);
             padding: 1.5rem;
             z-index: 200;
             animation: authSlideDown 0.2s ease;
@@ -938,7 +938,7 @@
         }
 
         .auth-dropdown h3 {
-            font-family: 'Cormorant Garamond', serif;
+            font-family: 'Fraunces', serif;
             font-size: 1.25rem;
             color: var(--navy);
             margin-bottom: 1rem;
@@ -969,9 +969,9 @@
         .auth-field input {
             width: 100%;
             padding: 0.6rem 0.85rem;
-            border: 1.5px solid rgba(26, 54, 93, 0.18);
+            border: 1.5px solid rgba(26, 26, 26, 0.18);
             border-radius: 6px;
-            font-family: 'DM Sans', sans-serif;
+            font-family: 'Inter', sans-serif;
             font-size: 0.9rem;
             color: var(--ink);
             background: var(--cream);
@@ -990,7 +990,7 @@
             color: var(--cream);
             border: none;
             border-radius: 6px;
-            font-family: 'DM Sans', sans-serif;
+            font-family: 'Inter', sans-serif;
             font-size: 0.9rem;
             font-weight: 600;
             cursor: pointer;
@@ -1043,7 +1043,21 @@
 <body>
     <header>
         <div class="header-inner">
-            <a href="/" class="logo">Officially <span>Human</span> Art</a>
+            <a href="/" class="logo" style="display:flex;align-items:center;gap:12px;text-decoration:none;font-family:'Inter',sans-serif;">
+    <svg viewBox="0 0 70 85" fill="none" stroke="currentColor" stroke-width="1.2" xmlns="http://www.w3.org/2000/svg" style="width:36px;height:44px;color:#1a1a1a;">
+        <path d="M35 5 C15 5 5 22 5 42 C5 62 15 80 35 80" stroke-linecap="round"/>
+        <path d="M35 12 C20 12 12 26 12 42 C12 58 20 72 35 72 C50 72 58 58 58 42" stroke-linecap="round"/>
+        <path d="M35 19 C24 19 18 30 18 42 C18 54 24 65 35 65 C46 65 52 54 52 42 C52 30 46 19 35 19" stroke-linecap="round"/>
+        <path d="M35 26 C28 26 24 33 24 42 C24 51 28 58 35 58 C42 58 46 51 46 42" stroke-linecap="round"/>
+        <path d="M35 33 C31 33 29 37 29 42 C29 47 31 51 35 51 C39 51 41 47 41 42 C41 37 39 33 35 33" stroke-linecap="round"/>
+        <path d="M65 42 C65 22 55 5 35 5" stroke-linecap="round"/>
+        <path d="M58 42 C58 26 50 12 35 12" stroke-linecap="round"/>
+    </svg>
+    <span style="display:flex;flex-direction:column;line-height:1.1;">
+        <span style="font-size:14px;"><span style="font-weight:300;color:#666666;">officially</span><span style="font-weight:600;color:#1a1a1a;">human</span></span>
+        <span style="font-size:24px;font-weight:700;color:#1a1a1a;margin-top:-2px;">.art</span>
+    </span>
+</a>
             <nav>
                 <a href="register.html">For Artists</a>
                 <a href="/">Home</a>
@@ -1170,13 +1184,13 @@
                         </div>
 
                         <!-- Artwork Image -->
-                        <div id="artwork-image-section" style="display:none;position:relative;overflow:hidden;border-radius:10px;margin-bottom:1.75rem;max-width:100%;text-align:center;background:#f7f5e6;border:1px solid rgba(26,54,93,0.06);">
+                        <div id="artwork-image-section" style="display:none;position:relative;overflow:hidden;border-radius:10px;margin-bottom:1.75rem;max-width:100%;text-align:center;background:#ebe5da;border:1px solid rgba(26,26,26,0.06);">
                             <div id="display-artwork-media" style="display:flex;justify-content:center;"></div>
-                            <div style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='200'%3E%3Ctext x='200' y='100' text-anchor='middle' font-family='Georgia,serif' font-size='22' fill='rgba(26,54,93,0.18)' transform='rotate(-30 200 100)'%3EOfficially Human Art Certified%3C/text%3E%3C/svg%3E&quot;);background-repeat:repeat;"></div>
+                            <div style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='200'%3E%3Ctext x='200' y='100' text-anchor='middle' font-family='Inter,sans-serif' font-size='22' fill='rgba(26,26,26,0.18)' transform='rotate(-30 200 100)'%3EOfficially Human Art Certified%3C/text%3E%3C/svg%3E&quot;);background-repeat:repeat;"></div>
                         </div>
 
                         <!-- Public Evidence Gallery -->
-                        <div id="evidence-gallery-section" style="display:none;padding:1.25rem;background:#fffef0;border-radius:10px;border:1px solid rgba(26,54,93,0.04);margin-bottom:1.75rem;">
+                        <div id="evidence-gallery-section" style="display:none;padding:1.25rem;background:#f5f0e8;border-radius:10px;border:1px solid rgba(26,26,26,0.04);margin-bottom:1.75rem;">
                             <span class="cert-description-label">Process Evidence</span>
                             <div id="evidence-gallery-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:0.75rem;margin-top:0.75rem;"></div>
                         </div>
@@ -1194,13 +1208,13 @@
                         </div>
 
                         <!-- Certificate Timeline -->
-                        <div id="timeline-section" style="display:none;padding:1.25rem 1.5rem;background:var(--cream);border-radius:10px;border:1px solid rgba(26,54,93,0.04);margin-bottom:1.75rem;">
+                        <div id="timeline-section" style="display:none;padding:1.25rem 1.5rem;background:var(--cream);border-radius:10px;border:1px solid rgba(26,26,26,0.04);margin-bottom:1.75rem;">
                             <span class="cert-description-label">Certificate History</span>
                             <div id="timeline-list" style="margin-top:0.75rem;"></div>
                         </div>
 
                         <!-- Copyright Notice -->
-                        <div style="text-align:center;padding:1rem 1.5rem;margin-bottom:1rem;font-size:0.78rem;color:#a0aec0;border-top:1px solid rgba(26,54,93,0.06);padding-top:1.25rem;">
+                        <div style="text-align:center;padding:1rem 1.5rem;margin-bottom:1rem;font-size:0.78rem;color:#a0aec0;border-top:1px solid rgba(26,26,26,0.06);padding-top:1.25rem;">
                             All rights reserved by the original creator. Registration with Officially Human Art does not transfer copyright.
                         </div>
 
@@ -1214,14 +1228,14 @@
 
                         <!-- Report Modal (inline, hidden) -->
                         <div id="report-panel" style="display:none;padding:1.5rem;background:var(--cream);border-radius:10px;border:1px solid rgba(197,48,48,0.12);margin-bottom:1.75rem;animation:fadeIn 0.3s ease;">
-                            <h4 style="font-family:'Cormorant Garamond',serif;font-size:1.1rem;color:var(--navy);margin-bottom:0.75rem;">Report This Certificate</h4>
+                            <h4 style="font-family:'Inter',sans-serif;font-size:1.1rem;color:var(--navy);margin-bottom:0.75rem;">Report This Certificate</h4>
                             <p style="font-size:0.82rem;color:var(--ink-light);margin-bottom:1rem;line-height:1.6;">If you believe this certificate is fraudulent or the work was not authentically human-made, please describe your concern below.</p>
                             <div id="report-alert" style="display:none;padding:0.75rem 1rem;border-radius:6px;font-size:0.85rem;margin-bottom:1rem;"></div>
-                            <textarea id="report-reason" rows="3" placeholder="Describe why you believe this certificate should be reviewed..." style="width:100%;padding:0.75rem 1rem;border:1.5px solid rgba(26,54,93,0.18);border-radius:6px;font-family:'DM Sans',sans-serif;font-size:0.9rem;background:white;color:var(--ink);resize:vertical;"></textarea>
-                            <input type="email" id="report-email" placeholder="Your email (optional, for follow-up)" style="width:100%;padding:0.75rem 1rem;border:1.5px solid rgba(26,54,93,0.18);border-radius:6px;font-family:'DM Sans',sans-serif;font-size:0.9rem;background:white;color:var(--ink);margin-top:0.5rem;">
+                            <textarea id="report-reason" rows="3" placeholder="Describe why you believe this certificate should be reviewed..." style="width:100%;padding:0.75rem 1rem;border:1.5px solid rgba(26,26,26,0.18);border-radius:6px;font-family:'Inter',sans-serif;font-size:0.9rem;background:white;color:var(--ink);resize:vertical;"></textarea>
+                            <input type="email" id="report-email" placeholder="Your email (optional, for follow-up)" style="width:100%;padding:0.75rem 1rem;border:1.5px solid rgba(26,26,26,0.18);border-radius:6px;font-family:'Inter',sans-serif;font-size:0.9rem;background:white;color:var(--ink);margin-top:0.5rem;">
                             <div style="display:flex;gap:0.75rem;margin-top:1rem;justify-content:flex-end;">
-                                <button type="button" id="report-cancel" style="padding:0.5rem 1rem;background:transparent;border:1.5px solid rgba(26,54,93,0.15);border-radius:6px;font-family:'DM Sans',sans-serif;font-size:0.82rem;cursor:pointer;color:var(--ink-light);">Cancel</button>
-                                <button type="button" id="report-submit" style="padding:0.5rem 1rem;background:var(--error);border:none;border-radius:6px;font-family:'DM Sans',sans-serif;font-size:0.82rem;font-weight:600;cursor:pointer;color:white;">Submit Report</button>
+                                <button type="button" id="report-cancel" style="padding:0.5rem 1rem;background:transparent;border:1.5px solid rgba(26,26,26,0.15);border-radius:6px;font-family:'Inter',sans-serif;font-size:0.82rem;cursor:pointer;color:var(--ink-light);">Cancel</button>
+                                <button type="button" id="report-submit" style="padding:0.5rem 1rem;background:var(--error);border:none;border-radius:6px;font-family:'Inter',sans-serif;font-size:0.82rem;font-weight:600;cursor:pointer;color:white;">Submit Report</button>
                             </div>
                         </div>
 
@@ -1244,7 +1258,7 @@
                                 <div class="embed-panel-title">Embed Code</div>
                                 <div class="embed-section">
                                     <span class="embed-section-label">Widget (recommended)</span>
-                                    <p style="font-size:0.78rem;color:#718096;margin:0.25rem 0 0.5rem;">A card showing the artwork title, artist, tier, and thumbnail. Paste into your website HTML.</p>
+                                    <p style="font-size:0.78rem;color:#888888;margin:0.25rem 0 0.5rem;">A card showing the artwork title, artist, tier, and thumbnail. Paste into your website HTML.</p>
                                     <div class="embed-code-box">
                                         <code id="embed-widget-code"></code>
                                         <button type="button" class="copy-btn" data-target="embed-widget-code">Copy</button>
@@ -1292,7 +1306,21 @@
 
     <footer>
         <div class="footer-inner">
-            <a href="/" class="logo" style="font-size:1.25rem;">Officially <span>Human</span> Art</a>
+            <a href="/" class="logo" style="display:flex;align-items:center;gap:10px;text-decoration:none;font-family:'Inter',sans-serif;">
+    <svg viewBox="0 0 70 85" fill="none" stroke="currentColor" stroke-width="1.2" xmlns="http://www.w3.org/2000/svg" style="width:28px;height:34px;color:#1a1a1a;">
+        <path d="M35 5 C15 5 5 22 5 42 C5 62 15 80 35 80" stroke-linecap="round"/>
+        <path d="M35 12 C20 12 12 26 12 42 C12 58 20 72 35 72 C50 72 58 58 58 42" stroke-linecap="round"/>
+        <path d="M35 19 C24 19 18 30 18 42 C18 54 24 65 35 65 C46 65 52 54 52 42 C52 30 46 19 35 19" stroke-linecap="round"/>
+        <path d="M35 26 C28 26 24 33 24 42 C24 51 28 58 35 58 C42 58 46 51 46 42" stroke-linecap="round"/>
+        <path d="M35 33 C31 33 29 37 29 42 C29 47 31 51 35 51 C39 51 41 47 41 42 C41 37 39 33 35 33" stroke-linecap="round"/>
+        <path d="M65 42 C65 22 55 5 35 5" stroke-linecap="round"/>
+        <path d="M58 42 C58 26 50 12 35 12" stroke-linecap="round"/>
+    </svg>
+    <span style="display:flex;flex-direction:column;line-height:1.1;">
+        <span style="font-size:11px;"><span style="font-weight:300;color:#666666;">officially</span><span style="font-weight:600;color:#1a1a1a;">human</span></span>
+        <span style="font-size:18px;font-weight:700;color:#1a1a1a;margin-top:-2px;">.art</span>
+    </span>
+</a>
             <div class="footer-links">
                 <a href="/">Home</a>
                 <a href="register.html">For Artists</a>
@@ -1605,7 +1633,7 @@
             if (cert.publicEvidenceFiles && cert.publicEvidenceFiles.length > 0) {
                 cert.publicEvidenceFiles.forEach(function(filename) {
                     var item = document.createElement('div');
-                    item.style.cssText = 'position:relative;border-radius:8px;overflow:hidden;aspect-ratio:1;background:#f7f5e6;border:1px solid rgba(26,54,93,0.08);';
+                    item.style.cssText = 'position:relative;border-radius:8px;overflow:hidden;aspect-ratio:1;background:#ebe5da;border:1px solid rgba(26,26,26,0.08);';
 
                     var ext = filename.split('.').pop().toLowerCase();
                     var isImage = ['jpg','jpeg','png','gif','webp','svg'].indexOf(ext) !== -1;
@@ -1614,7 +1642,7 @@
                     if (isImage) {
                         item.innerHTML =
                             '<img src="/uploads/' + escHtml(filename) + '" alt="Process evidence" loading="lazy" style="width:100%;height:100%;object-fit:cover;">' +
-                            '<div style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'300\' height=\'150\'%3E%3Ctext x=\'150\' y=\'75\' text-anchor=\'middle\' font-family=\'Georgia,serif\' font-size=\'16\' fill=\'rgba(26,54,93,0.18)\' transform=\'rotate(-30 150 75)\'%3EOfficially Human Art%3C/text%3E%3C/svg%3E&quot;);background-repeat:repeat;"></div>';
+                            '<div style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'300\' height=\'150\'%3E%3Ctext x=\'150\' y=\'75\' text-anchor=\'middle\' font-family=\'Inter,sans-serif\' font-size=\'16\' fill=\'rgba(26,26,26,0.18)\' transform=\'rotate(-30 150 75)\'%3EOfficially Human Art%3C/text%3E%3C/svg%3E&quot;);background-repeat:repeat;"></div>';
                     } else if (isVideo) {
                         item.innerHTML =
                             '<video src="/uploads/' + escHtml(filename) + '" preload="metadata" controls style="width:100%;height:100%;object-fit:cover;"></video>';

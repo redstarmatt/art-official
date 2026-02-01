@@ -5,28 +5,30 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Browse Certified Works — Officially Human Art</title>
     <link rel="stylesheet" href="/fonts/fonts.css">
+    <link rel="icon" type="image/svg+xml" href="/fingerprint-favicon.svg">
     <style>
         :root {
-            --navy: #1a365d;
-            --navy-light: #2c5282;
-            --cream: #fffef0;
-            --cream-dark: #f7f5e6;
-            --gold: #b7960b;
-            --gold-light: #d4af37;
-            --gold-pale: #f5efd0;
-            --ink: #2d3748;
-            --ink-light: #4a5568;
-            --ink-faint: #718096;
+            --navy: #2a2520;
+            --navy-light: #3d3630;
+            --navy-dark: #1a1510;
+            --cream: #f5f0e8;
+            --cream-dark: #ebe5da;
+            --gold: #3d3427;
+            --gold-light: #4a4035;
+            --gold-pale: #f0e6d2;
+            --ink: #1a1a1a;
+            --ink-light: #555555;
+            --ink-faint: #888888;
             --success: #276749;
             --error: #c53030;
-            --bronze: #9c6b30;
-            --silver: #718096;
+            --bronze: #c4935a;
+            --silver: #9ca3af;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            font-family: 'DM Sans', sans-serif;
+            font-family: 'Inter', sans-serif;
             background: var(--cream);
             color: var(--ink);
             line-height: 1.6;
@@ -49,10 +51,10 @@
             padding: 1.25rem 0;
             position: sticky;
             top: 0;
-            background: rgba(255, 254, 240, 0.92);
+            background: rgba(245, 240, 232, 0.92);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
-            border-bottom: 1px solid rgba(26, 54, 93, 0.08);
+            border-bottom: 1px solid rgba(26, 26, 26, 0.08);
             z-index: 100;
         }
 
@@ -66,7 +68,7 @@
         }
 
         .logo {
-            font-family: 'Cormorant Garamond', serif;
+            font-family: 'Inter', sans-serif;
             font-size: 1.75rem;
             font-weight: 700;
             color: var(--navy);
@@ -112,7 +114,7 @@
         }
 
         .section-title {
-            font-family: 'Cormorant Garamond', serif;
+            font-family: 'Fraunces', serif;
             font-size: clamp(1.75rem, 4vw, 2.5rem);
             color: var(--navy);
             margin-bottom: 0.5rem;
@@ -136,10 +138,10 @@
 
         .filter-select {
             padding: 0.5rem 1rem;
-            border: 1.5px solid rgba(26, 54, 93, 0.15);
+            border: 1.5px solid rgba(26, 26, 26, 0.15);
             border-radius: 6px;
             background: white;
-            font-family: 'DM Sans', sans-serif;
+            font-family: 'Inter', sans-serif;
             font-size: 0.85rem;
             color: var(--ink);
             cursor: pointer;
@@ -167,8 +169,8 @@
             background: white;
             border-radius: 12px;
             overflow: hidden;
-            border: 1px solid rgba(26, 54, 93, 0.06);
-            box-shadow: 0 2px 12px rgba(26, 54, 93, 0.04);
+            border: 1px solid rgba(26, 26, 26, 0.06);
+            box-shadow: 0 2px 12px rgba(26, 26, 26, 0.04);
             transition: transform 0.3s, box-shadow 0.3s;
             text-decoration: none;
             color: inherit;
@@ -177,7 +179,7 @@
 
         .work-card:hover {
             transform: translateY(-4px);
-            box-shadow: 0 12px 32px rgba(26, 54, 93, 0.1);
+            box-shadow: 0 12px 32px rgba(26, 26, 26, 0.1);
         }
 
         .work-thumb {
@@ -202,7 +204,7 @@
             align-items: center;
             justify-content: center;
             background: linear-gradient(135deg, var(--cream-dark), #eeeadb);
-            font-family: 'Cormorant Garamond', serif;
+            font-family: 'Inter', sans-serif;
             font-size: 1.5rem;
             font-weight: 600;
             color: var(--ink-faint);
@@ -211,7 +213,7 @@
         .work-body { padding: 1.25rem 1.5rem 1.5rem; }
 
         .work-title {
-            font-family: 'Cormorant Garamond', serif;
+            font-family: 'Fraunces', serif;
             font-size: 1.15rem;
             font-weight: 600;
             color: var(--navy);
@@ -243,9 +245,9 @@
             letter-spacing: 0.06em;
         }
 
-        .tier-badge.tier-gold { background: var(--gold-pale); color: var(--gold); }
-        .tier-badge.tier-silver { background: #e8edf2; color: var(--silver); }
-        .tier-badge.tier-bronze { background: #f0e6d8; color: var(--bronze); }
+        .tier-badge.tier-gold { background: #faf3e0; color: #a08530; }
+        .tier-badge.tier-silver { background: #edf0f4; color: #6b7280; }
+        .tier-badge.tier-bronze { background: #f5ebe0; color: #a0764a; }
 
         .work-medium {
             font-size: 0.78rem;
@@ -261,10 +263,10 @@
 
         .page-btn {
             padding: 0.5rem 0.9rem;
-            border: 1.5px solid rgba(26, 54, 93, 0.15);
+            border: 1.5px solid rgba(26, 26, 26, 0.15);
             border-radius: 6px;
             background: white;
-            font-family: 'DM Sans', sans-serif;
+            font-family: 'Inter', sans-serif;
             font-size: 0.85rem;
             color: var(--ink-light);
             cursor: pointer;
@@ -280,11 +282,11 @@
             padding: 4rem 2rem;
             background: white;
             border-radius: 12px;
-            border: 1px solid rgba(26, 54, 93, 0.06);
+            border: 1px solid rgba(26, 26, 26, 0.06);
         }
 
         .empty-state h3 {
-            font-family: 'Cormorant Garamond', serif;
+            font-family: 'Fraunces', serif;
             font-size: 1.3rem;
             color: var(--ink-light);
             margin-bottom: 0.5rem;
@@ -295,7 +297,7 @@
         .spinner {
             display: inline-block;
             width: 28px; height: 28px;
-            border: 3px solid rgba(26, 54, 93, 0.12);
+            border: 3px solid rgba(26, 26, 26, 0.12);
             border-top-color: var(--navy);
             border-radius: 50%;
             animation: spin 0.7s linear infinite;
@@ -305,7 +307,7 @@
 
         footer {
             padding: 3rem 0;
-            border-top: 1px solid rgba(26, 54, 93, 0.08);
+            border-top: 1px solid rgba(26, 26, 26, 0.08);
             margin-top: 2rem;
         }
 
@@ -353,7 +355,7 @@
         .auth-area[data-state="signed-in"] .auth-dropdown { display: none !important; }
 
         .auth-btn {
-            font-family: 'DM Sans', sans-serif;
+            font-family: 'Inter', sans-serif;
             font-size: 0.85rem;
             font-weight: 600;
             border: none;
@@ -397,8 +399,8 @@
             width: 320px;
             background: white;
             border-radius: 12px;
-            border: 1px solid rgba(26, 54, 93, 0.1);
-            box-shadow: 0 12px 40px rgba(26, 54, 93, 0.15);
+            border: 1px solid rgba(26, 26, 26, 0.1);
+            box-shadow: 0 12px 40px rgba(26, 26, 26, 0.15);
             padding: 1.5rem;
             z-index: 200;
             animation: authSlideDown 0.2s ease;
@@ -412,7 +414,7 @@
         }
 
         .auth-dropdown h3 {
-            font-family: 'Cormorant Garamond', serif;
+            font-family: 'Fraunces', serif;
             font-size: 1.25rem;
             color: var(--navy);
             margin-bottom: 1rem;
@@ -443,9 +445,9 @@
         .auth-field input {
             width: 100%;
             padding: 0.6rem 0.85rem;
-            border: 1.5px solid rgba(26, 54, 93, 0.18);
+            border: 1.5px solid rgba(26, 26, 26, 0.18);
             border-radius: 6px;
-            font-family: 'DM Sans', sans-serif;
+            font-family: 'Inter', sans-serif;
             font-size: 0.9rem;
             color: var(--ink);
             background: var(--cream);
@@ -464,7 +466,7 @@
             color: var(--cream);
             border: none;
             border-radius: 6px;
-            font-family: 'DM Sans', sans-serif;
+            font-family: 'Inter', sans-serif;
             font-size: 0.9rem;
             font-weight: 600;
             cursor: pointer;
@@ -500,7 +502,21 @@
 <body>
     <header>
         <div class="header-inner">
-            <a href="/" class="logo">Officially <span>Human</span> Art</a>
+            <a href="/" class="logo" style="display:flex;align-items:center;gap:12px;text-decoration:none;font-family:'Inter',sans-serif;">
+    <svg viewBox="0 0 70 85" fill="none" stroke="currentColor" stroke-width="1.2" xmlns="http://www.w3.org/2000/svg" style="width:36px;height:44px;color:#1a1a1a;">
+        <path d="M35 5 C15 5 5 22 5 42 C5 62 15 80 35 80" stroke-linecap="round"/>
+        <path d="M35 12 C20 12 12 26 12 42 C12 58 20 72 35 72 C50 72 58 58 58 42" stroke-linecap="round"/>
+        <path d="M35 19 C24 19 18 30 18 42 C18 54 24 65 35 65 C46 65 52 54 52 42 C52 30 46 19 35 19" stroke-linecap="round"/>
+        <path d="M35 26 C28 26 24 33 24 42 C24 51 28 58 35 58 C42 58 46 51 46 42" stroke-linecap="round"/>
+        <path d="M35 33 C31 33 29 37 29 42 C29 47 31 51 35 51 C39 51 41 47 41 42 C41 37 39 33 35 33" stroke-linecap="round"/>
+        <path d="M65 42 C65 22 55 5 35 5" stroke-linecap="round"/>
+        <path d="M58 42 C58 26 50 12 35 12" stroke-linecap="round"/>
+    </svg>
+    <span style="display:flex;flex-direction:column;line-height:1.1;">
+        <span style="font-size:14px;"><span style="font-weight:300;color:#666666;">officially</span><span style="font-weight:600;color:#1a1a1a;">human</span></span>
+        <span style="font-size:24px;font-weight:700;color:#1a1a1a;margin-top:-2px;">.art</span>
+    </span>
+</a>
             <nav>
                 <a href="verify.html">Verify</a>
                 <a href="register.html">For Artists</a>
@@ -564,7 +580,21 @@
 
     <footer>
         <div class="footer-inner">
-            <a href="/" class="logo" style="font-size:1.25rem;">Officially <span>Human</span> Art</a>
+            <a href="/" class="logo" style="display:flex;align-items:center;gap:10px;text-decoration:none;font-family:'Inter',sans-serif;">
+    <svg viewBox="0 0 70 85" fill="none" stroke="currentColor" stroke-width="1.2" xmlns="http://www.w3.org/2000/svg" style="width:28px;height:34px;color:#1a1a1a;">
+        <path d="M35 5 C15 5 5 22 5 42 C5 62 15 80 35 80" stroke-linecap="round"/>
+        <path d="M35 12 C20 12 12 26 12 42 C12 58 20 72 35 72 C50 72 58 58 58 42" stroke-linecap="round"/>
+        <path d="M35 19 C24 19 18 30 18 42 C18 54 24 65 35 65 C46 65 52 54 52 42 C52 30 46 19 35 19" stroke-linecap="round"/>
+        <path d="M35 26 C28 26 24 33 24 42 C24 51 28 58 35 58 C42 58 46 51 46 42" stroke-linecap="round"/>
+        <path d="M35 33 C31 33 29 37 29 42 C29 47 31 51 35 51 C39 51 41 47 41 42 C41 37 39 33 35 33" stroke-linecap="round"/>
+        <path d="M65 42 C65 22 55 5 35 5" stroke-linecap="round"/>
+        <path d="M58 42 C58 26 50 12 35 12" stroke-linecap="round"/>
+    </svg>
+    <span style="display:flex;flex-direction:column;line-height:1.1;">
+        <span style="font-size:11px;"><span style="font-weight:300;color:#666666;">officially</span><span style="font-weight:600;color:#1a1a1a;">human</span></span>
+        <span style="font-size:18px;font-weight:700;color:#1a1a1a;margin-top:-2px;">.art</span>
+    </span>
+</a>
             <div class="footer-links">
                 <a href="/">Home</a>
                 <a href="register.html">For Artists</a>

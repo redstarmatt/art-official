@@ -5,21 +5,28 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Legal — Officially Human Art</title>
     <link rel="stylesheet" href="/fonts/fonts.css">
+    <link rel="icon" type="image/svg+xml" href="/fingerprint-favicon.svg">
     <style>
         :root {
-            --navy: #1a365d;
-            --navy-light: #2c5282;
-            --cream: #fffef0;
-            --cream-dark: #f7f5e6;
-            --gold: #b7960b;
-            --ink: #2d3748;
-            --ink-light: #4a5568;
-            --ink-faint: #718096;
+            --navy: #2a2520;
+            --navy-light: #3d3630;
+            --navy-dark: #1a1510;
+            --cream: #f5f0e8;
+            --cream-dark: #ebe5da;
+            --gold: #3d3427;
+            --gold-light: #4a4035;
+            --gold-pale: #f0e6d2;
+            --ink: #1a1a1a;
+            --ink-light: #555555;
+            --ink-faint: #888888;
+            --success: #276749;
             --error: #c53030;
+            --bronze: #c4935a;
+            --silver: #9ca3af;
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: 'DM Sans', sans-serif;
+            font-family: 'Inter', sans-serif;
             background: var(--cream);
             color: var(--ink);
             line-height: 1.7;
@@ -28,18 +35,18 @@
         .container { max-width: 800px; margin: 0 auto; padding: 0 2rem; }
         header {
             padding: 1rem 0;
-            background: rgba(255, 254, 240, 0.92);
+            background: rgba(245, 240, 232, 0.92);
             backdrop-filter: blur(16px);
-            border-bottom: 1px solid rgba(26, 54, 93, 0.06);
+            border-bottom: 1px solid rgba(26, 26, 26, 0.06);
         }
         .header-inner { display: flex; justify-content: space-between; align-items: center; max-width: 800px; margin: 0 auto; padding: 0 2rem; }
-        .logo { font-family: 'Cormorant Garamond', serif; font-size: 1.5rem; font-weight: 700; color: var(--navy); text-decoration: none; }
+        .logo { font-family: 'Inter', sans-serif; font-size: 1.5rem; font-weight: 700; color: var(--navy); text-decoration: none; }
         .logo span { color: var(--gold); }
         nav a { color: var(--ink-faint); text-decoration: none; font-size: 0.9rem; margin-left: 1.5rem; }
         nav a:hover { color: var(--navy); }
         main { padding: 3rem 0 4rem; }
         h1 {
-            font-family: 'Cormorant Garamond', serif;
+            font-family: 'Fraunces', serif;
             font-size: 2.25rem;
             font-weight: 700;
             color: var(--navy);
@@ -47,14 +54,14 @@
         }
         .last-updated { font-size: 0.82rem; color: var(--ink-faint); margin-bottom: 2.5rem; }
         h2 {
-            font-family: 'Cormorant Garamond', serif;
+            font-family: 'Fraunces', serif;
             font-size: 1.5rem;
             font-weight: 600;
             color: var(--navy);
             margin-top: 2.5rem;
             margin-bottom: 0.75rem;
             padding-bottom: 0.5rem;
-            border-bottom: 1px solid rgba(26, 54, 93, 0.08);
+            border-bottom: 1px solid rgba(26, 26, 26, 0.08);
         }
         h3 {
             font-size: 1rem;
@@ -70,16 +77,16 @@
             display: flex; gap: 1rem; flex-wrap: wrap;
             margin-bottom: 2rem; padding: 1rem 1.25rem;
             background: var(--cream-dark); border-radius: 8px;
-            border: 1px solid rgba(26, 54, 93, 0.06);
+            border: 1px solid rgba(26, 26, 26, 0.06);
         }
         .section-nav a {
             font-size: 0.85rem; color: var(--navy); text-decoration: none;
             padding: 0.3rem 0.75rem; border-radius: 100px;
-            border: 1px solid rgba(26, 54, 93, 0.12);
+            border: 1px solid rgba(26, 26, 26, 0.12);
         }
-        .section-nav a:hover { background: rgba(26, 54, 93, 0.05); }
+        .section-nav a:hover { background: rgba(26, 26, 26, 0.05); }
         footer {
-            padding: 2rem 0; border-top: 1px solid rgba(26, 54, 93, 0.06);
+            padding: 2rem 0; border-top: 1px solid rgba(26, 26, 26, 0.06);
             text-align: center; font-size: 0.82rem; color: var(--ink-faint);
         }
         footer a { color: var(--ink-faint); text-decoration: none; margin: 0 0.75rem; }
@@ -105,7 +112,7 @@
         .auth-area[data-state="signed-in"] .auth-dropdown { display: none !important; }
 
         .auth-btn {
-            font-family: 'DM Sans', sans-serif;
+            font-family: 'Inter', sans-serif;
             font-size: 0.85rem;
             font-weight: 600;
             border: none;
@@ -123,7 +130,7 @@
 
         .auth-login-btn:hover {
             background: var(--navy);
-            color: #fffef0;
+            color: #f5f0e8;
         }
 
         .auth-user-name {
@@ -149,8 +156,8 @@
             width: 320px;
             background: white;
             border-radius: 12px;
-            border: 1px solid rgba(26, 54, 93, 0.1);
-            box-shadow: 0 12px 40px rgba(26, 54, 93, 0.15);
+            border: 1px solid rgba(26, 26, 26, 0.1);
+            box-shadow: 0 12px 40px rgba(26, 26, 26, 0.15);
             padding: 1.5rem;
             z-index: 200;
             animation: authSlideDown 0.2s ease;
@@ -164,7 +171,7 @@
         }
 
         .auth-dropdown h3 {
-            font-family: 'Cormorant Garamond', serif;
+            font-family: 'Fraunces', serif;
             font-size: 1.25rem;
             color: var(--navy);
             margin-bottom: 1rem;
@@ -195,9 +202,9 @@
         .auth-field input {
             width: 100%;
             padding: 0.6rem 0.85rem;
-            border: 1.5px solid rgba(26, 54, 93, 0.18);
+            border: 1.5px solid rgba(26, 26, 26, 0.18);
             border-radius: 6px;
-            font-family: 'DM Sans', sans-serif;
+            font-family: 'Inter', sans-serif;
             font-size: 0.9rem;
             color: var(--ink);
             background: var(--cream);
@@ -213,10 +220,10 @@
             width: 100%;
             padding: 0.7rem;
             background: var(--navy);
-            color: #fffef0;
+            color: #f5f0e8;
             border: none;
             border-radius: 6px;
-            font-family: 'DM Sans', sans-serif;
+            font-family: 'Inter', sans-serif;
             font-size: 0.9rem;
             font-weight: 600;
             cursor: pointer;
@@ -252,7 +259,21 @@
 <body>
     <header>
         <div class="header-inner">
-            <a href="/" class="logo">Officially <span>Human</span> Art</a>
+            <a href="/" class="logo" style="display:flex;align-items:center;gap:12px;text-decoration:none;font-family:'Inter',sans-serif;">
+    <svg viewBox="0 0 70 85" fill="none" stroke="currentColor" stroke-width="1.2" xmlns="http://www.w3.org/2000/svg" style="width:36px;height:44px;color:#1a1a1a;">
+        <path d="M35 5 C15 5 5 22 5 42 C5 62 15 80 35 80" stroke-linecap="round"/>
+        <path d="M35 12 C20 12 12 26 12 42 C12 58 20 72 35 72 C50 72 58 58 58 42" stroke-linecap="round"/>
+        <path d="M35 19 C24 19 18 30 18 42 C18 54 24 65 35 65 C46 65 52 54 52 42 C52 30 46 19 35 19" stroke-linecap="round"/>
+        <path d="M35 26 C28 26 24 33 24 42 C24 51 28 58 35 58 C42 58 46 51 46 42" stroke-linecap="round"/>
+        <path d="M35 33 C31 33 29 37 29 42 C29 47 31 51 35 51 C39 51 41 47 41 42 C41 37 39 33 35 33" stroke-linecap="round"/>
+        <path d="M65 42 C65 22 55 5 35 5" stroke-linecap="round"/>
+        <path d="M58 42 C58 26 50 12 35 12" stroke-linecap="round"/>
+    </svg>
+    <span style="display:flex;flex-direction:column;line-height:1.1;">
+        <span style="font-size:14px;"><span style="font-weight:300;color:#666666;">officially</span><span style="font-weight:600;color:#1a1a1a;">human</span></span>
+        <span style="font-size:24px;font-weight:700;color:#1a1a1a;margin-top:-2px;">.art</span>
+    </span>
+</a>
             <nav>
                 <a href="/">Home</a>
                 <a href="register.html">For Creators</a>
@@ -427,22 +448,22 @@
 
             <h3>Submit a Takedown Request</h3>
             <div id="takedown-alert" style="display:none;padding:0.75rem 1rem;border-radius:6px;margin-bottom:1rem;font-size:0.9rem;"></div>
-            <form id="takedown-form" style="background:#fff;border:1px solid rgba(26,54,93,0.1);border-radius:10px;padding:1.5rem;margin-top:1rem;">
+            <form id="takedown-form" style="background:#fff;border:1px solid rgba(26,26,26,0.1);border-radius:10px;padding:1.5rem;margin-top:1rem;">
                 <div style="margin-bottom:1rem;">
                     <label for="td-name" style="display:block;font-size:0.85rem;font-weight:600;color:var(--ink-light);margin-bottom:0.3rem;">Your Full Name <span style="color:var(--error);">*</span></label>
-                    <input type="text" id="td-name" required style="width:100%;padding:0.6rem 0.85rem;border:1.5px solid rgba(26,54,93,0.18);border-radius:6px;font-family:inherit;font-size:0.9rem;background:var(--cream-dark);">
+                    <input type="text" id="td-name" required style="width:100%;padding:0.6rem 0.85rem;border:1.5px solid rgba(26,26,26,0.18);border-radius:6px;font-family:inherit;font-size:0.9rem;background:var(--cream-dark);">
                 </div>
                 <div style="margin-bottom:1rem;">
                     <label for="td-email" style="display:block;font-size:0.85rem;font-weight:600;color:var(--ink-light);margin-bottom:0.3rem;">Email Address <span style="color:var(--error);">*</span></label>
-                    <input type="email" id="td-email" required style="width:100%;padding:0.6rem 0.85rem;border:1.5px solid rgba(26,54,93,0.18);border-radius:6px;font-family:inherit;font-size:0.9rem;background:var(--cream-dark);">
+                    <input type="email" id="td-email" required style="width:100%;padding:0.6rem 0.85rem;border:1.5px solid rgba(26,26,26,0.18);border-radius:6px;font-family:inherit;font-size:0.9rem;background:var(--cream-dark);">
                 </div>
                 <div style="margin-bottom:1rem;">
                     <label for="td-cert-id" style="display:block;font-size:0.85rem;font-weight:600;color:var(--ink-light);margin-bottom:0.3rem;">Certificate ID <span style="color:var(--error);">*</span></label>
-                    <input type="text" id="td-cert-id" placeholder="e.g. OH-2026-ABC123" required style="width:100%;padding:0.6rem 0.85rem;border:1.5px solid rgba(26,54,93,0.18);border-radius:6px;font-family:inherit;font-size:0.9rem;background:var(--cream-dark);">
+                    <input type="text" id="td-cert-id" placeholder="e.g. OH-2026-ABC123" required style="width:100%;padding:0.6rem 0.85rem;border:1.5px solid rgba(26,26,26,0.18);border-radius:6px;font-family:inherit;font-size:0.9rem;background:var(--cream-dark);">
                 </div>
                 <div style="margin-bottom:1rem;">
                     <label for="td-work" style="display:block;font-size:0.85rem;font-weight:600;color:var(--ink-light);margin-bottom:0.3rem;">Description of Copyrighted Work <span style="color:var(--error);">*</span></label>
-                    <textarea id="td-work" rows="3" required style="width:100%;padding:0.6rem 0.85rem;border:1.5px solid rgba(26,54,93,0.18);border-radius:6px;font-family:inherit;font-size:0.9rem;background:var(--cream-dark);resize:vertical;"></textarea>
+                    <textarea id="td-work" rows="3" required style="width:100%;padding:0.6rem 0.85rem;border:1.5px solid rgba(26,26,26,0.18);border-radius:6px;font-family:inherit;font-size:0.9rem;background:var(--cream-dark);resize:vertical;"></textarea>
                 </div>
                 <div style="margin-bottom:1.25rem;">
                     <label style="display:flex;align-items:flex-start;gap:0.5rem;font-size:0.88rem;color:var(--ink-light);cursor:pointer;">
@@ -450,14 +471,28 @@
                         <span>I declare under penalty of perjury that I am the copyright owner or am authorised to act on behalf of the owner, and that the information in this notice is accurate. I understand that filing a false claim may result in legal liability.</span>
                     </label>
                 </div>
-                <button type="submit" id="td-submit-btn" style="padding:0.65rem 1.5rem;background:var(--navy);color:#fffef0;border:none;border-radius:6px;font-family:inherit;font-size:0.9rem;font-weight:600;cursor:pointer;">Submit Takedown Request</button>
+                <button type="submit" id="td-submit-btn" style="padding:0.65rem 1.5rem;background:var(--navy);color:#f5f0e8;border:none;border-radius:6px;font-family:inherit;font-size:0.9rem;font-weight:600;cursor:pointer;">Submit Takedown Request</button>
             </form>
         </div>
     </main>
 
     <footer>
         <div class="container">
-            <a href="/" class="logo" style="font-size:1.1rem;font-family:'Cormorant Garamond',serif;font-weight:700;color:#1a365d;text-decoration:none;">Officially <span style="color:#b7960b;">Human</span> Art</a>
+            <a href="/" class="logo" style="display:flex;align-items:center;gap:10px;text-decoration:none;font-family:'Inter',sans-serif;">
+    <svg viewBox="0 0 70 85" fill="none" stroke="currentColor" stroke-width="1.2" xmlns="http://www.w3.org/2000/svg" style="width:28px;height:34px;color:#1a1a1a;">
+        <path d="M35 5 C15 5 5 22 5 42 C5 62 15 80 35 80" stroke-linecap="round"/>
+        <path d="M35 12 C20 12 12 26 12 42 C12 58 20 72 35 72 C50 72 58 58 58 42" stroke-linecap="round"/>
+        <path d="M35 19 C24 19 18 30 18 42 C18 54 24 65 35 65 C46 65 52 54 52 42 C52 30 46 19 35 19" stroke-linecap="round"/>
+        <path d="M35 26 C28 26 24 33 24 42 C24 51 28 58 35 58 C42 58 46 51 46 42" stroke-linecap="round"/>
+        <path d="M35 33 C31 33 29 37 29 42 C29 47 31 51 35 51 C39 51 41 47 41 42 C41 37 39 33 35 33" stroke-linecap="round"/>
+        <path d="M65 42 C65 22 55 5 35 5" stroke-linecap="round"/>
+        <path d="M58 42 C58 26 50 12 35 12" stroke-linecap="round"/>
+    </svg>
+    <span style="display:flex;flex-direction:column;line-height:1.1;">
+        <span style="font-size:11px;"><span style="font-weight:300;color:#666666;">officially</span><span style="font-weight:600;color:#1a1a1a;">human</span></span>
+        <span style="font-size:18px;font-weight:700;color:#1a1a1a;margin-top:-2px;">.art</span>
+    </span>
+</a>
             <div style="margin-top:0.75rem;">
                 <a href="/">Home</a>
                 <a href="register.html">For Creators</a>

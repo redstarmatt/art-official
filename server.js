@@ -521,21 +521,21 @@ app.post('/api/webhooks/stripe', express.raw({ type: 'application/json' }), asyn
                         from: process.env.SMTP_FROM || process.env.SMTP_USER,
                         to: artist.email,
                         subject: 'Your Officially Human Art subscription has ended',
-                        html: `<div style="font-family:'Helvetica Neue',Arial,sans-serif;max-width:600px;margin:0 auto;background:#fffef0;">
-                            <div style="background:#1a365d;color:#fffef0;padding:2rem;text-align:center;">
-                                <div style="font-family:Georgia,serif;font-size:1.75rem;font-weight:bold;">Officially <span style="color:#d4af37;">Human</span> Art</div>
+                        html: `<div style="font-family:'Helvetica Neue',Arial,sans-serif;max-width:600px;margin:0 auto;background:#f5f0e8;">
+                            <div style="background:#2a2520;color:#fafafa;padding:2rem;text-align:center;">
+                                <div style="font-family:Inter,-apple-system,sans-serif;font-size:1.2rem;font-weight:600;"><span style="font-weight:300;color:#999;">officially</span><span style="font-weight:600;">human</span><span style="font-weight:700;font-size:1.5rem;">.art</span></div>
                             </div>
                             <div style="padding:2rem;">
-                                <p style="color:#4a5568;margin-bottom:1rem;">Hi ${artist.name},</p>
-                                <p style="color:#4a5568;margin-bottom:1rem;">Your Creator subscription has ended. Your account has been moved to the Free plan.</p>
-                                <p style="color:#4a5568;margin-bottom:1rem;"><strong>Your ${certCount} existing certificate${certCount !== 1 ? 's remain' : ' remains'} fully active.</strong> All badges, QR codes, and verification pages continue to work as normal. Nothing has been removed.</p>
-                                <p style="color:#4a5568;margin-bottom:1rem;">On the Free plan, you can maintain up to 3 certified works. To certify unlimited works again, you can resubscribe at any time from your dashboard.</p>
+                                <p style="color:#666666;margin-bottom:1rem;">Hi ${artist.name},</p>
+                                <p style="color:#666666;margin-bottom:1rem;">Your Creator subscription has ended. Your account has been moved to the Free plan.</p>
+                                <p style="color:#666666;margin-bottom:1rem;"><strong>Your ${certCount} existing certificate${certCount !== 1 ? 's remain' : ' remains'} fully active.</strong> All badges, QR codes, and verification pages continue to work as normal. Nothing has been removed.</p>
+                                <p style="color:#666666;margin-bottom:1rem;">On the Free plan, you can maintain up to 3 certified works. To certify unlimited works again, you can resubscribe at any time from your dashboard.</p>
                                 <div style="text-align:center;margin:2rem 0;">
-                                    <a href="${process.env.BASE_URL || 'https://officallyhuman.art'}/register.html" style="display:inline-block;padding:0.75rem 2rem;background:#1a365d;color:#fffef0;text-decoration:none;border-radius:6px;font-weight:600;font-size:0.9rem;">Go to Dashboard</a>
+                                    <a href="${process.env.BASE_URL || 'https://officallyhuman.art'}/register.html" style="display:inline-block;padding:0.75rem 2rem;background:#2a2520;color:#fafafa;text-decoration:none;border-radius:6px;font-weight:600;font-size:0.9rem;">Go to Dashboard</a>
                                 </div>
-                                <p style="color:#718096;font-size:0.85rem;">Thanks for supporting Officially Human Art. We hope to see you back.</p>
+                                <p style="color:#888888;font-size:0.85rem;">Thanks for supporting Officially Human Art. We hope to see you back.</p>
                             </div>
-                            <div style="background:#f7f5e6;padding:1rem;text-align:center;font-size:0.75rem;color:#a0aec0;border-top:1px solid rgba(26,54,93,0.06);">
+                            <div style="background:#ebe5da;padding:1rem;text-align:center;font-size:0.75rem;color:#a0aec0;border-top:1px solid rgba(26,26,26,0.06);">
                                 <p style="margin:0;">&copy; 2026 Officially Human Art</p>
                             </div>
                         </div>`
@@ -552,18 +552,18 @@ app.post('/api/webhooks/stripe', express.raw({ type: 'application/json' }), asyn
                     from: process.env.SMTP_FROM || process.env.SMTP_USER,
                     to: artist.email,
                     subject: 'Payment failed for your Officially Human Art subscription',
-                    html: `<div style="font-family:'Helvetica Neue',Arial,sans-serif;max-width:600px;margin:0 auto;background:#fffef0;">
-                        <div style="background:#1a365d;color:#fffef0;padding:2rem;text-align:center;">
-                            <div style="font-family:Georgia,serif;font-size:1.75rem;font-weight:bold;">Officially <span style="color:#d4af37;">Human</span> Art</div>
+                    html: `<div style="font-family:'Helvetica Neue',Arial,sans-serif;max-width:600px;margin:0 auto;background:#f5f0e8;">
+                        <div style="background:#2a2520;color:#fafafa;padding:2rem;text-align:center;">
+                            <div style="font-family:Inter,-apple-system,sans-serif;font-size:1.2rem;font-weight:600;"><span style="font-weight:300;color:#999;">officially</span><span style="font-weight:600;">human</span><span style="font-weight:700;font-size:1.5rem;">.art</span></div>
                         </div>
                         <div style="padding:2rem;">
-                            <p style="color:#4a5568;margin-bottom:1rem;">Hi ${artist.name},</p>
-                            <p style="color:#4a5568;margin-bottom:1rem;">We weren't able to process your latest payment for the Creator plan. This can happen if your card has expired or has insufficient funds.</p>
-                            <p style="color:#4a5568;margin-bottom:1rem;">Please update your payment method to keep your subscription active. Stripe will automatically retry the payment, but if it continues to fail your subscription will be cancelled.</p>
-                            <p style="color:#4a5568;margin-bottom:1rem;"><strong>Your certificates remain active while we retry.</strong> No changes have been made to your account yet.</p>
-                            <p style="color:#718096;font-size:0.85rem;">If you believe this is an error, please check with your bank or card provider.</p>
+                            <p style="color:#666666;margin-bottom:1rem;">Hi ${artist.name},</p>
+                            <p style="color:#666666;margin-bottom:1rem;">We weren't able to process your latest payment for the Creator plan. This can happen if your card has expired or has insufficient funds.</p>
+                            <p style="color:#666666;margin-bottom:1rem;">Please update your payment method to keep your subscription active. Stripe will automatically retry the payment, but if it continues to fail your subscription will be cancelled.</p>
+                            <p style="color:#666666;margin-bottom:1rem;"><strong>Your certificates remain active while we retry.</strong> No changes have been made to your account yet.</p>
+                            <p style="color:#888888;font-size:0.85rem;">If you believe this is an error, please check with your bank or card provider.</p>
                         </div>
-                        <div style="background:#f7f5e6;padding:1rem;text-align:center;font-size:0.75rem;color:#a0aec0;border-top:1px solid rgba(26,54,93,0.06);">
+                        <div style="background:#ebe5da;padding:1rem;text-align:center;font-size:0.75rem;color:#a0aec0;border-top:1px solid rgba(26,26,26,0.06);">
                             <p style="margin:0;">&copy; 2026 Officially Human Art</p>
                         </div>
                     </div>`
@@ -752,48 +752,49 @@ function blogTemplate(title, content, { description, isIndex, keywords } = {}) {
     <meta name="description" content="${esc(description || title)}">
 ${keywords ? `    <meta name="keywords" content="${esc(keywords)}">` : ''}
     <link rel="stylesheet" href="/fonts/fonts.css">
+    <link rel="icon" type="image/svg+xml" href="/fingerprint-favicon.svg">
     <style>
-        :root{--navy:#1a365d;--navy-light:#2c5282;--cream:#fffef0;--cream-dark:#f7f5e6;--gold:#b7960b;--gold-light:#d4af37;--ink:#2d3748;--ink-light:#4a5568;--ink-faint:#718096;}
+        :root{--navy:#2a2520;--navy-light:#3d3630;--cream:#f5f0e8;--cream-dark:#ebe5da;--gold:#3d3427;--gold-light:#4a4035;--ink:#1a1a1a;--ink-light:#555555;--ink-faint:#888888;}
         *{margin:0;padding:0;box-sizing:border-box;}
-        body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);line-height:1.6;-webkit-font-smoothing:antialiased;}
+        body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--ink);line-height:1.6;-webkit-font-smoothing:antialiased;}
         .container{max-width:760px;margin:0 auto;padding:0 2rem;}
-        header{padding:1rem 0;border-bottom:1px solid rgba(26,54,93,0.06);margin-bottom:3rem;}
+        header{padding:1rem 0;border-bottom:1px solid rgba(26,26,26,0.06);margin-bottom:3rem;}
         .header-inner{display:flex;justify-content:space-between;align-items:center;max-width:760px;margin:0 auto;padding:0 2rem;}
-        .logo{font-family:'Cormorant Garamond',serif;font-size:1.5rem;font-weight:700;color:var(--navy);text-decoration:none;}
+        .logo{font-family:'Inter',sans-serif;font-size:1.5rem;font-weight:700;color:var(--navy);text-decoration:none;}
         .logo span{color:var(--gold);}
         nav a{color:var(--ink-light);text-decoration:none;font-size:0.9rem;font-weight:500;margin-left:1.5rem;}
         nav a:hover{color:var(--navy);}
         .blog-content{padding-bottom:5rem;}
-        .blog-content h1{font-family:'Cormorant Garamond',serif;font-size:clamp(2rem,4vw,2.75rem);color:var(--navy);margin-bottom:0.5rem;line-height:1.15;}
-        .blog-content h2{font-family:'Cormorant Garamond',serif;font-size:1.5rem;color:var(--navy);margin:2.5rem 0 0.75rem;}
+        .blog-content h1{font-family:'Fraunces',serif;font-size:clamp(2rem,4vw,2.75rem);color:var(--navy);margin-bottom:0.5rem;line-height:1.15;}
+        .blog-content h2{font-family:'Fraunces',serif;font-size:1.5rem;color:var(--navy);margin:2.5rem 0 0.75rem;}
         .blog-content h3{font-size:1.15rem;color:var(--navy);margin:2rem 0 0.5rem;}
         .blog-meta{font-size:0.85rem;color:var(--ink-faint);margin-bottom:2.5rem;}
         .blog-content p{margin-bottom:1.25rem;line-height:1.8;color:var(--ink-light);font-size:1.02rem;}
-        .blog-content blockquote{border-left:3px solid var(--gold);padding:0.5rem 0 0.5rem 1.5rem;margin:1.5rem 0;font-family:'Cormorant Garamond',serif;font-size:1.3rem;color:var(--navy);font-style:italic;line-height:1.5;}
+        .blog-content blockquote{border-left:3px solid var(--gold);padding:0.5rem 0 0.5rem 1.5rem;margin:1.5rem 0;font-family:'Fraunces',serif;font-size:1.3rem;color:var(--navy);font-style:italic;line-height:1.5;}
         .blog-content ul,.blog-content ol{margin:0 0 1.25rem 1.5rem;color:var(--ink-light);}
         .blog-content li{margin-bottom:0.4rem;line-height:1.7;}
         .blog-content a{color:var(--navy);font-weight:600;}
         .blog-content a:hover{color:var(--gold);}
         .blog-content img{max-width:100%;border-radius:8px;margin:1.5rem 0;}
-        .blog-content hr{border:none;border-top:1px solid rgba(26,54,93,0.08);margin:2.5rem 0;}
+        .blog-content hr{border:none;border-top:1px solid rgba(26,26,26,0.08);margin:2.5rem 0;}
         .post-list{list-style:none;padding:0;}
-        .post-item{padding:1.75rem 0;border-bottom:1px solid rgba(26,54,93,0.06);}
+        .post-item{padding:1.75rem 0;border-bottom:1px solid rgba(26,26,26,0.06);}
         .post-item:first-child{padding-top:0;}
-        .post-item h2{font-family:'Cormorant Garamond',serif;font-size:1.5rem;margin-bottom:0.3rem;}
+        .post-item h2{font-family:'Fraunces',serif;font-size:1.5rem;margin-bottom:0.3rem;}
         .post-item h2 a{color:var(--navy);text-decoration:none;}
         .post-item h2 a:hover{color:var(--gold);}
         .post-item .post-date{font-size:0.82rem;color:var(--ink-faint);margin-bottom:0.5rem;}
         .post-item .post-excerpt{color:var(--ink-light);font-size:0.95rem;line-height:1.65;}
         .back-link{display:inline-block;margin-bottom:2rem;font-size:0.9rem;color:var(--ink-faint);text-decoration:none;}
         .back-link:hover{color:var(--navy);}
-        footer{padding:2rem 0;border-top:1px solid rgba(26,54,93,0.06);text-align:center;}
+        footer{padding:2rem 0;border-top:1px solid rgba(26,26,26,0.06);text-align:center;}
         footer p{color:var(--ink-faint);font-size:0.82rem;}
     </style>
 </head>
 <body>
     <header>
         <div class="header-inner">
-            <a href="/" class="logo">Officially <span>Human</span> Art</a>
+            <a href="/" class="logo" style="display:flex;align-items:center;gap:8px;text-decoration:none;font-family:'Inter',sans-serif;"><svg viewBox="0 0 70 85" fill="none" stroke="currentColor" stroke-width="1.2" xmlns="http://www.w3.org/2000/svg" style="width:28px;height:34px;color:#1a1a1a;"><path d="M35 5 C15 5 5 22 5 42 C5 62 15 80 35 80" stroke-linecap="round"/><path d="M35 12 C20 12 12 26 12 42 C12 58 20 72 35 72 C50 72 58 58 58 42" stroke-linecap="round"/><path d="M35 19 C24 19 18 30 18 42 C18 54 24 65 35 65 C46 65 52 54 52 42 C52 30 46 19 35 19" stroke-linecap="round"/><path d="M35 26 C28 26 24 33 24 42 C24 51 28 58 35 58 C42 58 46 51 46 42" stroke-linecap="round"/><path d="M35 33 C31 33 29 37 29 42 C29 47 31 51 35 51 C39 51 41 47 41 42 C41 37 39 33 35 33" stroke-linecap="round"/><path d="M65 42 C65 22 55 5 35 5" stroke-linecap="round"/><path d="M58 42 C58 26 50 12 35 12" stroke-linecap="round"/></svg><span style="display:flex;flex-direction:column;line-height:1.1;"><span style="font-size:11px;"><span style="font-weight:300;color:#666;">officially</span><span style="font-weight:600;color:#1a1a1a;">human</span></span><span style="font-size:18px;font-weight:700;color:#1a1a1a;margin-top:-2px;">.art</span></span></a>
             <nav>
                 <a href="/blog">Blog</a>
                 <a href="/browse.html">Browse</a>
@@ -1043,7 +1044,7 @@ async function sendCertificateEmail(artist, certificate, host) {
     if (!emailEnabled) return;
 
     const verifyUrl = `${host}/verify.html?code=${certificate.id}`;
-    const tierColors = { gold: '#b7960b', silver: '#718096', bronze: '#9c6b30' };
+    const tierColors = { gold: '#a08530', silver: '#6b7280', bronze: '#a0764a' };
     const tierColor = tierColors[certificate.tier] || tierColors.bronze;
     const tierLabel = certificate.tierLabel || certificate.tier || 'Bronze';
 
@@ -1051,35 +1052,35 @@ async function sendCertificateEmail(artist, certificate, host) {
     try {
         qrDataUrl = await QRCode.toDataURL(verifyUrl, {
             width: 200, margin: 2,
-            color: { dark: '#1a365d', light: '#fffef0' }
+            color: { dark: '#2a2520', light: '#f5f0e8' }
         });
     } catch (e) { /* skip QR if it fails */ }
 
     const html = `
-    <div style="font-family:'Helvetica Neue',Arial,sans-serif;max-width:600px;margin:0 auto;background:#fffef0;">
-        <div style="background:#1a365d;color:#fffef0;padding:2rem;text-align:center;">
-            <div style="font-family:Georgia,serif;font-size:1.75rem;font-weight:bold;">Officially <span style="color:#d4af37;">Human</span> Art</div>
+    <div style="font-family:'Helvetica Neue',Arial,sans-serif;max-width:600px;margin:0 auto;background:#f5f0e8;">
+        <div style="background:#2a2520;color:#fafafa;padding:2rem;text-align:center;">
+            <div style="font-family:Inter,-apple-system,sans-serif;font-size:1.2rem;font-weight:600;"><span style="font-weight:300;color:#999;">officially</span><span style="font-weight:600;">human</span><span style="font-weight:700;font-size:1.5rem;">.art</span></div>
             <div style="font-size:0.8rem;text-transform:uppercase;letter-spacing:0.12em;opacity:0.8;margin-top:0.25rem;">Certificate of Human Creation</div>
         </div>
         <div style="padding:2rem;">
-            <p style="color:#4a5568;margin-bottom:1.5rem;">Hi ${artist.name},</p>
-            <p style="color:#4a5568;margin-bottom:1.5rem;">Your work has been certified as authentically human-made. Here are your certificate details:</p>
-            <div style="background:#fff;border:1px solid rgba(26,54,93,0.1);border-radius:12px;padding:1.5rem;margin-bottom:1.5rem;">
-                <h2 style="font-family:Georgia,serif;color:#1a365d;margin:0 0 0.5rem;font-size:1.4rem;">${certificate.title}</h2>
-                <p style="color:#718096;margin:0 0 1rem;font-size:0.9rem;">${certificate.medium}</p>
+            <p style="color:#666666;margin-bottom:1.5rem;">Hi ${artist.name},</p>
+            <p style="color:#666666;margin-bottom:1.5rem;">Your work has been certified as authentically human-made. Here are your certificate details:</p>
+            <div style="background:#fff;border:1px solid rgba(26,26,26,0.1);border-radius:12px;padding:1.5rem;margin-bottom:1.5rem;">
+                <h2 style="font-family:Inter,-apple-system,sans-serif;color:#1a1a1a;margin:0 0 0.5rem;font-size:1.4rem;">${certificate.title}</h2>
+                <p style="color:#888888;margin:0 0 1rem;font-size:0.9rem;">${certificate.medium}</p>
                 <div style="display:inline-block;padding:0.3rem 1rem;border-radius:100px;font-size:0.75rem;font-weight:bold;text-transform:uppercase;letter-spacing:0.06em;color:#fff;background:${tierColor};">${tierLabel} Certification</div>
-                <div style="margin-top:1.25rem;padding-top:1rem;border-top:1px solid rgba(26,54,93,0.08);">
+                <div style="margin-top:1.25rem;padding-top:1rem;border-top:1px solid rgba(26,26,26,0.08);">
                     <p style="color:#a0aec0;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.1em;margin:0 0 0.2rem;">Certificate ID</p>
-                    <p style="font-family:monospace;color:#1a365d;font-size:1.1rem;font-weight:600;margin:0;letter-spacing:0.08em;">${certificate.id}</p>
+                    <p style="font-family:monospace;color:#1a1a1a;font-size:1.1rem;font-weight:600;margin:0;letter-spacing:0.08em;">${certificate.id}</p>
                 </div>
                 ${qrDataUrl ? `<div style="margin-top:1.25rem;text-align:center;"><img src="${qrDataUrl}" alt="QR Code" style="width:150px;height:150px;border-radius:8px;"></div>` : ''}
             </div>
             <div style="text-align:center;margin-bottom:1.5rem;">
-                <a href="${verifyUrl}" style="display:inline-block;padding:0.75rem 2rem;background:#1a365d;color:#fffef0;text-decoration:none;border-radius:6px;font-weight:600;font-size:0.9rem;">View Your Certificate</a>
+                <a href="${verifyUrl}" style="display:inline-block;padding:0.75rem 2rem;background:#2a2520;color:#fafafa;text-decoration:none;border-radius:6px;font-weight:600;font-size:0.9rem;">View Your Certificate</a>
             </div>
-            <p style="color:#718096;font-size:0.82rem;">You can share your certificate by sending the verification link or using the embed code on your website.</p>
+            <p style="color:#888888;font-size:0.82rem;">You can share your certificate by sending the verification link or using the embed code on your website.</p>
         </div>
-        <div style="background:#f7f5e6;padding:1.25rem;text-align:center;font-size:0.75rem;color:#a0aec0;border-top:1px solid rgba(26,54,93,0.06);">
+        <div style="background:#ebe5da;padding:1.25rem;text-align:center;font-size:0.75rem;color:#a0aec0;border-top:1px solid rgba(26,26,26,0.06);">
             <p style="margin:0;">All rights reserved by the original creator. Registration does not transfer copyright.</p>
             <p style="margin:0.5rem 0 0;">&copy; 2026 Officially Human Art</p>
         </div>
@@ -1106,19 +1107,19 @@ async function sendVerificationEmail(artist, token, host) {
             to: artist.email,
             subject: 'Verify your email — Officially Human Art',
             html: `
-            <div style="font-family:'Helvetica Neue',Arial,sans-serif;max-width:600px;margin:0 auto;background:#fffef0;">
-                <div style="background:#1a365d;color:#fffef0;padding:2rem;text-align:center;">
-                    <div style="font-family:Georgia,serif;font-size:1.75rem;font-weight:bold;">Officially <span style="color:#d4af37;">Human</span> Art</div>
+            <div style="font-family:'Helvetica Neue',Arial,sans-serif;max-width:600px;margin:0 auto;background:#f5f0e8;">
+                <div style="background:#2a2520;color:#fafafa;padding:2rem;text-align:center;">
+                    <div style="font-family:Inter,-apple-system,sans-serif;font-size:1.2rem;font-weight:600;"><span style="font-weight:300;color:#999;">officially</span><span style="font-weight:600;">human</span><span style="font-weight:700;font-size:1.5rem;">.art</span></div>
                 </div>
                 <div style="padding:2rem;">
-                    <p style="color:#4a5568;margin-bottom:1.5rem;">Hi ${artist.name},</p>
-                    <p style="color:#4a5568;margin-bottom:1.5rem;">Please verify your email address to start submitting artwork for certification.</p>
+                    <p style="color:#666666;margin-bottom:1.5rem;">Hi ${artist.name},</p>
+                    <p style="color:#666666;margin-bottom:1.5rem;">Please verify your email address to start submitting artwork for certification.</p>
                     <div style="text-align:center;margin-bottom:1.5rem;">
-                        <a href="${verifyUrl}" style="display:inline-block;padding:0.75rem 2rem;background:#1a365d;color:#fffef0;text-decoration:none;border-radius:6px;font-weight:600;font-size:0.9rem;">Verify Email</a>
+                        <a href="${verifyUrl}" style="display:inline-block;padding:0.75rem 2rem;background:#2a2520;color:#fafafa;text-decoration:none;border-radius:6px;font-weight:600;font-size:0.9rem;">Verify Email</a>
                     </div>
-                    <p style="color:#718096;font-size:0.82rem;">If you didn't create an account, you can safely ignore this email.</p>
+                    <p style="color:#888888;font-size:0.82rem;">If you didn't create an account, you can safely ignore this email.</p>
                 </div>
-                <div style="background:#f7f5e6;padding:1.25rem;text-align:center;font-size:0.75rem;color:#a0aec0;border-top:1px solid rgba(26,54,93,0.06);">
+                <div style="background:#ebe5da;padding:1.25rem;text-align:center;font-size:0.75rem;color:#a0aec0;border-top:1px solid rgba(26,26,26,0.06);">
                     <p style="margin:0;">&copy; 2026 Officially Human Art</p>
                 </div>
             </div>`
@@ -1136,16 +1137,16 @@ async function sendRetentionWarningEmail(artist) {
             to: artist.email,
             subject: 'Your Officially Human Art account will be deleted',
             html: `
-            <div style="font-family:'Helvetica Neue',Arial,sans-serif;max-width:600px;margin:0 auto;background:#fffef0;">
-                <div style="background:#1a365d;color:#fffef0;padding:2rem;text-align:center;">
-                    <div style="font-family:Georgia,serif;font-size:1.75rem;font-weight:bold;">Officially <span style="color:#d4af37;">Human</span> Art</div>
+            <div style="font-family:'Helvetica Neue',Arial,sans-serif;max-width:600px;margin:0 auto;background:#f5f0e8;">
+                <div style="background:#2a2520;color:#fafafa;padding:2rem;text-align:center;">
+                    <div style="font-family:Inter,-apple-system,sans-serif;font-size:1.2rem;font-weight:600;"><span style="font-weight:300;color:#999;">officially</span><span style="font-weight:600;">human</span><span style="font-weight:700;font-size:1.5rem;">.art</span></div>
                 </div>
                 <div style="padding:2rem;">
-                    <p style="color:#4a5568;margin-bottom:1.5rem;">Hi ${artist.name},</p>
-                    <p style="color:#4a5568;margin-bottom:1.5rem;">Your account has been inactive for over 24 months and has no certificates. It will be permanently deleted in 30 days unless you log in.</p>
-                    <p style="color:#718096;font-size:0.82rem;">If you'd like to keep your account, simply log in before the deletion date.</p>
+                    <p style="color:#666666;margin-bottom:1.5rem;">Hi ${artist.name},</p>
+                    <p style="color:#666666;margin-bottom:1.5rem;">Your account has been inactive for over 24 months and has no certificates. It will be permanently deleted in 30 days unless you log in.</p>
+                    <p style="color:#888888;font-size:0.82rem;">If you'd like to keep your account, simply log in before the deletion date.</p>
                 </div>
-                <div style="background:#f7f5e6;padding:1.25rem;text-align:center;font-size:0.75rem;color:#a0aec0;border-top:1px solid rgba(26,54,93,0.06);">
+                <div style="background:#ebe5da;padding:1.25rem;text-align:center;font-size:0.75rem;color:#a0aec0;border-top:1px solid rgba(26,26,26,0.06);">
                     <p style="margin:0;">&copy; 2026 Officially Human Art</p>
                 </div>
             </div>`
@@ -1874,7 +1875,7 @@ app.get('/api/qr/:certificateId', async (req, res) => {
     try {
         const qrDataUrl = await QRCode.toDataURL(verifyUrl, {
             width: 200, margin: 2,
-            color: { dark: '#1a365d', light: '#fffef0' }
+            color: { dark: '#2a2520', light: '#f5f0e8' }
         });
         res.json({ success: true, qrCode: qrDataUrl, verifyUrl });
     } catch (err) {
@@ -1898,19 +1899,19 @@ app.get('/api/badge/:certificateId', (req, res) => {
     }
 
     const tierColors = {
-        gold: { bg: '#b7960b', text: '#fffef0' },
-        silver: { bg: '#718096', text: '#fffef0' },
-        bronze: { bg: '#9c6b30', text: '#fffef0' }
+        gold: { bg: '#a08530', text: '#fafafa' },
+        silver: { bg: '#9ca3af', text: '#fafafa' },
+        bronze: { bg: '#c4935a', text: '#fafafa' }
     };
     const colors = tierColors[cert.tier] || tierColors.bronze;
 
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="200" height="36" viewBox="0 0 200 36">
   <rect width="200" height="36" rx="4" fill="${colors.bg}"/>
   <rect x="1" y="1" width="198" height="34" rx="3" fill="none" stroke="${colors.text}" stroke-opacity="0.3"/>
-  <text x="28" y="22" font-family="Georgia,serif" font-size="11" fill="${colors.text}" font-weight="bold">Officially Human Art</text>
+  <text x="28" y="22" font-family="Inter,-apple-system,sans-serif" font-size="11" fill="${colors.text}" font-weight="bold">officiallyhuman.art</text>
   <text x="115" y="22" font-family="monospace" font-size="9" fill="${colors.text}" opacity="0.85">${cert.id}</text>
   <circle cx="14" cy="18" r="8" fill="${colors.text}" opacity="0.2"/>
-  <text x="14" y="22" font-family="Georgia,serif" font-size="10" fill="${colors.text}" text-anchor="middle" font-weight="bold">OH</text>
+  <text x="14" y="22" font-family="Inter,-apple-system,sans-serif" font-size="10" fill="${colors.text}" text-anchor="middle" font-weight="bold">OH</text>
 </svg>`;
 
     res.setHeader('Content-Type', 'image/svg+xml');
@@ -1923,7 +1924,7 @@ app.get('/api/widget/:certificateId', (req, res) => {
     const { certificateId } = req.params;
     const cert = rowToCert(stmts.getCertById.get(certificateId.toUpperCase()));
 
-    const widgetNotFound = '<html><body style="margin:0;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100%;color:#718096;font-size:14px;">Certificate not found</body></html>';
+    const widgetNotFound = '<html><body style="margin:0;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100%;color:#888888;font-size:14px;">Certificate not found</body></html>';
     if (!cert) {
         res.setHeader('Content-Type', 'text/html');
         return res.send(widgetNotFound);
@@ -1938,8 +1939,8 @@ app.get('/api/widget/:certificateId', (req, res) => {
 
     const host = `${req.protocol}://${req.get('host')}`;
     const verifyUrl = `${host}/verify.html?code=${cert.id}`;
-    const tierColors = { gold: '#b7960b', silver: '#718096', bronze: '#9c6b30' };
-    const tierBgs = { gold: '#f5efd0', silver: '#e8edf2', bronze: '#f0e6d8' };
+    const tierColors = { gold: '#a08530', silver: '#6b7280', bronze: '#a0764a' };
+    const tierBgs = { gold: '#faf3e0', silver: '#edf0f4', bronze: '#f5ebe0' };
     const tc = tierColors[cert.tier] || tierColors.bronze;
     const tb = tierBgs[cert.tier] || tierBgs.bronze;
     const tierLabel = cert.tierLabel || cert.tier || 'Bronze';
@@ -1951,27 +1952,27 @@ app.get('/api/widget/:certificateId', (req, res) => {
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:transparent}
 a{text-decoration:none;color:inherit}
-.card{border:1px solid rgba(26,54,93,0.12);border-radius:10px;overflow:hidden;background:#fff;max-width:340px;box-shadow:0 1px 4px rgba(0,0,0,0.06)}
+.card{border:1px solid rgba(26,26,26,0.12);border-radius:10px;overflow:hidden;background:#fff;max-width:340px;box-shadow:0 1px 4px rgba(0,0,0,0.06)}
 .card:hover{box-shadow:0 2px 8px rgba(0,0,0,0.1)}
-.header{background:#1a365d;color:#fffef0;padding:0.6rem 1rem;display:flex;align-items:center;justify-content:space-between}
-.logo{font-family:Georgia,serif;font-weight:700;font-size:0.95rem}
-.logo span{color:#d4af37}
-.check{background:rgba(255,254,240,0.15);border-radius:100px;padding:0.15rem 0.6rem;font-size:0.65rem;letter-spacing:0.04em}
+.header{background:#2a2520;color:#fafafa;padding:0.6rem 1rem;display:flex;align-items:center;justify-content:space-between}
+.logo{font-family:Inter,-apple-system,sans-serif;font-weight:700;font-size:0.95rem}
+.logo span{color:#999}
+.check{background:rgba(250,250,250,0.15);border-radius:100px;padding:0.15rem 0.6rem;font-size:0.65rem;letter-spacing:0.04em}
 .body{padding:1rem;display:flex;gap:0.85rem;align-items:flex-start}
-.thumb{width:64px;height:64px;border-radius:6px;object-fit:cover;background:#f7f5e6;flex-shrink:0}
-.thumb-placeholder{width:64px;height:64px;border-radius:6px;background:#f7f5e6;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#a0aec0;font-family:Georgia,serif;font-size:1.2rem;font-weight:700}
+.thumb{width:64px;height:64px;border-radius:6px;object-fit:cover;background:#ebe5da;flex-shrink:0}
+.thumb-placeholder{width:64px;height:64px;border-radius:6px;background:#ebe5da;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#a0aec0;font-family:Inter,-apple-system,sans-serif;font-size:1.2rem;font-weight:700}
 .info{flex:1;min-width:0}
-.title{font-weight:600;color:#1a365d;font-size:0.88rem;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.artist{color:#718096;font-size:0.78rem;margin-top:0.15rem}
+.title{font-weight:600;color:#1a1a1a;font-size:0.88rem;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.artist{color:#888888;font-size:0.78rem;margin-top:0.15rem}
 .meta{display:flex;align-items:center;gap:0.5rem;margin-top:0.5rem}
 .tier{padding:0.15rem 0.55rem;border-radius:100px;font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.04em}
 .cert-id{font-family:monospace;font-size:0.68rem;color:#a0aec0;letter-spacing:0.04em}
-.footer{border-top:1px solid rgba(26,54,93,0.06);padding:0.5rem 1rem;text-align:center;font-size:0.65rem;color:#a0aec0}
+.footer{border-top:1px solid rgba(26,26,26,0.06);padding:0.5rem 1rem;text-align:center;font-size:0.65rem;color:#a0aec0}
 </style></head>
 <body><a href="${verifyUrl}" target="_blank" rel="noopener">
 <div class="card">
   <div class="header">
-    <div class="logo">Officially <span>Human</span> Art</div>
+    <div class="logo"><span>officially</span>human.art</div>
     <div class="check">&#10003; Verified</div>
   </div>
   <div class="body">
@@ -2309,19 +2310,19 @@ app.post('/api/artist/forgot-password', doubleCsrfProtection, async (req, res) =
                 to: artist.email,
                 subject: 'Officially Human Art — Password Reset',
                 html: `
-                <div style="font-family:'Helvetica Neue',Arial,sans-serif;max-width:600px;margin:0 auto;background:#fffef0;">
-                    <div style="background:#1a365d;color:#fffef0;padding:2rem;text-align:center;">
-                        <div style="font-family:Georgia,serif;font-size:1.75rem;font-weight:bold;">Officially <span style="color:#d4af37;">Human</span> Art</div>
+                <div style="font-family:'Helvetica Neue',Arial,sans-serif;max-width:600px;margin:0 auto;background:#f5f0e8;">
+                    <div style="background:#2a2520;color:#fafafa;padding:2rem;text-align:center;">
+                        <div style="font-family:Inter,-apple-system,sans-serif;font-size:1.2rem;font-weight:600;"><span style="font-weight:300;color:#999;">officially</span><span style="font-weight:600;">human</span><span style="font-weight:700;font-size:1.5rem;">.art</span></div>
                     </div>
                     <div style="padding:2rem;">
-                        <p style="color:#4a5568;margin-bottom:1.5rem;">Hi ${artist.name},</p>
-                        <p style="color:#4a5568;margin-bottom:1.5rem;">We received a request to reset your password. Click the button below to choose a new password:</p>
+                        <p style="color:#666666;margin-bottom:1.5rem;">Hi ${artist.name},</p>
+                        <p style="color:#666666;margin-bottom:1.5rem;">We received a request to reset your password. Click the button below to choose a new password:</p>
                         <div style="text-align:center;margin-bottom:1.5rem;">
-                            <a href="${resetUrl}" style="display:inline-block;padding:0.75rem 2rem;background:#1a365d;color:#fffef0;text-decoration:none;border-radius:6px;font-weight:600;font-size:0.9rem;">Reset Password</a>
+                            <a href="${resetUrl}" style="display:inline-block;padding:0.75rem 2rem;background:#2a2520;color:#fafafa;text-decoration:none;border-radius:6px;font-weight:600;font-size:0.9rem;">Reset Password</a>
                         </div>
-                        <p style="color:#718096;font-size:0.82rem;">This link expires in 1 hour. If you didn't request a password reset, you can safely ignore this email.</p>
+                        <p style="color:#888888;font-size:0.82rem;">This link expires in 1 hour. If you didn't request a password reset, you can safely ignore this email.</p>
                     </div>
-                    <div style="background:#f7f5e6;padding:1.25rem;text-align:center;font-size:0.75rem;color:#a0aec0;border-top:1px solid rgba(26,54,93,0.06);">
+                    <div style="background:#ebe5da;padding:1.25rem;text-align:center;font-size:0.75rem;color:#a0aec0;border-top:1px solid rgba(26,26,26,0.06);">
                         <p style="margin:0;">&copy; 2026 Officially Human Art</p>
                     </div>
                 </div>`

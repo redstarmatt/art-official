@@ -7,6 +7,7 @@
     <meta name="description" content="Certify your creative work as authentically human-made. Evidence-based verification for artists, writers, and musicians in the age of AI.">
     <link rel="canonical" href="https://officallyhuman.art/">
     <link rel="stylesheet" href="/fonts/fonts.css">
+    <link rel="icon" type="image/svg+xml" href="/fingerprint-favicon.svg">
     <script type="application/ld+json">
     {
         "@context": "https://schema.org",
@@ -44,27 +45,27 @@
     </script>
     <style>
         :root {
-            --navy: #1a365d;
-            --navy-light: #2c5282;
-            --navy-dark: #12284a;
-            --cream: #fffef0;
-            --cream-dark: #f7f5e6;
-            --gold: #b7960b;
-            --gold-light: #d4af37;
-            --gold-pale: #f5efd0;
-            --ink: #2d3748;
-            --ink-light: #4a5568;
-            --ink-faint: #718096;
+            --navy: #2a2520;
+            --navy-light: #3d3630;
+            --navy-dark: #1a1510;
+            --cream: #f5f0e8;
+            --cream-dark: #ebe5da;
+            --gold: #3d3427;
+            --gold-light: #4a4035;
+            --gold-pale: #f0e6d2;
+            --ink: #1a1a1a;
+            --ink-light: #555555;
+            --ink-faint: #888888;
             --success: #276749;
             --error: #c53030;
-            --bronze: #9c6b30;
-            --silver: #718096;
+            --bronze: #c4935a;
+            --silver: #9ca3af;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            font-family: 'DM Sans', sans-serif;
+            font-family: 'Inter', sans-serif;
             background: var(--cream);
             color: var(--ink);
             line-height: 1.6;
@@ -107,31 +108,27 @@
             padding: 1rem 0;
             position: sticky;
             top: 0;
-            background: rgba(255, 254, 240, 0.92);
+            background: rgba(245, 240, 232, 0.92);
             backdrop-filter: blur(16px);
             -webkit-backdrop-filter: blur(16px);
-            border-bottom: 1px solid rgba(26, 54, 93, 0.06);
+            border-bottom: 1px solid rgba(26, 26, 26, 0.06);
             z-index: 100;
         }
 
-        .header-inner { display: flex; justify-content: space-between; align-items: center; }
+        .header-inner { display: flex; justify-content: space-between; align-items: center; gap: 2rem; }
 
         .logo {
-            font-family: 'Cormorant Garamond', serif;
-            font-size: 1.75rem;
-            font-weight: 700;
-            color: var(--navy);
+            display: flex;
+            align-items: center;
             text-decoration: none;
-            letter-spacing: -0.02em;
+            flex-shrink: 0;
         }
 
-        .logo span { color: var(--gold); }
-
-        nav { display: flex; gap: 2rem; align-items: center; }
+        nav { display: flex; gap: 1.25rem; align-items: center; }
 
         .nav-links {
             display: flex;
-            gap: 2rem;
+            gap: 1.25rem;
             align-items: center;
         }
 
@@ -175,7 +172,7 @@
             display: none;
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(255, 254, 240, 0.98);
+            background: rgba(245, 240, 232, 0.98);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
             z-index: 99;
@@ -193,7 +190,7 @@
         }
 
         .mobile-menu a {
-            font-family: 'Cormorant Garamond', serif;
+            font-family: 'Inter', sans-serif;
             font-size: 1.75rem;
             color: var(--navy);
             text-decoration: none;
@@ -220,17 +217,17 @@
             transition: all 0.25s cubic-bezier(0.22, 1, 0.36, 1);
         }
 
-        .btn:hover { background: var(--navy-light); transform: translateY(-2px); box-shadow: 0 6px 20px rgba(26, 54, 93, 0.2); }
+        .btn:hover { background: var(--navy-light); transform: translateY(-2px); box-shadow: 0 6px 20px rgba(26, 26, 26, 0.2); }
         .btn-outline { background: transparent; border: 1.5px solid var(--navy); color: var(--navy); }
         .btn-outline:hover { background: var(--navy); color: var(--cream); }
         .btn-gold { background: var(--gold); }
-        .btn-gold:hover { background: var(--gold-light); box-shadow: 0 6px 20px rgba(183, 150, 11, 0.25); }
+        .btn-gold:hover { background: var(--gold-light); box-shadow: 0 6px 20px rgba(26, 26, 26, 0.25); }
         .btn-lg { padding: 1rem 2.25rem; font-size: 1rem; border-radius: 10px; }
         .btn-sm { padding: 0.5rem 1rem; font-size: 0.8rem; }
 
         /* Hero */
         .hero {
-            padding: 6rem 0 5rem;
+            padding: 2.5rem 0 5rem;
             text-align: center;
             position: relative;
             overflow: hidden;
@@ -244,7 +241,7 @@
             transform: translateX(-50%);
             width: 800px;
             height: 800px;
-            background: radial-gradient(ellipse, rgba(183, 150, 11, 0.06) 0%, transparent 70%);
+            background: radial-gradient(ellipse, rgba(26, 26, 26, 0.06) 0%, transparent 70%);
             pointer-events: none;
         }
 
@@ -264,8 +261,8 @@
             align-items: center;
             gap: 0.5rem;
             padding: 0.5rem 1.25rem;
-            background: rgba(26, 54, 93, 0.05);
-            border: 1px solid rgba(26, 54, 93, 0.08);
+            background: rgba(26, 26, 26, 0.05);
+            border: 1px solid rgba(26, 26, 26, 0.08);
             border-radius: 100px;
             font-size: 0.78rem;
             font-weight: 600;
@@ -283,7 +280,7 @@
         }
 
         h1 {
-            font-family: 'Cormorant Garamond', serif;
+            font-family: 'Fraunces', serif;
             font-size: clamp(2.75rem, 5.5vw, 4.75rem);
             font-weight: 500;
             color: var(--navy);
@@ -292,7 +289,7 @@
             letter-spacing: -0.025em;
         }
 
-        h1 em { font-style: italic; color: var(--gold); }
+        h1 em { font-style: italic; color: var(--navy); }
 
         .hero-subtitle {
             font-size: 1.15rem;
@@ -316,9 +313,9 @@
             border-radius: 14px;
             overflow: hidden;
             box-shadow:
-                0 2px 4px rgba(26, 54, 93, 0.04),
-                0 12px 40px rgba(26, 54, 93, 0.08),
-                0 32px 80px rgba(26, 54, 93, 0.1);
+                0 2px 4px rgba(26, 26, 26, 0.04),
+                0 12px 40px rgba(26, 26, 26, 0.08),
+                0 32px 80px rgba(26, 26, 26, 0.1);
             transform: rotateX(2deg);
             transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.5s ease;
         }
@@ -326,9 +323,9 @@
         .cert-preview:hover {
             transform: rotateX(0deg);
             box-shadow:
-                0 2px 4px rgba(26, 54, 93, 0.04),
-                0 16px 48px rgba(26, 54, 93, 0.12),
-                0 40px 100px rgba(26, 54, 93, 0.14);
+                0 2px 4px rgba(26, 26, 26, 0.04),
+                0 16px 48px rgba(26, 26, 26, 0.12),
+                0 40px 100px rgba(26, 26, 26, 0.14);
         }
 
         .cert-preview-header {
@@ -342,24 +339,23 @@
             content: '';
             position: absolute;
             top: 0.5rem; left: 0.5rem; right: 0.5rem; bottom: 0.5rem;
-            border: 1px solid rgba(255, 254, 240, 0.12);
+            border: 1px solid rgba(245, 240, 232, 0.12);
             pointer-events: none;
         }
 
         .cert-seal {
             width: 56px; height: 56px;
             margin: 0 auto 0.75rem;
-            background: radial-gradient(circle at 35% 35%, var(--gold-light), var(--gold));
-            border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
-            font-family: 'Cormorant Garamond', serif;
-            font-size: 1.5rem; font-weight: 700;
-            color: var(--navy);
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2), inset 0 1px 2px rgba(255,255,255,0.3);
+            color: var(--cream);
+        }
+
+        .cert-seal svg {
+            width: 40px; height: 48px;
         }
 
         .cert-preview-header h3 {
-            font-family: 'Cormorant Garamond', serif;
+            font-family: 'Fraunces', serif;
             font-size: 1.1rem; font-weight: 500;
             color: var(--cream);
             margin-bottom: 0.25rem;
@@ -368,7 +364,7 @@
         .cert-preview-header .cert-code {
             font-family: monospace;
             font-size: 0.8rem;
-            color: var(--gold);
+            color: rgba(245, 240, 232, 0.6);
             letter-spacing: 0.12em;
         }
 
@@ -377,7 +373,7 @@
         }
 
         .cert-preview-title {
-            font-family: 'Cormorant Garamond', serif;
+            font-family: 'Fraunces', serif;
             font-size: 1.4rem;
             color: var(--navy);
             margin-bottom: 0.15rem;
@@ -390,7 +386,7 @@
             grid-template-columns: 1fr 1fr 1fr;
             gap: 1rem;
             padding-top: 1rem;
-            border-top: 1px solid rgba(26, 54, 93, 0.06);
+            border-top: 1px solid rgba(26, 26, 26, 0.06);
         }
 
         .cert-preview-meta dt { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink-faint); }
@@ -408,9 +404,9 @@
             letter-spacing: 0.06em;
         }
 
-        .tier-gold { background: var(--gold-pale); color: var(--gold); }
-        .tier-silver { background: #e8edf2; color: var(--silver); }
-        .tier-bronze { background: #f0e6d8; color: var(--bronze); }
+        .tier-gold { background: #faf3e0; color: #a08530; }
+        .tier-silver { background: #edf0f4; color: #6b7280; }
+        .tier-bronze { background: #f5ebe0; color: #a0764a; }
 
         /* How it works */
         .how-it-works { padding: 7rem 0; }
@@ -427,7 +423,7 @@
         }
 
         .section-title {
-            font-family: 'Cormorant Garamond', serif;
+            font-family: 'Fraunces', serif;
             font-size: clamp(2rem, 3.5vw, 2.75rem);
             color: var(--navy);
             text-align: center;
@@ -459,7 +455,7 @@
             left: 12.5%;
             right: 12.5%;
             height: 2px;
-            background: linear-gradient(90deg, var(--gold-pale), var(--gold), var(--gold-pale));
+            background: linear-gradient(90deg, transparent, rgba(42, 37, 32, 0.12), transparent);
             z-index: 0;
         }
 
@@ -467,29 +463,29 @@
             background: white;
             padding: 2.25rem 1.5rem;
             border-radius: 12px;
-            border: 1px solid rgba(26, 54, 93, 0.05);
+            border: 1px solid rgba(26, 26, 26, 0.05);
             text-align: center;
             position: relative;
             z-index: 1;
             transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.35s ease;
         }
 
-        .step-card:hover { transform: translateY(-6px); box-shadow: 0 16px 40px rgba(26, 54, 93, 0.1); }
+        .step-card:hover { transform: translateY(-6px); box-shadow: 0 16px 40px rgba(26, 26, 26, 0.1); }
 
         .step-number {
             width: 42px; height: 42px;
             margin: 0 auto 1.25rem;
-            background: var(--navy);
+            background: rgba(42, 37, 32, 0.08);
+            border: 1.5px solid rgba(42, 37, 32, 0.15);
             border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
-            color: var(--gold);
-            font-family: 'Cormorant Garamond', serif;
+            color: var(--navy);
+            font-family: 'Inter', sans-serif;
             font-size: 1.15rem; font-weight: 700;
-            box-shadow: 0 2px 8px rgba(26, 54, 93, 0.15);
         }
 
         .step-card h3 {
-            font-family: 'Cormorant Garamond', serif;
+            font-family: 'Fraunces', serif;
             font-size: 1.25rem;
             color: var(--navy);
             margin-bottom: 0.75rem;
@@ -517,7 +513,7 @@
 
         .tiers-section .section-eyebrow { color: var(--gold-light); }
         .tiers-section .section-title { color: var(--cream); }
-        .tiers-section .section-subtitle { color: rgba(255, 254, 240, 0.65); }
+        .tiers-section .section-subtitle { color: rgba(245, 240, 232, 0.65); }
 
         .tiers-grid {
             display: grid;
@@ -530,8 +526,8 @@
         }
 
         .tier-card {
-            background: rgba(255, 254, 240, 0.04);
-            border: 1px solid rgba(255, 254, 240, 0.08);
+            background: rgba(245, 240, 232, 0.04);
+            border: 1px solid rgba(245, 240, 232, 0.08);
             border-radius: 14px;
             padding: 2.5rem 2rem;
             text-align: center;
@@ -539,9 +535,9 @@
             position: relative;
         }
 
-        .tier-card:hover { transform: translateY(-6px); background: rgba(255, 254, 240, 0.06); }
+        .tier-card:hover { transform: translateY(-6px); background: rgba(245, 240, 232, 0.06); }
 
-        .tier-card.featured { border-color: var(--gold); background: rgba(183, 150, 11, 0.08); }
+        .tier-card.featured { border-color: var(--gold); background: rgba(26, 26, 26, 0.08); }
 
         .tier-card.featured::before {
             content: 'Recommended';
@@ -550,7 +546,7 @@
             left: 50%;
             transform: translateX(-50%);
             background: var(--gold);
-            color: var(--navy);
+            color: var(--cream);
             padding: 0.25rem 1rem;
             font-size: 0.7rem;
             font-weight: 700;
@@ -567,17 +563,17 @@
             font-size: 1.6rem;
         }
 
-        .tier-icon-bronze { background: rgba(156, 107, 48, 0.15); color: var(--bronze); }
-        .tier-icon-silver { background: rgba(113, 128, 150, 0.15); color: var(--silver); }
-        .tier-icon-gold { background: rgba(183, 150, 11, 0.15); color: var(--gold); }
+        .tier-icon-bronze { background: rgba(196, 147, 90, 0.2); color: var(--bronze); }
+        .tier-icon-silver { background: rgba(156, 163, 175, 0.2); color: var(--silver); }
+        .tier-icon-gold { background: rgba(212, 175, 55, 0.2); color: #d4af37; }
 
         .tier-card h3 {
-            font-family: 'Cormorant Garamond', serif;
+            font-family: 'Fraunces', serif;
             font-size: 1.5rem;
             margin-bottom: 0.5rem;
         }
 
-        .tier-card .tier-desc { font-size: 0.9rem; color: rgba(255, 254, 240, 0.55); margin-bottom: 1.5rem; }
+        .tier-card .tier-desc { font-size: 0.9rem; color: rgba(245, 240, 232, 0.55); margin-bottom: 1.5rem; }
 
         .tier-requirements {
             list-style: none;
@@ -588,8 +584,8 @@
         .tier-requirements li {
             padding: 0.55rem 0;
             font-size: 0.85rem;
-            color: rgba(255, 254, 240, 0.8);
-            border-bottom: 1px solid rgba(255, 254, 240, 0.05);
+            color: rgba(245, 240, 232, 0.8);
+            border-bottom: 1px solid rgba(245, 240, 232, 0.05);
             display: flex;
             align-items: center;
             gap: 0.6rem;
@@ -616,19 +612,19 @@
 
         .use-case-card {
             background: white;
-            border: 1px solid rgba(26, 54, 93, 0.05);
+            border: 1px solid rgba(26, 26, 26, 0.05);
             border-radius: 14px;
             padding: 2.25rem 1.75rem;
             text-align: center;
             transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.35s ease;
         }
 
-        .use-case-card:hover { transform: translateY(-6px); box-shadow: 0 16px 40px rgba(26, 54, 93, 0.1); }
+        .use-case-card:hover { transform: translateY(-6px); box-shadow: 0 16px 40px rgba(26, 26, 26, 0.1); }
 
         .use-case-icon {
             width: 56px; height: 56px;
             margin: 0 auto 1.25rem;
-            background: rgba(26, 54, 93, 0.05);
+            background: rgba(26, 26, 26, 0.05);
             border-radius: 14px;
             display: flex;
             align-items: center;
@@ -637,7 +633,7 @@
         }
 
         .use-case-card h3 {
-            font-family: 'Cormorant Garamond', serif;
+            font-family: 'Fraunces', serif;
             font-size: 1.3rem;
             color: var(--navy);
             margin-bottom: 0.6rem;
@@ -671,7 +667,7 @@
 
         .compare-table td {
             padding: 0.85rem 1rem;
-            border-bottom: 1px solid rgba(26, 54, 93, 0.06);
+            border-bottom: 1px solid rgba(26, 26, 26, 0.06);
             color: var(--ink-light);
         }
 
@@ -681,7 +677,7 @@
         .compare-table .cross { color: var(--ink-faint); }
 
         .compare-table .col-hm {
-            background: rgba(183, 150, 11, 0.06);
+            background: rgba(26, 26, 26, 0.06);
             font-weight: 600;
             color: var(--navy);
         }
@@ -698,7 +694,7 @@
         .story-content p { margin-bottom: 1.25rem; }
         .story-content p:last-child { margin-bottom: 0; }
         .story-pullquote {
-            font-family: 'Cormorant Garamond', Georgia, serif;
+            font-family: 'Fraunces', serif;
             font-size: 1.5rem;
             line-height: 1.5;
             color: var(--navy);
@@ -724,14 +720,16 @@
             background: white;
             padding: 2.5rem 2rem;
             border-radius: 14px;
-            border: 1px solid rgba(26, 54, 93, 0.06);
+            border: 1px solid rgba(26, 26, 26, 0.06);
             text-align: center;
             transition: all 0.35s cubic-bezier(0.22, 1, 0.36, 1);
             position: relative;
+            display: flex;
+            flex-direction: column;
         }
 
-        .pricing-card:hover { transform: translateY(-6px); box-shadow: 0 20px 50px rgba(26, 54, 93, 0.1); }
-        .pricing-card.featured { border-color: var(--gold); box-shadow: 0 8px 30px rgba(183, 150, 11, 0.12); }
+        .pricing-card:hover { transform: translateY(-6px); box-shadow: 0 20px 50px rgba(26, 26, 26, 0.1); }
+        .pricing-card.featured { border-color: var(--gold); box-shadow: 0 8px 30px rgba(26, 26, 26, 0.12); }
 
         .pricing-card.featured::before {
             content: 'Best Value';
@@ -741,10 +739,10 @@
             border-radius: 100px; text-transform: uppercase; letter-spacing: 0.06em;
         }
 
-        .pricing-name { font-family: 'Cormorant Garamond', serif; font-size: 1.4rem; color: var(--navy); margin-bottom: 0.5rem; }
+        .pricing-name { font-family: 'Fraunces', serif; font-size: 1.4rem; color: var(--navy); margin-bottom: 0.5rem; }
 
         .pricing-price {
-            font-family: 'Cormorant Garamond', serif;
+            font-family: 'Fraunces', serif;
             font-size: 3rem; font-weight: 700;
             color: var(--navy);
             margin-bottom: 0.25rem;
@@ -781,7 +779,7 @@
             background-position: center;
         }
 
-        .pricing-card .btn { width: 100%; justify-content: center; }
+        .pricing-card .btn { width: 100%; justify-content: center; margin-top: auto; }
 
         /* CTA */
         .cta {
@@ -798,7 +796,7 @@
             top: 50%; left: 50%;
             transform: translate(-50%, -50%);
             width: 600px; height: 600px;
-            background: radial-gradient(ellipse, rgba(183, 150, 11, 0.06) 0%, transparent 70%);
+            background: radial-gradient(ellipse, rgba(26, 26, 26, 0.06) 0%, transparent 70%);
             pointer-events: none;
         }
 
@@ -809,7 +807,7 @@
         }
 
         .cta h2 {
-            font-family: 'Cormorant Garamond', serif;
+            font-family: 'Fraunces', serif;
             font-size: clamp(2rem, 3.5vw, 2.75rem);
             color: var(--navy);
             margin-bottom: 1rem;
@@ -821,7 +819,7 @@
         /* Footer */
         footer {
             padding: 3rem 0;
-            border-top: 1px solid rgba(26, 54, 93, 0.06);
+            border-top: 1px solid rgba(26, 26, 26, 0.06);
         }
 
         .footer-inner {
@@ -857,7 +855,7 @@
         .auth-area[data-state="signed-in"] .auth-dropdown { display: none !important; }
 
         .auth-btn {
-            font-family: 'DM Sans', sans-serif;
+            font-family: 'Inter', sans-serif;
             font-size: 0.85rem;
             font-weight: 600;
             border: none;
@@ -901,8 +899,8 @@
             width: 320px;
             background: white;
             border-radius: 12px;
-            border: 1px solid rgba(26, 54, 93, 0.1);
-            box-shadow: 0 12px 40px rgba(26, 54, 93, 0.15);
+            border: 1px solid rgba(26, 26, 26, 0.1);
+            box-shadow: 0 12px 40px rgba(26, 26, 26, 0.15);
             padding: 1.5rem;
             z-index: 200;
             animation: authSlideDown 0.2s ease;
@@ -916,7 +914,7 @@
         }
 
         .auth-dropdown h3 {
-            font-family: 'Cormorant Garamond', serif;
+            font-family: 'Inter', sans-serif;
             font-size: 1.25rem;
             color: var(--navy);
             margin-bottom: 1rem;
@@ -947,9 +945,9 @@
         .auth-field input {
             width: 100%;
             padding: 0.6rem 0.85rem;
-            border: 1.5px solid rgba(26, 54, 93, 0.18);
+            border: 1.5px solid rgba(26, 26, 26, 0.18);
             border-radius: 6px;
-            font-family: 'DM Sans', sans-serif;
+            font-family: 'Inter', sans-serif;
             font-size: 0.9rem;
             color: var(--ink);
             background: var(--cream);
@@ -968,7 +966,7 @@
             color: var(--cream);
             border: none;
             border-radius: 6px;
-            font-family: 'DM Sans', sans-serif;
+            font-family: 'Inter', sans-serif;
             font-size: 0.9rem;
             font-weight: 600;
             cursor: pointer;
@@ -1027,7 +1025,21 @@
 <body>
     <header>
         <div class="container header-inner">
-            <a href="/" class="logo">Officially <span>Human</span> Art</a>
+            <a href="/" class="logo" style="display:flex;align-items:center;gap:12px;text-decoration:none;font-family:'Inter',sans-serif;">
+                <svg viewBox="0 0 70 85" fill="none" stroke="currentColor" stroke-width="1.2" xmlns="http://www.w3.org/2000/svg" style="width:36px;height:44px;color:#1a1a1a;">
+                    <path d="M35 5 C15 5 5 22 5 42 C5 62 15 80 35 80" stroke-linecap="round"/>
+                    <path d="M35 12 C20 12 12 26 12 42 C12 58 20 72 35 72 C50 72 58 58 58 42" stroke-linecap="round"/>
+                    <path d="M35 19 C24 19 18 30 18 42 C18 54 24 65 35 65 C46 65 52 54 52 42 C52 30 46 19 35 19" stroke-linecap="round"/>
+                    <path d="M35 26 C28 26 24 33 24 42 C24 51 28 58 35 58 C42 58 46 51 46 42" stroke-linecap="round"/>
+                    <path d="M35 33 C31 33 29 37 29 42 C29 47 31 51 35 51 C39 51 41 47 41 42 C41 37 39 33 35 33" stroke-linecap="round"/>
+                    <path d="M65 42 C65 22 55 5 35 5" stroke-linecap="round"/>
+                    <path d="M58 42 C58 26 50 12 35 12" stroke-linecap="round"/>
+                </svg>
+                <span style="display:flex;flex-direction:column;line-height:1.1;">
+                    <span style="font-size:14px;"><span style="font-weight:300;color:#666666;">officially</span><span style="font-weight:600;color:#1a1a1a;">human</span></span>
+                    <span style="font-size:24px;font-weight:700;color:#1a1a1a;margin-top:-2px;">.art</span>
+                </span>
+            </a>
             <nav>
                 <div class="nav-links">
                     <a href="#how-it-works">How It Works</a>
@@ -1101,7 +1113,7 @@
                 <div class="cert-preview-wrapper fade-up stagger-4">
                     <div class="cert-preview">
                         <div class="cert-preview-header">
-                            <div class="cert-seal">OH</div>
+                            <div class="cert-seal"><svg viewBox="0 0 70 85" fill="none" stroke="currentColor" stroke-width="1.2" xmlns="http://www.w3.org/2000/svg"><path d="M35 5 C15 5 5 22 5 42 C5 62 15 80 35 80" stroke-linecap="round"/><path d="M35 12 C20 12 12 26 12 42 C12 58 20 72 35 72 C50 72 58 58 58 42" stroke-linecap="round"/><path d="M35 19 C24 19 18 30 18 42 C18 54 24 65 35 65 C46 65 52 54 52 42 C52 30 46 19 35 19" stroke-linecap="round"/><path d="M35 26 C28 26 24 33 24 42 C24 51 28 58 35 58 C42 58 46 51 46 42" stroke-linecap="round"/><path d="M35 33 C31 33 29 37 29 42 C29 47 31 51 35 51 C39 51 41 47 41 42 C41 37 39 33 35 33" stroke-linecap="round"/><path d="M65 42 C65 22 55 5 35 5" stroke-linecap="round"/><path d="M58 42 C58 26 50 12 35 12" stroke-linecap="round"/></svg></div>
                             <h3>Certificate of Human Creation</h3>
                             <span class="cert-code">OH-2026-X7K9M2</span>
                         </div>
@@ -1334,14 +1346,14 @@
                 <div class="cta-inner fade-up">
                     <h2>Your work is officially human.<br>Now you can prove it.</h2>
                     <p>Join creators who are building verifiable trust with their fans, collectors, galleries, and buyers.</p>
-                    <div id="community-stats" style="display:none;margin:1.5rem 0 0.5rem;font-size:0.9rem;color:var(--ink-faint);letter-spacing:0.02em;"></div>
+
                     <a href="register.html" class="btn btn-gold btn-lg">Certify Your First Work Free</a>
 
-                    <div class="newsletter-signup" style="margin-top:3.5rem;padding-top:2.5rem;border-top:1px solid rgba(26,54,93,0.08);">
+                    <div class="newsletter-signup" style="margin-top:3.5rem;padding-top:2.5rem;border-top:1px solid rgba(26,26,26,0.08);">
                         <p style="font-size:0.95rem;color:var(--ink-light);margin-bottom:1rem;">Not ready yet? Get updates on authenticity, creator rights, and new features.</p>
                         <form id="newsletter-form" style="display:flex;gap:0.5rem;max-width:440px;margin:0 auto;flex-wrap:wrap;justify-content:center;">
                             <input type="email" id="newsletter-email" placeholder="Your email address" required
-                                style="flex:1;min-width:220px;padding:0.75rem 1rem;border:1.5px solid rgba(26,54,93,0.18);border-radius:8px;font-family:inherit;font-size:0.9rem;background:white;color:var(--ink);">
+                                style="flex:1;min-width:220px;padding:0.75rem 1rem;border:1.5px solid rgba(26,26,26,0.18);border-radius:8px;font-family:inherit;font-size:0.9rem;background:white;color:var(--ink);">
                             <button type="submit" class="btn btn-sm" id="newsletter-submit">Subscribe</button>
                         </form>
                         <p id="newsletter-msg" style="display:none;margin-top:0.75rem;font-size:0.85rem;"></p>
@@ -1355,7 +1367,21 @@
     <footer>
         <div class="container">
             <div class="footer-inner">
-                <a href="/" class="logo" style="font-size:1.25rem;">Officially <span>Human</span> Art</a>
+                <a href="/" class="logo" style="display:flex;align-items:center;gap:10px;text-decoration:none;font-family:'Inter',sans-serif;">
+                    <svg viewBox="0 0 70 85" fill="none" stroke="currentColor" stroke-width="1.2" xmlns="http://www.w3.org/2000/svg" style="width:28px;height:34px;color:#1a1a1a;">
+                        <path d="M35 5 C15 5 5 22 5 42 C5 62 15 80 35 80" stroke-linecap="round"/>
+                        <path d="M35 12 C20 12 12 26 12 42 C12 58 20 72 35 72 C50 72 58 58 58 42" stroke-linecap="round"/>
+                        <path d="M35 19 C24 19 18 30 18 42 C18 54 24 65 35 65 C46 65 52 54 52 42 C52 30 46 19 35 19" stroke-linecap="round"/>
+                        <path d="M35 26 C28 26 24 33 24 42 C24 51 28 58 35 58 C42 58 46 51 46 42" stroke-linecap="round"/>
+                        <path d="M35 33 C31 33 29 37 29 42 C29 47 31 51 35 51 C39 51 41 47 41 42 C41 37 39 33 35 33" stroke-linecap="round"/>
+                        <path d="M65 42 C65 22 55 5 35 5" stroke-linecap="round"/>
+                        <path d="M58 42 C58 26 50 12 35 12" stroke-linecap="round"/>
+                    </svg>
+                    <span style="display:flex;flex-direction:column;line-height:1.1;">
+                        <span style="font-size:11px;"><span style="font-weight:300;color:#666666;">officially</span><span style="font-weight:600;color:#1a1a1a;">human</span></span>
+                        <span style="font-size:18px;font-weight:700;color:#1a1a1a;margin-top:-2px;">.art</span>
+                    </span>
+                </a>
                 <div class="footer-links">
                     <a href="#how-it-works">How It Works</a>
                     <a href="register.html">For Creators</a>
@@ -1522,19 +1548,6 @@
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ page: location.pathname, referrer: document.referrer })
         }).catch(function() {});
-
-        // Community stats
-        fetch('/api/stats')
-            .then(function(res) { return res.json(); })
-            .then(function(data) {
-                if (data.success && (data.certificates > 0 || data.artists > 0)) {
-                    var el = document.getElementById('community-stats');
-                    el.textContent = data.certificates + ' work' + (data.certificates !== 1 ? 's' : '') +
-                        ' certified by ' + data.artists + ' creator' + (data.artists !== 1 ? 's' : '');
-                    el.style.display = 'block';
-                }
-            })
-            .catch(function() {});
 
         // Newsletter signup
         (function() {
