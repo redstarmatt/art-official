@@ -496,24 +496,15 @@
         /* Tiers section */
         .tiers-section {
             padding: 7rem 0;
-            background: var(--navy);
-            color: var(--cream);
+            background: var(--cream-dark);
+            color: var(--ink);
             position: relative;
             overflow: hidden;
         }
 
-        .tiers-section::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-            opacity: 0.04;
-            pointer-events: none;
-        }
-
-        .tiers-section .section-eyebrow { color: var(--gold-light); }
-        .tiers-section .section-title { color: var(--cream); }
-        .tiers-section .section-subtitle { color: rgba(245, 240, 232, 0.65); }
+        .tiers-section .section-eyebrow { color: var(--ink-faint); }
+        .tiers-section .section-title { color: var(--navy); }
+        .tiers-section .section-subtitle { color: var(--ink-light); }
 
         .tiers-grid {
             display: grid;
@@ -526,8 +517,8 @@
         }
 
         .tier-card {
-            background: rgba(245, 240, 232, 0.04);
-            border: 1px solid rgba(245, 240, 232, 0.08);
+            background: white;
+            border: 1px solid rgba(26, 26, 26, 0.06);
             border-radius: 14px;
             padding: 2.5rem 2rem;
             text-align: center;
@@ -535,9 +526,9 @@
             position: relative;
         }
 
-        .tier-card:hover { transform: translateY(-6px); background: rgba(245, 240, 232, 0.06); }
+        .tier-card:hover { transform: translateY(-6px); box-shadow: 0 16px 40px rgba(26, 26, 26, 0.1); }
 
-        .tier-card.featured { border-color: var(--gold); background: rgba(26, 26, 26, 0.08); }
+        .tier-card.featured { border-color: #d4af37; box-shadow: 0 4px 20px rgba(212, 175, 55, 0.15); }
 
         .tier-card.featured::before {
             content: 'Recommended';
@@ -545,8 +536,8 @@
             top: -12px;
             left: 50%;
             transform: translateX(-50%);
-            background: var(--gold);
-            color: var(--cream);
+            background: #d4af37;
+            color: white;
             padding: 0.25rem 1rem;
             font-size: 0.7rem;
             font-weight: 700;
@@ -563,17 +554,18 @@
             font-size: 1.6rem;
         }
 
-        .tier-icon-bronze { background: rgba(196, 147, 90, 0.2); color: var(--bronze); }
-        .tier-icon-silver { background: rgba(156, 163, 175, 0.2); color: var(--silver); }
-        .tier-icon-gold { background: rgba(212, 175, 55, 0.2); color: #d4af37; }
+        .tier-icon-bronze { background: #f5ebe0; color: #c4935a; }
+        .tier-icon-silver { background: #edf0f4; color: #8a95a5; }
+        .tier-icon-gold { background: #faf3e0; color: #d4af37; }
 
         .tier-card h3 {
             font-family: 'Fraunces', serif;
             font-size: 1.5rem;
+            color: var(--navy);
             margin-bottom: 0.5rem;
         }
 
-        .tier-card .tier-desc { font-size: 0.9rem; color: rgba(245, 240, 232, 0.55); margin-bottom: 1.5rem; }
+        .tier-card .tier-desc { font-size: 0.9rem; color: var(--ink-light); margin-bottom: 1.5rem; }
 
         .tier-requirements {
             list-style: none;
@@ -584,8 +576,8 @@
         .tier-requirements li {
             padding: 0.55rem 0;
             font-size: 0.85rem;
-            color: rgba(245, 240, 232, 0.8);
-            border-bottom: 1px solid rgba(245, 240, 232, 0.05);
+            color: var(--ink-light);
+            border-bottom: 1px solid rgba(26, 26, 26, 0.04);
             display: flex;
             align-items: center;
             gap: 0.6rem;
@@ -594,7 +586,7 @@
         .tier-requirements li::before {
             content: '';
             width: 5px; height: 5px;
-            background: var(--gold);
+            background: var(--ink-faint);
             border-radius: 50%;
             flex-shrink: 0;
         }
