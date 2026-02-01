@@ -1379,8 +1379,11 @@
                 <div class="card" style="text-align:center;padding:3rem 2rem;">
                     <div style="font-size:2.5rem;margin-bottom:1rem;opacity:0.4;">&#9670;</div>
                     <h2 class="card-title">Work Limit Reached</h2>
-                    <p class="card-subtitle">Your Free plan allows up to 3 certified works. Upgrade to Creator for unlimited certificates and priority support.</p>
-                    <button type="button" class="btn btn-gold btn-lg" id="upgrade-from-blocker" style="margin-top:1rem;">Upgrade to Creator &mdash; &pound;5/month</button>
+                    <p class="card-subtitle">Your Free plan allows up to 3 certified works. Buy a single credit or upgrade for unlimited.</p>
+                    <div style="display:flex;gap:0.75rem;justify-content:center;margin-top:1.25rem;flex-wrap:wrap;">
+                        <button type="button" class="btn btn-outline" id="buy-credit-btn">Buy 1 Credit &mdash; &pound;2</button>
+                        <button type="button" class="btn btn-gold" id="upgrade-from-blocker">Upgrade to Creator &mdash; &pound;5/month</button>
+                    </div>
                 </div>
             </div>
 
@@ -1853,8 +1856,18 @@
         }
 
         // ---- Alerts ----
-        function showAlert(id, msg) {
-            $(id).classList.add('show');
+        function showAlert(id, msg, type) {
+            var el = $(id);
+            el.classList.add('show');
+            if (type === 'success') {
+                el.style.background = 'rgba(39, 103, 73, 0.08)';
+                el.style.borderColor = 'var(--success)';
+                el.style.color = 'var(--success)';
+            } else {
+                el.style.background = '';
+                el.style.borderColor = '';
+                el.style.color = '';
+            }
             $(id + '-msg').textContent = msg;
         }
         function hideAlert(id) {
@@ -2984,6 +2997,33 @@
         $('upgrade-from-blocker').addEventListener('click', openPaymentModal);
         $('payment-modal-close').addEventListener('click', closePaymentModal);
 
+        // Buy single credit
+        $('buy-credit-btn').addEventListener('click', function() {
+            var btn = $('buy-credit-btn');
+            btn.disabled = true;
+            btn.textContent = 'Redirecting...';
+            fetch('/api/stripe/buy-credit', {
+                method: 'POST',
+                headers: csrfHeaders('application/json'),
+                credentials: 'include'
+            })
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+                if (data.success && data.url) {
+                    window.location.href = data.url;
+                } else {
+                    alert(data.message || 'Could not start payment. Please try again.');
+                    btn.disabled = false;
+                    btn.textContent = 'Buy 1 Credit \u2014 \u00A32';
+                }
+            })
+            .catch(function() {
+                alert('Connection error. Please try again.');
+                btn.disabled = false;
+                btn.textContent = 'Buy 1 Credit \u2014 \u00A32';
+            });
+        });
+
         // Payment submit
         $('payment-submit-btn').addEventListener('click', function() {
             if (!currentArtist || !stripeInstance || !stripeElements) return;
@@ -3079,6 +3119,13 @@
                 .then(function(data) {
                     if (data.success && data.artist) {
                         setLoggedIn(data.artist);
+                        // Show success message if returning from credit purchase
+                        var params = new URLSearchParams(window.location.search);
+                        if (params.get('credit_purchased') === '1') {
+                            switchTab('submit');
+                            showAlert('submit-alert', 'Certificate credit added! You can now submit another work.', 'success');
+                            window.history.replaceState({}, '', 'register.html');
+                        }
                     }
                 })
                 .catch(function() {});

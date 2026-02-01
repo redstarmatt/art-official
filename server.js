@@ -58,6 +58,7 @@ CREATE TABLE IF NOT EXISTS artists (
   plan_expires_at TEXT,
   stripe_customer_id TEXT,
   stripe_subscription_id TEXT,
+  certificate_credits INTEGER DEFAULT 0,
   reset_token TEXT,
   reset_token_expires TEXT,
   created_at TEXT NOT NULL
@@ -150,6 +151,7 @@ addColumnIfMissing('artists', 'ban_reason', 'TEXT');
 addColumnIfMissing('reports', 'resolution', 'TEXT');
 addColumnIfMissing('reports', 'resolved_at', 'TEXT');
 addColumnIfMissing('reports', 'type', "TEXT DEFAULT 'dispute'");
+addColumnIfMissing('artists', 'certificate_credits', 'INTEGER DEFAULT 0');
 
 // Create indexes (IF NOT EXISTS)
 db.exec(`
@@ -319,6 +321,9 @@ const stmts = {
 
     // Admin: certificate revocation
     updateCertStatus: db.prepare('UPDATE certificates SET status = ? WHERE id = ?'),
+
+    // Certificate credits
+    incrementCertificateCredits: db.prepare('UPDATE artists SET certificate_credits = certificate_credits + 1 WHERE id = ?'),
 };
 
 // Helper: convert DB row to artist object with camelCase
@@ -336,7 +341,8 @@ function rowToArtist(row) {
         lastLoginAt: row.last_login_at,
         deletionWarningSentAt: row.deletion_warning_sent_at,
         banned: row.banned === 1,
-        banReason: row.ban_reason || null
+        banReason: row.ban_reason || null,
+        certificateCredits: row.certificate_credits || 0
     };
 }
 
@@ -544,6 +550,15 @@ app.post('/api/webhooks/stripe', express.raw({ type: 'application/json' }), asyn
             }
             break;
         }
+        case 'checkout.session.completed': {
+            const session = event.data.object;
+            if (session.metadata && session.metadata.type === 'certificate_credit' && session.payment_status === 'paid') {
+                const artistId = session.metadata.artistId;
+                stmts.incrementCertificateCredits.run(artistId);
+                console.log(`Certificate credit added for artist ${artistId}`);
+            }
+            break;
+        }
         case 'invoice.payment_failed': {
             const invoice = event.data.object;
             const artist = rowToArtist(stmts.getArtistByStripeCustomer.get(invoice.customer));
@@ -692,7 +707,7 @@ app.get('/sitemap.xml', (req, res) => {
     const staticPages = [
         { url: '/', changefreq: 'weekly', priority: '1.0' },
         { url: '/verify.html', changefreq: 'monthly', priority: '0.8' },
-        { url: '/browse.html', changefreq: 'daily', priority: '0.8' },
+
         { url: '/register.html', changefreq: 'monthly', priority: '0.7' },
         { url: '/legal.html', changefreq: 'yearly', priority: '0.3' },
     ];
@@ -797,7 +812,6 @@ ${keywords ? `    <meta name="keywords" content="${esc(keywords)}">` : ''}
             <a href="/" class="logo" style="display:flex;align-items:center;gap:8px;text-decoration:none;font-family:'Inter',sans-serif;"><svg viewBox="0 0 70 85" fill="none" stroke="currentColor" stroke-width="1.2" xmlns="http://www.w3.org/2000/svg" style="width:28px;height:34px;color:#1a1a1a;"><path d="M35 5 C15 5 5 22 5 42 C5 62 15 80 35 80" stroke-linecap="round"/><path d="M35 12 C20 12 12 26 12 42 C12 58 20 72 35 72 C50 72 58 58 58 42" stroke-linecap="round"/><path d="M35 19 C24 19 18 30 18 42 C18 54 24 65 35 65 C46 65 52 54 52 42 C52 30 46 19 35 19" stroke-linecap="round"/><path d="M35 26 C28 26 24 33 24 42 C24 51 28 58 35 58 C42 58 46 51 46 42" stroke-linecap="round"/><path d="M35 33 C31 33 29 37 29 42 C29 47 31 51 35 51 C39 51 41 47 41 42 C41 37 39 33 35 33" stroke-linecap="round"/><path d="M65 42 C65 22 55 5 35 5" stroke-linecap="round"/><path d="M58 42 C58 26 50 12 35 12" stroke-linecap="round"/></svg><span style="display:flex;flex-direction:column;line-height:1.1;"><span style="font-size:11px;"><span style="font-weight:300;color:#666;">officially</span><span style="font-weight:600;color:#1a1a1a;">human</span></span><span style="font-size:18px;font-weight:700;color:#1a1a1a;margin-top:-2px;">.art</span></span></a>
             <nav>
                 <a href="/blog">Blog</a>
-                <a href="/browse.html">Browse</a>
                 <a href="/verify.html">Verify</a>
                 <a href="/register.html">Register</a>
             </nav>
@@ -1761,10 +1775,11 @@ app.post('/api/artwork/submit', requireAuth, (req, res, next) => {
     // Check work limit for Free tier
     if (!isCreator(artist)) {
         const certCount = stmts.countCertsByArtist.get(artistId).n;
-        if (certCount >= 3) {
+        const limit = 3 + (artist.certificateCredits || 0);
+        if (certCount >= limit) {
             return res.status(403).json({
                 success: false,
-                message: 'Free plan limited to 3 works. Upgrade to Creator for unlimited certificates.',
+                message: 'You\'ve reached your certificate limit. Buy a single certificate (£2) or upgrade to Creator for unlimited.',
                 limitReached: true
             });
         }
@@ -2033,7 +2048,8 @@ app.get('/api/artist/plan/:artistId', requireAuth, (req, res) => {
         planStatus: artist.planStatus || 'active',
         planExpiresAt: artist.planExpiresAt || null,
         certificateCount: certCount,
-        certificateLimit: plan === 'creator' ? null : 3
+        certificateCredits: artist.certificateCredits || 0,
+        certificateLimit: plan === 'creator' ? null : 3 + (artist.certificateCredits || 0)
     });
 });
 
@@ -2102,6 +2118,49 @@ app.post('/api/stripe/cancel-subscription', doubleCsrfProtection, requireAuth, a
     } catch (err) {
         console.error('Stripe cancel error:', err.message);
         res.status(500).json({ success: false, message: 'Failed to cancel subscription' });
+    }
+});
+
+// Buy a single certificate credit (one-time £2 payment via Stripe Checkout)
+app.post('/api/stripe/buy-credit', doubleCsrfProtection, requireAuth, async (req, res) => {
+    if (!stripe) return res.status(400).json({ success: false, message: 'Payments not configured' });
+
+    const artistId = req.session.artistId;
+    const artist = rowToArtist(stmts.getArtistById.get(artistId));
+    if (!artist) return res.status(404).json({ success: false, message: 'Artist not found' });
+
+    try {
+        let customerId = artist.stripeCustomerId;
+        if (!customerId) {
+            const customer = await stripe.customers.create({
+                email: artist.email, name: artist.name,
+                metadata: { artistId: artist.id }
+            });
+            customerId = customer.id;
+            stmts.updateArtistStripeCustomer.run(customerId, artistId);
+        }
+
+        const host = `${req.protocol}://${req.get('host')}`;
+        const session = await stripe.checkout.sessions.create({
+            customer: customerId,
+            mode: 'payment',
+            line_items: [{
+                price_data: {
+                    currency: 'gbp',
+                    product_data: { name: 'Single Certificate Credit', description: 'One additional certified work on Officially Human Art' },
+                    unit_amount: 200 // £2.00
+                },
+                quantity: 1
+            }],
+            metadata: { artistId: artist.id, type: 'certificate_credit' },
+            success_url: `${host}/register.html?credit_purchased=1`,
+            cancel_url: `${host}/register.html`
+        });
+
+        res.json({ success: true, url: session.url });
+    } catch (err) {
+        console.error('Stripe buy credit error:', err.message);
+        res.status(500).json({ success: false, message: 'Failed to create payment. Please try again.' });
     }
 });
 

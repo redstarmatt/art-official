@@ -64,9 +64,22 @@
 ## Pending
 - [ ] Configure Stripe for production (set STRIPE_SECRET_KEY, STRIPE_PUBLISHABLE_KEY, STRIPE_WEBHOOK_SECRET, STRIPE_CREATOR_PRICE_ID on Railway)
   - Create Product + £5/month Price in Stripe dashboard, set up webhook endpoint
+  - Register `checkout.session.completed` event in Stripe webhook settings (for one-time credit purchases)
 - [ ] Set up custom domain email via GoDaddy
   - Buy domain on GoDaddy, add GoDaddy Workspace Email (or Microsoft 365)
   - Create mailbox e.g. noreply@officiallyhuman.art
   - Set Railway env vars: SMTP_HOST=smtpout.secureserver.net, SMTP_PORT=465, SMTP_USER=noreply@officiallyhuman.art, SMTP_PASS=<mailbox password>, SMTP_FROM=noreply@officiallyhuman.art
   - GoDaddy handles SPF/DKIM automatically for its own email
 - [ ] Data processing agreements with Stripe, SMTP provider, Railway
+
+## Technical Debt
+- [ ] **Extract shared CSS** — `:root` variables and component styles are copy-pasted across 6 HTML files. Move to a shared stylesheet.
+- [ ] **Extract shared header/footer** — Same logo and nav markup repeated in every page. Use server-side includes or a template engine.
+- [ ] **Split server.js** — Single ~2500-line file. Split into route modules (auth, certificates, stripe, admin, etc.).
+- [ ] **Extract email templates** — HTML email templates are inline template literals in server.js. Move to separate files.
+- [ ] **Image optimisation** — Artwork images served as-is. Add resizing, compression, or WebP conversion on upload.
+- [ ] **Error pages** — No custom 404 or 500 pages. Express falls through to default handler.
+- [ ] **Loading states** — Dashboard and verification pages have no skeleton/loading UI while fetching.
+- [ ] **Orphaned file cleanup** — Deleted certificates leave artwork and evidence files on disk.
+- [ ] **Structured logging** — Replace console.log/console.error with a structured logger.
+- [ ] **Frontend tests** — Only API tests exist. No unit tests for client-side JS or visual regression tests.
