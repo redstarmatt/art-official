@@ -3061,6 +3061,11 @@
                     loadPlanInfo(currentArtist.id);
                     return null;
                 }
+                // Fallback to Stripe Checkout
+                if (data.checkoutUrl) {
+                    window.location.href = data.checkoutUrl;
+                    return null;
+                }
                 if (!data.clientSecret) {
                     throw new Error('No payment secret returned. Please refresh and try again.');
                 }
@@ -3145,6 +3150,11 @@
                         if (params.get('credit_purchased') === '1') {
                             switchTab('submit');
                             showAlert('submit-alert', 'Certificate credit added! You can now submit another work.', 'success');
+                            window.history.replaceState({}, '', 'register.html');
+                        }
+                        if (params.get('subscribed') === '1') {
+                            switchTab('submit');
+                            showAlert('submit-alert', 'Creator plan activated! You now have unlimited certificates.', 'success');
                             window.history.replaceState({}, '', 'register.html');
                         }
                     }

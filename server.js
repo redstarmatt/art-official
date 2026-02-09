@@ -557,6 +557,16 @@ app.post('/api/webhooks/stripe', express.raw({ type: 'application/json' }), asyn
                 stmts.incrementCertificateCredits.run(artistId);
                 console.log(`Certificate credit added for artist ${artistId}`);
             }
+            // Handle subscription checkout
+            if (session.mode === 'subscription' && session.metadata && session.metadata.artistId) {
+                const artistId = session.metadata.artistId;
+                const subscriptionId = session.subscription;
+                if (subscriptionId) {
+                    stmts.updateArtistStripeSubscription.run(subscriptionId, artistId);
+                    stmts.updateArtistPlan.run('creator', 'active', null, artistId);
+                    console.log(`Creator subscription activated for artist ${artistId} via Checkout`);
+                }
+            }
             break;
         }
         case 'invoice.payment_failed': {
@@ -2101,15 +2111,26 @@ app.post('/api/stripe/create-subscription', doubleCsrfProtection, requireAuth, a
 
         stmts.updateArtistStripeSubscription.run(subscription.id, artistId);
 
+        console.log('Stripe sub created:', { status: subscription.status, invoiceStatus: subscription.latest_invoice?.status, piStatus: subscription.latest_invoice?.payment_intent?.status, amount: subscription.latest_invoice?.amount_due });
+
         // If subscription is already active (e.g. free trial, £0 invoice), no payment needed
-        const paymentIntent = subscription.latest_invoice && subscription.latest_invoice.payment_intent;
         if (subscription.status === 'active') {
             stmts.updateArtistPlan.run('creator', 'active', null, artistId);
             return res.json({ success: true, subscriptionId: subscription.id, active: true });
         }
 
-        if (!paymentIntent) {
-            return res.status(500).json({ success: false, message: 'Subscription created but no payment required. Please refresh.' });
+        const paymentIntent = subscription.latest_invoice && subscription.latest_invoice.payment_intent;
+        if (!paymentIntent || !paymentIntent.client_secret) {
+            // Fallback: use Stripe Checkout instead
+            const checkoutSession = await stripe.checkout.sessions.create({
+                customer: customerId,
+                mode: 'subscription',
+                line_items: [{ price: process.env.STRIPE_CREATOR_PRICE_ID, quantity: 1 }],
+                success_url: `${req.protocol}://${req.get('host')}/register.html?subscribed=1`,
+                cancel_url: `${req.protocol}://${req.get('host')}/register.html`,
+                metadata: { artistId }
+            });
+            return res.json({ success: true, checkoutUrl: checkoutSession.url });
         }
 
         res.json({
