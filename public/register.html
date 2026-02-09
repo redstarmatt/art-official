@@ -2940,11 +2940,18 @@
             if (upgradeSection) upgradeSection.style.display = currentPlan.plan === 'free' ? 'block' : 'none';
             if (managePlan) {
                 managePlan.style.display = currentPlan.plan === 'creator' ? 'block' : 'none';
-                if (currentPlan.planStatus === 'canceling' && currentPlan.planExpiresAt) {
-                    var d = new Date(currentPlan.planExpiresAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
-                    $('plan-status-text').textContent = 'Your Creator plan is active until ' + d + '. After that, you\'ll be on the Free plan.';
+                var cancelBtn = $('cancel-plan-btn');
+                if (currentPlan.planStatus === 'canceling') {
+                    var msg = 'Your Creator plan will cancel at the end of your billing period. After that, you\'ll be on the Free plan.';
+                    if (currentPlan.planExpiresAt) {
+                        var d = new Date(currentPlan.planExpiresAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+                        msg = 'Your Creator plan is active until ' + d + '. After that, you\'ll be on the Free plan.';
+                    }
+                    $('plan-status-text').textContent = msg;
+                    if (cancelBtn) cancelBtn.style.display = 'none';
                 } else {
                     $('plan-status-text').textContent = 'Your Creator plan is active.';
+                    if (cancelBtn) cancelBtn.style.display = '';
                 }
             }
 
@@ -3118,15 +3125,18 @@
             .then(function(res) { return res.json(); })
             .then(function(data) {
                 if (data.success) {
+                    currentPlan.planStatus = 'canceling';
+                    currentPlan.planExpiresAt = data.planExpiresAt || null;
+                    updatePlanUI();
                     loadPlanInfo(currentArtist.id);
                 } else {
                     alert(data.message || 'Failed to cancel subscription.');
+                    btn.disabled = false;
+                    btn.textContent = 'Cancel Plan';
                 }
             })
             .catch(function() {
                 alert('Connection error. Please try again.');
-            })
-            .finally(function() {
                 btn.disabled = false;
                 btn.textContent = 'Cancel Plan';
             });
