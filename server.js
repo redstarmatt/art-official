@@ -507,7 +507,10 @@ app.post('/api/webhooks/stripe', express.raw({ type: 'application/json' }), asyn
             const artist = rowToArtist(stmts.getArtistByStripeCustomer.get(subscription.customer));
             if (artist) {
                 if (subscription.cancel_at_period_end) {
-                    stmts.updateArtistPlan.run('creator', 'canceling', new Date(subscription.current_period_end * 1000).toISOString(), artist.id);
+                    const periodEnd = subscription.current_period_end
+                        ? new Date(subscription.current_period_end * 1000).toISOString()
+                        : null;
+                    stmts.updateArtistPlan.run('creator', 'canceling', periodEnd, artist.id);
                 } else {
                     stmts.updateArtistPlan.run('creator', 'active', null, artist.id);
                 }
@@ -537,7 +540,7 @@ app.post('/api/webhooks/stripe', express.raw({ type: 'application/json' }), asyn
                                 <p style="color:#666666;margin-bottom:1rem;"><strong>Your ${certCount} existing certificate${certCount !== 1 ? 's remain' : ' remains'} fully active.</strong> All badges, QR codes, and verification pages continue to work as normal. Nothing has been removed.</p>
                                 <p style="color:#666666;margin-bottom:1rem;">On the Free plan, you can maintain up to 3 certified works. To certify unlimited works again, you can resubscribe at any time from your dashboard.</p>
                                 <div style="text-align:center;margin:2rem 0;">
-                                    <a href="${process.env.BASE_URL || 'https://officallyhuman.art'}/register.html" style="display:inline-block;padding:0.75rem 2rem;background:#2a2520;color:#fafafa;text-decoration:none;border-radius:6px;font-weight:600;font-size:0.9rem;">Go to Dashboard</a>
+                                    <a href="${process.env.BASE_URL || 'https://officiallyhuman.art'}/register.html" style="display:inline-block;padding:0.75rem 2rem;background:#2a2520;color:#fafafa;text-decoration:none;border-radius:6px;font-weight:600;font-size:0.9rem;">Go to Dashboard</a>
                                 </div>
                                 <p style="color:#888888;font-size:0.85rem;">Thanks for supporting Officially Human Art. We hope to see you back.</p>
                             </div>
@@ -2191,12 +2194,48 @@ app.post('/api/stripe/cancel-subscription', doubleCsrfProtection, requireAuth, a
             cancel_at_period_end: true
         });
 
-        stmts.updateArtistPlan.run('creator', 'canceling', new Date(subscription.current_period_end * 1000).toISOString(), artistId);
+        const periodEnd = subscription.current_period_end
+            ? new Date(subscription.current_period_end * 1000).toISOString()
+            : null;
+
+        stmts.updateArtistPlan.run('creator', 'canceling', periodEnd, artistId);
+
+        // Send cancellation confirmation email
+        if (emailEnabled) {
+            const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
+            const periodEndFormatted = periodEnd
+                ? new Date(subscription.current_period_end * 1000).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
+                : 'the end of your billing period';
+            sendEmail({
+                from: process.env.SMTP_FROM || process.env.SMTP_USER,
+                to: artist.email,
+                subject: 'Your Creator plan cancellation — Officially Human Art',
+                html: `
+                <div style="font-family:'Helvetica Neue',Arial,sans-serif;max-width:600px;margin:0 auto;background:#f5f0e8;">
+                    <div style="background:#2a2520;color:#fafafa;padding:2rem;text-align:center;">
+                        <div style="font-family:Inter,-apple-system,sans-serif;font-size:1.2rem;font-weight:600;"><span style="font-weight:300;color:#999;">officially</span><span style="font-weight:600;">human</span><span style="font-weight:700;font-size:1.5rem;">.art</span></div>
+                    </div>
+                    <div style="padding:2rem;">
+                        <p style="color:#666666;margin-bottom:1.5rem;">Hi ${artist.name},</p>
+                        <p style="color:#666666;margin-bottom:1.5rem;">Your Creator plan has been set to cancel. You'll continue to have full access to unlimited certificates until <strong>${periodEndFormatted}</strong>.</p>
+                        <p style="color:#666666;margin-bottom:1.5rem;">After that, your account will move to the Free plan. <strong>All your existing certificates will remain fully active</strong> — badges, QR codes, and verification pages will continue to work as normal.</p>
+                        <p style="color:#666666;margin-bottom:1.5rem;">Changed your mind? You can resubscribe at any time from your dashboard.</p>
+                        <div style="text-align:center;margin-bottom:1.5rem;">
+                            <a href="${baseUrl}/register.html#dashboard" style="display:inline-block;padding:0.75rem 2rem;background:#2a2520;color:#fafafa;text-decoration:none;border-radius:6px;font-weight:600;font-size:0.9rem;">Go to Dashboard</a>
+                        </div>
+                        <p style="color:#888888;font-size:0.82rem;">Thank you for supporting Officially Human Art.</p>
+                    </div>
+                    <div style="background:#ebe5da;padding:1.25rem;text-align:center;font-size:0.75rem;color:#a0aec0;border-top:1px solid rgba(26,26,26,0.06);">
+                        <p style="margin:0;">&copy; 2026 Officially Human Art</p>
+                    </div>
+                </div>`
+            }).catch(err => console.error('Failed to send cancellation email:', err.message));
+        }
 
         res.json({
             success: true,
             message: 'Subscription will cancel at end of billing period',
-            planExpiresAt: new Date(subscription.current_period_end * 1000).toISOString()
+            planExpiresAt: periodEnd
         });
     } catch (err) {
         console.error('Stripe cancel error:', err.type, err.message, err.code);
