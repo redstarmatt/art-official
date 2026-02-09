@@ -565,6 +565,34 @@ app.post('/api/webhooks/stripe', express.raw({ type: 'application/json' }), asyn
                     stmts.updateArtistStripeSubscription.run(subscriptionId, artistId);
                     stmts.updateArtistPlan.run('creator', 'active', null, artistId);
                     console.log(`Creator subscription activated for artist ${artistId} via Checkout`);
+
+                    // Send confirmation email
+                    const artist = rowToArtist(stmts.getArtistById.get(artistId));
+                    if (artist && emailEnabled) {
+                        sendEmail({
+                            from: process.env.SMTP_FROM || process.env.SMTP_USER,
+                            to: artist.email,
+                            subject: 'Welcome to the Creator Plan — Officially Human Art',
+                            html: `
+                            <div style="font-family:'Helvetica Neue',Arial,sans-serif;max-width:600px;margin:0 auto;background:#f5f0e8;">
+                                <div style="background:#2a2520;color:#fafafa;padding:2rem;text-align:center;">
+                                    <div style="font-family:Inter,-apple-system,sans-serif;font-size:1.2rem;font-weight:600;"><span style="font-weight:300;color:#999;">officially</span><span style="font-weight:600;">human</span><span style="font-weight:700;font-size:1.5rem;">.art</span></div>
+                                </div>
+                                <div style="padding:2rem;">
+                                    <p style="color:#666666;margin-bottom:1.5rem;">Hi ${artist.name},</p>
+                                    <p style="color:#666666;margin-bottom:1.5rem;">Your Creator plan is now active. You have <strong>unlimited certificates</strong> for as long as your subscription is active.</p>
+                                    <p style="color:#666666;margin-bottom:1.5rem;">You can manage your subscription from your dashboard at any time.</p>
+                                    <div style="text-align:center;margin-bottom:1.5rem;">
+                                        <a href="${req.protocol}://${req.get('host')}/register.html#dashboard" style="display:inline-block;padding:0.75rem 2rem;background:#2a2520;color:#fafafa;text-decoration:none;border-radius:6px;font-weight:600;font-size:0.9rem;">Go to Dashboard</a>
+                                    </div>
+                                    <p style="color:#888888;font-size:0.82rem;">Thank you for supporting Officially Human Art.</p>
+                                </div>
+                                <div style="background:#ebe5da;padding:1.25rem;text-align:center;font-size:0.75rem;color:#a0aec0;border-top:1px solid rgba(26,26,26,0.06);">
+                                    <p style="margin:0;">&copy; 2026 Officially Human Art</p>
+                                </div>
+                            </div>`
+                        }).catch(err => console.error('Failed to send subscription confirmation email:', err.message));
+                    }
                 }
             }
             break;
@@ -2121,6 +2149,10 @@ app.post('/api/stripe/create-subscription', doubleCsrfProtection, requireAuth, a
 
         const paymentIntent = subscription.latest_invoice && subscription.latest_invoice.payment_intent;
         if (!paymentIntent || !paymentIntent.client_secret) {
+            // Cancel the incomplete subscription before redirecting to Checkout
+            try { await stripe.subscriptions.cancel(subscription.id); } catch (e) { console.log('Could not cancel incomplete sub:', e.message); }
+            stmts.updateArtistStripeSubscription.run(null, artistId);
+
             // Fallback: use Stripe Checkout instead
             const checkoutSession = await stripe.checkout.sessions.create({
                 customer: customerId,
@@ -2167,8 +2199,8 @@ app.post('/api/stripe/cancel-subscription', doubleCsrfProtection, requireAuth, a
             planExpiresAt: new Date(subscription.current_period_end * 1000).toISOString()
         });
     } catch (err) {
-        console.error('Stripe cancel error:', err.message);
-        res.status(500).json({ success: false, message: 'Failed to cancel subscription' });
+        console.error('Stripe cancel error:', err.type, err.message, err.code);
+        res.status(500).json({ success: false, message: 'Cancel error: ' + (err.message || 'Unknown error') });
     }
 });
 
