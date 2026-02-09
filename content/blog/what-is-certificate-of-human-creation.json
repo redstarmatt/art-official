@@ -12,9 +12,9 @@
 
         { "type": "heading", "text": "The Simple Definition" },
 
-        "A certificate of human creation is proof that you made something yourself. You submit evidence of your creative process \u2014 sketches, drafts, photos, notes \u2014 and sign a declaration that the work is yours, made without AI. A platform reviews it and issues a public, verifiable certificate.",
+        "A certificate of human creation is proof that you made something yourself. You submit evidence of your creative process \u2014 sketches, drafts, photos, notes \u2014 and sign a declaration that the work is yours, made without AI. A platform records it all and issues a public, verifiable certificate.",
 
-        "It's similar to how an organic certification verifies that a farm follows certain standards. It's similar to how a notary certifies a signature. It's a third-party verification of a claim.",
+        "Think of it like a public record. The evidence is there for anyone to see \u2014 a buyer, a gallery, a collector. They can look at what you submitted and decide for themselves whether it's credible.",
 
         "In this case, the claim is: \"I made this work myself, and here's the evidence.\"",
 
@@ -24,11 +24,11 @@
 
         "<strong>The work itself.</strong> The artwork, writing, music, or creative piece you're certifying. A description of it. Title, date, medium.",
 
-        "<strong>Creator details.</strong> Your name, verified contact information, and a link to your profile so people can learn more about you.",
+        "<strong>Creator details.</strong> Your name, contact information, and a link to your profile so people can learn more about you.",
 
         "<strong>The evidence submitted.</strong> A record of what you provided: sketches, drafts, process photos, revision history, notes, video, or other documentation of your creative journey.",
 
-        "<strong>The certification tier.</strong> Bronze, Silver, Gold \u2014 indicating how much evidence you submitted and how extensively it was reviewed.",
+        "<strong>The certification tier.</strong> Bronze, Silver, Gold \u2014 based on how much evidence you submitted.",
 
         "<strong>A unique certificate ID.</strong> Every certificate gets a specific number, making it unique and traceable.",
 
@@ -45,10 +45,10 @@
         "<strong>What a certificate of human creation proves:</strong>",
 
         { "type": "list", "items": [
-            "The creator submitted real evidence of creative process",
-            "A verification platform reviewed that evidence and found it credible",
-            "The creator made a signed declaration that they didn't use AI generation",
-            "There's a public, verifiable record of all this"
+            "The creator submitted real evidence of their creative process",
+            "The creator signed a declaration that they didn't use AI generation",
+            "The evidence is publicly visible \u2014 anyone can look at it and judge for themselves",
+            "There's a permanent, verifiable record tied to the work"
         ]},
 
         "<strong>What it doesn't prove:</strong>",
@@ -86,41 +86,37 @@
 
         { "type": "h3", "text": "Bronze Tier" },
 
-        "Requires a basic declaration (signed statement that you made it without AI) and minimal evidence (a few process photos or drafts). Quick verification process.",
+        "Requires a signed declaration that you made it without AI, plus minimal evidence (a few process photos or drafts).",
 
-        "Bronze certification says: \"This creator documented their process and made a declaration. We've verified the basic evidence checks out.\" It's a useful starting point and valuable for emerging artists.",
+        "Bronze certification says: \"This creator documented their process and made a declaration. Here's what they submitted.\" It's a useful starting point and valuable for emerging artists.",
 
         { "type": "h3", "text": "Silver Tier" },
 
-        "Requires more comprehensive evidence \u2014 multiple sketches, drafts, photos at different stages, process notes or explanation of your creative choices. More detailed verification review.",
+        "Requires more comprehensive evidence \u2014 multiple sketches, drafts, photos at different stages, process notes or explanation of your creative choices.",
 
         "Silver says: \"This creator submitted substantial evidence of a genuine creative journey. The documentation is detailed and coherent.\"",
 
         { "type": "h3", "text": "Gold Tier" },
 
-        "The highest level. Requires extensive evidence packages \u2014 sketches, detailed revision history, process photos, possibly video, notes. Deep dive verification process.",
+        "The highest level. Requires extensive evidence \u2014 sketches, detailed revision history, process photos, possibly video, notes.",
 
-        "Gold says: \"This creator submitted comprehensive evidence of their creative process. The documentation is extensive, detailed, and thoroughly verified.\"",
+        "Gold says: \"This creator submitted comprehensive evidence of their creative process. The documentation is extensive and detailed.\"",
 
         "None of these is better than the others for all situations. An emerging artist might earn Bronze and be proud of it. An established artist might go for Gold to settle any lingering questions. A commercial artist might use Silver for client work.",
 
-        { "type": "heading", "text": "How Verification Works" },
+        { "type": "heading", "text": "How It Works" },
 
-        "This is where the credibility lives.",
+        "You submit your finished work, your evidence, and a signed declaration. The tier is determined by how much evidence you include. Your certificate is issued and made public.",
 
-        "When you submit evidence to a certification platform, it's reviewed for coherence. The sketches and process photos are checked. The timeline is reviewed. The markers of genuine creative work are examined: revisions, corrections, changes in approach, evidence of real decision-making.",
+        "The key: everything you submit is visible. Anyone with your certificate link or QR code can see exactly what evidence you provided. A buyer can look at your sketches, your process photos, your notes \u2014 and decide for themselves whether the creative journey is credible.",
 
-        "It's not running your work through an AI detector (which doesn't work). It's asking: \"Does this evidence show a genuine creative process? Do the pieces fit together? Does the timeline make sense? Is this credible?\"",
-
-        "If yes, your certificate is issued and made public. Anyone can verify it through the platform's website using your certificate ID or QR code.",
-
-        "The verification is transparent. The result is public. You can share your certificate with confidence because it's backed by actual review, not algorithms.",
+        "It's not an AI detector (those don't work). It's not someone grading your art. It's a public record of what you submitted, tied to a declaration you signed. The transparency is the trust mechanism \u2014 the evidence speaks for itself.",
 
         { "type": "heading", "text": "Why This Matters Right Now" },
 
         "We live in a moment where scepticism about creative authenticity is at peak levels. AI is improving rapidly. People see AI images everywhere. The question \"Did a human make this?\" has become routine.",
 
-        "A certificate of human creation is a tool that lets you answer that question with more than your word. It lets you say: \"Yes, I made it. Here's the evidence. It's been verified. It's in the public record.\"",
+        "A certificate of human creation is a tool that lets you answer that question with more than your word. It lets you say: \"Yes, I made it. Here's the evidence. It's all in the public record.\"",
 
         "That matters for collectors who want authenticity. It matters for galleries wanting confidence in their inventory. It matters for artists tired of defending their own work.",
 
