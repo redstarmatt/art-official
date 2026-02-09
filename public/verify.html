@@ -1773,7 +1773,7 @@
             feedback.style.display = 'none';
 
             var headers = { 'Content-Type': 'application/json' };
-            if (typeof authCsrf !== 'undefined' && authCsrf) headers['X-CSRF-Token'] = authCsrf;
+            if (csrfToken) headers['X-CSRF-Token'] = csrfToken;
 
             fetch('/api/certificate/share', {
                 method: 'POST',
