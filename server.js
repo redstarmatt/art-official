@@ -324,6 +324,18 @@ const stmts = {
 
     // Certificate credits
     incrementCertificateCredits: db.prepare('UPDATE artists SET certificate_credits = certificate_credits + 1 WHERE id = ?'),
+
+    // Admin: list all artists with cert counts
+    getAllArtists: db.prepare(`
+        SELECT a.*, COUNT(c.id) as cert_count
+        FROM artists a
+        LEFT JOIN certificates c ON c.artist_id = a.id
+        GROUP BY a.id
+        ORDER BY a.created_at DESC
+    `),
+
+    // Admin: list all certificates
+    getAllCerts: db.prepare('SELECT * FROM certificates ORDER BY registered_at DESC'),
 };
 
 // Helper: convert DB row to artist object with camelCase
@@ -1501,6 +1513,65 @@ app.put('/api/admin/artists/:artistId/unban', requireAdmin, (req, res) => {
     // Note: certificates are NOT automatically un-revoked — admin must manually reinstate if appropriate
     audit('artist_unbanned', { artistId });
     res.json({ success: true, message: 'Artist unbanned. Certificates remain revoked and must be reinstated individually if appropriate.' });
+});
+
+// ---- Admin: List All Artists ----
+app.get('/api/admin/artists', requireAdmin, (req, res) => {
+    const rows = stmts.getAllArtists.all();
+    const artists = rows.map(row => {
+        const a = rowToArtist(row);
+        return {
+            id: a.id, name: a.name, email: a.email, slug: a.slug,
+            plan: a.plan, planStatus: a.planStatus,
+            emailVerified: a.emailVerified, banned: a.banned, banReason: a.banReason,
+            createdAt: a.createdAt, lastLoginAt: a.lastLoginAt,
+            certCount: row.cert_count || 0
+        };
+    });
+    res.json({ success: true, artists });
+});
+
+// ---- Admin: Get Artist Details ----
+app.get('/api/admin/artists/:artistId', requireAdmin, (req, res) => {
+    const artist = rowToArtist(stmts.getArtistById.get(req.params.artistId));
+    if (!artist) return res.status(404).json({ success: false, message: 'Artist not found' });
+
+    const certs = stmts.getCertsByArtist.all(req.params.artistId).map(row => {
+        const c = rowToCert(row);
+        return {
+            id: c.id, title: c.title, medium: c.medium,
+            tier: c.tier, tierLabel: c.tierLabel, status: c.status,
+            registeredAt: c.registeredAt, artworkImage: c.artworkImage,
+            reportCount: c.reportCount
+        };
+    });
+
+    res.json({
+        success: true,
+        artist: {
+            id: artist.id, name: artist.name, email: artist.email, slug: artist.slug,
+            bio: artist.bio, location: artist.location, portfolio: artist.portfolio,
+            plan: artist.plan, planStatus: artist.planStatus,
+            emailVerified: artist.emailVerified, banned: artist.banned, banReason: artist.banReason,
+            createdAt: artist.createdAt, lastLoginAt: artist.lastLoginAt,
+            certificateCredits: artist.certificateCredits
+        },
+        certificates: certs
+    });
+});
+
+// ---- Admin: List All Certificates ----
+app.get('/api/admin/certificates', requireAdmin, (req, res) => {
+    const rows = stmts.getAllCerts.all();
+    const certificates = rows.map(row => {
+        const c = rowToCert(row);
+        return {
+            id: c.id, title: c.title, artistId: c.artistId, artistName: c.artistName,
+            medium: c.medium, tier: c.tier, tierLabel: c.tierLabel, status: c.status,
+            registeredAt: c.registeredAt, artworkImage: c.artworkImage, reportCount: c.reportCount
+        };
+    });
+    res.json({ success: true, certificates });
 });
 
 // Session restore endpoint

@@ -99,6 +99,63 @@
         #admin-panel { display: none; }
         .error-msg { color: var(--error); font-size: 0.88rem; margin-top: 0.5rem; }
         .empty-msg { text-align: center; padding: 2rem; color: var(--ink-faint); font-size: 0.9rem; }
+
+        /* Tab navigation */
+        .admin-tabs { display: flex; gap: 0; border-bottom: 2px solid rgba(26,26,26,0.1); margin-bottom: 1.5rem; }
+        .tab-btn {
+            padding: 0.6rem 1.25rem; border: none; background: transparent;
+            font-family: inherit; font-size: 0.9rem; font-weight: 600;
+            color: var(--ink-faint); cursor: pointer;
+            border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all 0.2s;
+        }
+        .tab-btn:hover { color: var(--ink-light); }
+        .tab-btn.active { color: var(--navy); border-bottom-color: var(--navy); }
+        .tab-panel { display: none; }
+        .tab-panel.active { display: block; }
+
+        /* Search input */
+        .search-input {
+            width: 100%; max-width: 360px; padding: 0.55rem 1rem;
+            border: 1.5px solid rgba(26,26,26,0.14); border-radius: 6px;
+            font-family: inherit; font-size: 0.88rem; background: #fff; margin-bottom: 1rem;
+        }
+        .search-input:focus { outline: none; border-color: var(--navy); }
+
+        /* List rows */
+        .list-row {
+            background: #fff; border-radius: 10px; padding: 1rem 1.25rem;
+            border: 1px solid rgba(26,26,26,0.08); margin-bottom: 0.5rem;
+            display: flex; justify-content: space-between; align-items: center;
+            gap: 1rem; cursor: pointer; transition: border-color 0.15s;
+        }
+        .list-row:hover { border-color: rgba(26,26,26,0.2); }
+        .list-row-info { flex: 1; min-width: 0; }
+        .list-row-info strong { color: var(--navy); }
+        .list-row-meta { font-size: 0.8rem; color: var(--ink-faint); margin-top: 0.2rem; }
+        .list-row-actions { display: flex; gap: 0.5rem; align-items: center; flex-shrink: 0; }
+
+        /* Detail panel */
+        .detail-panel {
+            background: #fff; border-radius: 10px; padding: 1.5rem;
+            border: 1px solid rgba(26,26,26,0.08); margin-bottom: 1.5rem;
+        }
+        .detail-panel h3 { font-family: 'Fraunces', serif; font-size: 1.2rem; font-weight: 600; color: var(--navy); margin-bottom: 0.75rem; }
+        .detail-grid { display: grid; grid-template-columns: 140px 1fr; gap: 0.4rem 1rem; font-size: 0.88rem; }
+        .detail-label { color: var(--ink-faint); font-weight: 600; }
+        .detail-value { color: var(--ink); word-break: break-word; }
+        .detail-back { background: none; border: none; color: var(--ink-faint); cursor: pointer; font-family: inherit; font-size: 0.85rem; padding: 0; margin-bottom: 1rem; }
+        .detail-back:hover { color: var(--ink); }
+
+        /* Additional badges */
+        .badge-banned { background: #fee2e2; color: #991b1b; }
+        .badge-verified { background: #d1fae5; color: #065f46; }
+        .badge-revoked { background: #fee2e2; color: #991b1b; }
+        .badge-free { background: #e5e7eb; color: #4b5563; }
+        .badge-creator { background: #dbeafe; color: #1e40af; }
+        .badge-gold { background: #fef3c7; color: #92400e; }
+        .badge-silver { background: #f3f4f6; color: #4b5563; }
+        .badge-bronze { background: #fed7aa; color: #9a3412; }
+        .filter-btn.active, .cert-filter-btn.active { background: var(--navy); color: var(--cream); border-color: var(--navy); }
     </style>
 </head>
 <body>
@@ -148,14 +205,40 @@
                     <span id="backup-status" style="margin-left:0.5rem;font-size:0.82rem;color:var(--ink-faint);"></span>
                 </div>
 
-                <!-- Reports -->
-                <h2>Reports</h2>
-                <div style="margin-bottom:1rem;">
-                    <button type="button" class="btn btn-sm btn-outline filter-btn active" data-filter="all">All</button>
-                    <button type="button" class="btn btn-sm btn-outline filter-btn" data-filter="pending">Pending</button>
-                    <button type="button" class="btn btn-sm btn-outline filter-btn" data-filter="resolved">Resolved</button>
+                <!-- Tab Navigation -->
+                <div class="admin-tabs">
+                    <button type="button" class="tab-btn active" data-tab="reports">Reports</button>
+                    <button type="button" class="tab-btn" data-tab="users">Users</button>
+                    <button type="button" class="tab-btn" data-tab="certificates">Certificates</button>
                 </div>
-                <div id="reports-list"></div>
+
+                <!-- Reports Tab -->
+                <div class="tab-panel active" id="tab-reports">
+                    <div style="margin-bottom:1rem;">
+                        <button type="button" class="btn btn-sm btn-outline filter-btn active" data-filter="all">All</button>
+                        <button type="button" class="btn btn-sm btn-outline filter-btn" data-filter="pending">Pending</button>
+                        <button type="button" class="btn btn-sm btn-outline filter-btn" data-filter="resolved">Resolved</button>
+                    </div>
+                    <div id="reports-list"></div>
+                </div>
+
+                <!-- Users Tab -->
+                <div class="tab-panel" id="tab-users">
+                    <input type="text" class="search-input" id="users-search" placeholder="Search by name or email...">
+                    <div id="users-list"></div>
+                    <div id="user-detail" style="display:none;"></div>
+                </div>
+
+                <!-- Certificates Tab -->
+                <div class="tab-panel" id="tab-certificates">
+                    <input type="text" class="search-input" id="certs-search" placeholder="Search by title, artist, or ID...">
+                    <div style="margin-bottom:1rem;">
+                        <button type="button" class="btn btn-sm btn-outline cert-filter-btn active" data-filter="all">All</button>
+                        <button type="button" class="btn btn-sm btn-outline cert-filter-btn" data-filter="verified">Verified</button>
+                        <button type="button" class="btn btn-sm btn-outline cert-filter-btn" data-filter="revoked">Revoked</button>
+                    </div>
+                    <div id="certs-list"></div>
+                </div>
             </div>
         </div>
     </main>
@@ -327,6 +410,313 @@
             apiFetch('/api/admin/backup').then(function(d) {
                 $('backup-status').textContent = d.success ? 'Backup complete.' : (d.message || 'Failed.');
             }).catch(function() { $('backup-status').textContent = 'Error.'; });
+        });
+
+        // ===== Tab Switching =====
+        var allUsers = [];
+        var allCerts = [];
+        var currentCertFilter = 'all';
+        var usersLoaded = false;
+        var certsLoaded = false;
+
+        document.querySelectorAll('.tab-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+                document.querySelectorAll('.tab-panel').forEach(function(p) { p.classList.remove('active'); });
+                btn.classList.add('active');
+                $('tab-' + btn.dataset.tab).classList.add('active');
+                if (btn.dataset.tab === 'users' && !usersLoaded) loadUsers();
+                if (btn.dataset.tab === 'certificates' && !certsLoaded) loadCerts();
+            });
+        });
+
+        // ===== Users Tab =====
+        function loadUsers() {
+            $('users-list').innerHTML = '<div class="empty-msg">Loading...</div>';
+            apiFetch('/api/admin/artists').then(function(d) {
+                if (!d.success) return;
+                allUsers = d.artists;
+                usersLoaded = true;
+                renderUsers(allUsers);
+            });
+        }
+
+        function renderUsers(users) {
+            var container = $('users-list');
+            $('user-detail').style.display = 'none';
+            container.style.display = 'block';
+
+            if (users.length === 0) {
+                container.innerHTML = '<div class="empty-msg">No users found.</div>';
+                return;
+            }
+
+            container.innerHTML = users.map(function(u) {
+                var badges = '';
+                if (u.banned) badges += ' <span class="badge badge-banned">Banned</span>';
+                if (!u.emailVerified) badges += ' <span class="badge badge-dismissed">Unverified</span>';
+                var planBadge = u.plan === 'creator'
+                    ? '<span class="badge badge-creator">Creator</span>'
+                    : '<span class="badge badge-free">Free</span>';
+
+                return '<div class="list-row" data-user-id="' + escHtml(u.id) + '">' +
+                    '<div class="list-row-info">' +
+                        '<strong>' + escHtml(u.name) + '</strong> ' + planBadge + badges +
+                        '<div class="list-row-meta">' + escHtml(u.email) +
+                        ' &middot; ' + u.certCount + ' cert' + (u.certCount !== 1 ? 's' : '') +
+                        ' &middot; Joined ' + new Date(u.createdAt).toLocaleDateString() +
+                        '</div>' +
+                    '</div>' +
+                    '<div class="list-row-actions">' +
+                        (u.banned
+                            ? '<button class="btn btn-sm btn-outline unban-btn" data-id="' + escHtml(u.id) + '">Unban</button>'
+                            : '<button class="btn btn-sm btn-error ban-btn" data-id="' + escHtml(u.id) + '">Ban</button>') +
+                    '</div>' +
+                '</div>';
+            }).join('');
+
+            // Click row to view detail
+            container.querySelectorAll('.list-row').forEach(function(row) {
+                row.addEventListener('click', function(e) {
+                    if (e.target.closest('.ban-btn') || e.target.closest('.unban-btn')) return;
+                    loadUserDetail(row.dataset.userId);
+                });
+            });
+
+            // Ban buttons
+            container.querySelectorAll('.ban-btn').forEach(function(btn) {
+                btn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    var reason = prompt('Ban reason (optional):');
+                    if (reason === null) return;
+                    apiFetch('/api/admin/artists/' + btn.dataset.id + '/ban', {
+                        method: 'PUT',
+                        body: JSON.stringify({ reason: reason || 'Violation of terms of service' })
+                    }).then(function(d) {
+                        if (d.success) { alert(d.message); loadUsers(); loadStats(); }
+                    });
+                });
+            });
+
+            // Unban buttons
+            container.querySelectorAll('.unban-btn').forEach(function(btn) {
+                btn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    if (!confirm('Unban this artist?')) return;
+                    apiFetch('/api/admin/artists/' + btn.dataset.id + '/unban', { method: 'PUT' })
+                        .then(function(d) {
+                            if (d.success) { alert(d.message); loadUsers(); }
+                        });
+                });
+            });
+        }
+
+        // Users search
+        $('users-search').addEventListener('input', function() {
+            var q = this.value.toLowerCase().trim();
+            if (!q) { renderUsers(allUsers); return; }
+            var filtered = allUsers.filter(function(u) {
+                return u.name.toLowerCase().indexOf(q) !== -1 ||
+                       u.email.toLowerCase().indexOf(q) !== -1;
+            });
+            renderUsers(filtered);
+        });
+
+        // User detail view
+        function loadUserDetail(artistId) {
+            apiFetch('/api/admin/artists/' + artistId).then(function(d) {
+                if (!d.success) return;
+                var a = d.artist;
+                var certs = d.certificates;
+
+                $('users-list').style.display = 'none';
+                $('users-search').style.display = 'none';
+                var detail = $('user-detail');
+                detail.style.display = 'block';
+
+                var badges = '';
+                if (a.banned) badges += ' <span class="badge badge-banned">Banned</span>';
+                if (a.emailVerified) badges += ' <span class="badge badge-verified">Email Verified</span>';
+
+                var certsHtml = '';
+                if (certs.length === 0) {
+                    certsHtml = '<div class="empty-msg">No certificates.</div>';
+                } else {
+                    certsHtml = certs.map(function(c) {
+                        var tierBadge = '<span class="badge badge-' + escHtml(c.tier) + '">' + escHtml(c.tierLabel || c.tier) + '</span>';
+                        var statusBadge = c.status === 'revoked' ? ' <span class="badge badge-revoked">Revoked</span>' : '';
+                        return '<div class="list-row" onclick="window.open(\'/verify.html?code=' + escHtml(c.id) + '\',\'_blank\')">' +
+                            '<div class="list-row-info">' +
+                                '<strong>' + escHtml(c.title) + '</strong> ' + tierBadge + statusBadge +
+                                '<div class="list-row-meta">' + escHtml(c.id) +
+                                (c.medium ? ' &middot; ' + escHtml(c.medium) : '') +
+                                ' &middot; ' + new Date(c.registeredAt).toLocaleDateString() +
+                                '</div>' +
+                            '</div>' +
+                            '<div class="list-row-actions">' +
+                                (c.status !== 'revoked'
+                                    ? '<button class="btn btn-sm btn-error revoke-detail-btn" data-cert="' + escHtml(c.id) + '" onclick="event.stopPropagation();">Revoke</button>'
+                                    : '') +
+                            '</div>' +
+                        '</div>';
+                    }).join('');
+                }
+
+                detail.innerHTML =
+                    '<button class="detail-back" id="back-to-users">&larr; Back to users</button>' +
+                    '<div class="detail-panel">' +
+                        '<h3>' + escHtml(a.name) + badges + '</h3>' +
+                        '<div class="detail-grid">' +
+                            '<span class="detail-label">Email</span><span class="detail-value">' + escHtml(a.email) + '</span>' +
+                            '<span class="detail-label">Plan</span><span class="detail-value">' + escHtml(a.plan) + (a.planStatus !== 'active' ? ' (' + escHtml(a.planStatus) + ')' : '') + '</span>' +
+                            '<span class="detail-label">Slug</span><span class="detail-value">' + escHtml(a.slug) + '</span>' +
+                            '<span class="detail-label">Location</span><span class="detail-value">' + escHtml(a.location || '—') + '</span>' +
+                            '<span class="detail-label">Portfolio</span><span class="detail-value">' + (a.portfolio ? '<a href="' + escHtml(a.portfolio) + '" target="_blank" style="color:var(--navy);">' + escHtml(a.portfolio) + '</a>' : '—') + '</span>' +
+                            '<span class="detail-label">Bio</span><span class="detail-value">' + escHtml(a.bio || '—') + '</span>' +
+                            '<span class="detail-label">Joined</span><span class="detail-value">' + new Date(a.createdAt).toLocaleDateString() + '</span>' +
+                            '<span class="detail-label">Last Login</span><span class="detail-value">' + (a.lastLoginAt ? new Date(a.lastLoginAt).toLocaleDateString() : '—') + '</span>' +
+                            '<span class="detail-label">Credits</span><span class="detail-value">' + (a.certificateCredits || 0) + '</span>' +
+                            (a.banned ? '<span class="detail-label">Ban Reason</span><span class="detail-value">' + escHtml(a.banReason || '—') + '</span>' : '') +
+                        '</div>' +
+                        '<div style="margin-top:1rem;">' +
+                            (a.banned
+                                ? '<button class="btn btn-sm btn-outline" id="detail-unban-btn" data-id="' + escHtml(a.id) + '">Unban</button>'
+                                : '<button class="btn btn-sm btn-error" id="detail-ban-btn" data-id="' + escHtml(a.id) + '">Ban</button>') +
+                        '</div>' +
+                    '</div>' +
+                    '<h2 style="margin-top:1rem;">Certificates (' + certs.length + ')</h2>' +
+                    certsHtml;
+
+                // Back button
+                $('back-to-users').addEventListener('click', function() {
+                    detail.style.display = 'none';
+                    $('users-list').style.display = 'block';
+                    $('users-search').style.display = '';
+                });
+
+                // Ban/unban in detail
+                var banBtn = document.getElementById('detail-ban-btn');
+                if (banBtn) {
+                    banBtn.addEventListener('click', function() {
+                        var reason = prompt('Ban reason (optional):');
+                        if (reason === null) return;
+                        apiFetch('/api/admin/artists/' + banBtn.dataset.id + '/ban', {
+                            method: 'PUT',
+                            body: JSON.stringify({ reason: reason || 'Violation of terms of service' })
+                        }).then(function(d) {
+                            if (d.success) { alert(d.message); loadUserDetail(artistId); usersLoaded = false; loadStats(); }
+                        });
+                    });
+                }
+                var unbanBtn = document.getElementById('detail-unban-btn');
+                if (unbanBtn) {
+                    unbanBtn.addEventListener('click', function() {
+                        if (!confirm('Unban this artist?')) return;
+                        apiFetch('/api/admin/artists/' + unbanBtn.dataset.id + '/unban', { method: 'PUT' })
+                            .then(function(d) {
+                                if (d.success) { alert(d.message); loadUserDetail(artistId); usersLoaded = false; }
+                            });
+                    });
+                }
+
+                // Revoke cert buttons in detail
+                detail.querySelectorAll('.revoke-detail-btn').forEach(function(btn) {
+                    btn.addEventListener('click', function() {
+                        if (!confirm('Revoke certificate ' + btn.dataset.cert + '?')) return;
+                        apiFetch('/api/admin/certificates/' + btn.dataset.cert + '/revoke', { method: 'PUT' })
+                            .then(function(d) {
+                                if (d.success) { alert('Revoked.'); loadUserDetail(artistId); loadStats(); }
+                            });
+                    });
+                });
+            });
+        }
+
+        // ===== Certificates Tab =====
+        function loadCerts() {
+            $('certs-list').innerHTML = '<div class="empty-msg">Loading...</div>';
+            apiFetch('/api/admin/certificates').then(function(d) {
+                if (!d.success) return;
+                allCerts = d.certificates;
+                certsLoaded = true;
+                renderCerts();
+            });
+        }
+
+        function renderCerts() {
+            var container = $('certs-list');
+            var q = $('certs-search').value.toLowerCase().trim();
+            var filtered = allCerts;
+
+            if (currentCertFilter !== 'all') {
+                filtered = filtered.filter(function(c) { return c.status === currentCertFilter; });
+            }
+            if (q) {
+                filtered = filtered.filter(function(c) {
+                    return c.title.toLowerCase().indexOf(q) !== -1 ||
+                           c.artistName.toLowerCase().indexOf(q) !== -1 ||
+                           c.id.toLowerCase().indexOf(q) !== -1;
+                });
+            }
+
+            if (filtered.length === 0) {
+                container.innerHTML = '<div class="empty-msg">No certificates found.</div>';
+                return;
+            }
+
+            container.innerHTML = filtered.map(function(c) {
+                var tierBadge = '<span class="badge badge-' + escHtml(c.tier) + '">' + escHtml(c.tierLabel || c.tier) + '</span>';
+                var statusBadge = c.status === 'revoked' ? ' <span class="badge badge-revoked">Revoked</span>' : '';
+                return '<div class="list-row" data-cert-id="' + escHtml(c.id) + '">' +
+                    '<div class="list-row-info">' +
+                        '<strong>' + escHtml(c.title) + '</strong> ' + tierBadge + statusBadge +
+                        '<div class="list-row-meta">' + escHtml(c.artistName) +
+                        ' &middot; ' + escHtml(c.id) +
+                        (c.medium ? ' &middot; ' + escHtml(c.medium) : '') +
+                        ' &middot; ' + new Date(c.registeredAt).toLocaleDateString() +
+                        (c.reportCount > 0 ? ' &middot; <span style="color:var(--error);">' + c.reportCount + ' report(s)</span>' : '') +
+                        '</div>' +
+                    '</div>' +
+                    '<div class="list-row-actions">' +
+                        (c.status !== 'revoked'
+                            ? '<button class="btn btn-sm btn-error cert-revoke-btn" data-cert="' + escHtml(c.id) + '">Revoke</button>'
+                            : '') +
+                    '</div>' +
+                '</div>';
+            }).join('');
+
+            // Click row to open certificate
+            container.querySelectorAll('.list-row').forEach(function(row) {
+                row.addEventListener('click', function(e) {
+                    if (e.target.closest('.cert-revoke-btn')) return;
+                    window.open('/verify.html?code=' + row.dataset.certId, '_blank');
+                });
+            });
+
+            // Revoke buttons
+            container.querySelectorAll('.cert-revoke-btn').forEach(function(btn) {
+                btn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    if (!confirm('Revoke certificate ' + btn.dataset.cert + '?')) return;
+                    apiFetch('/api/admin/certificates/' + btn.dataset.cert + '/revoke', { method: 'PUT' })
+                        .then(function(d) {
+                            if (d.success) { alert('Revoked.'); certsLoaded = false; loadCerts(); loadStats(); }
+                        });
+                });
+            });
+        }
+
+        // Cert search
+        $('certs-search').addEventListener('input', function() { renderCerts(); });
+
+        // Cert status filter
+        document.querySelectorAll('.cert-filter-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.cert-filter-btn').forEach(function(b) { b.classList.remove('active'); });
+                btn.classList.add('active');
+                currentCertFilter = btn.dataset.filter;
+                renderCerts();
+            });
         });
     })();
     </script>
