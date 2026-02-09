@@ -27,13 +27,15 @@ Then open http://localhost:3000
 - **QR Code Support** — Scan from physical certificates or embedded badges
 - **Full Details** — See artist, artwork info, registration date, status
 
-## Pricing Tiers (Display Only)
+## Introductory Pricing
+
+All limits are per artist account. Early adopters lock in these rates.
 
 | Plan | Price | Description |
 |------|-------|-------------|
-| Single Work | £25 | One certification |
-| Portfolio | £99 | 5 works |
-| Annual | £299 | Unlimited |
+| Free | £0 | Up to 3 certified works |
+| Pay As You Go | £2/cert | One additional certified work, no subscription |
+| Creator | £5/month | Unlimited certified works per account, cancel anytime |
 
 ## Tech Stack
 

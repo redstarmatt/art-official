@@ -1029,20 +1029,22 @@ if (useResendApi) {
     console.log('Email enabled via ' + process.env.SMTP_HOST);
 }
 
-async function sendEmail({ from, to, subject, html, text }) {
+async function sendEmail({ from, to, subject, html, text, replyTo }) {
     if (useResendApi) {
+        const payload = {
+            from: from || process.env.SMTP_FROM || process.env.SMTP_USER,
+            to: Array.isArray(to) ? to : [to],
+            subject,
+            ...(html ? { html } : { text })
+        };
+        if (replyTo) payload.reply_to = replyTo;
         const res = await fetch('https://api.resend.com/emails', {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${process.env.SMTP_PASS}`,
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({
-                from: from || process.env.SMTP_FROM || process.env.SMTP_USER,
-                to: Array.isArray(to) ? to : [to],
-                subject,
-                ...(html ? { html } : { text })
-            })
+            body: JSON.stringify(payload)
         });
         if (!res.ok) {
             const body = await res.text();
@@ -1050,7 +1052,9 @@ async function sendEmail({ from, to, subject, html, text }) {
         }
         return await res.json();
     } else if (mailTransporter) {
-        return mailTransporter.sendMail({ from, to, subject, html, text });
+        const opts = { from, to, subject, html, text };
+        if (replyTo) opts.replyTo = replyTo;
+        return mailTransporter.sendMail(opts);
     }
 }
 
@@ -2592,6 +2596,40 @@ app.post('/api/takedown', doubleCsrfProtection, (req, res) => {
     }
 
     res.json({ success: true, message: 'Takedown request submitted. We will review it promptly.' });
+});
+
+// Contact form
+app.post('/api/contact', doubleCsrfProtection, (req, res) => {
+    const { name, email, message } = req.body;
+
+    if (!name || !email || !message) {
+        return res.status(400).json({ success: false, message: 'All fields are required.' });
+    }
+
+    if (message.trim().length < 10) {
+        return res.status(400).json({ success: false, message: 'Please include a bit more detail in your message.' });
+    }
+
+    const ip = req.ip || req.connection.remoteAddress;
+    if (!rateLimit('contact:' + ip, 3, 3600000)) {
+        return res.status(429).json({ success: false, message: 'Too many messages. Please try again later.' });
+    }
+
+    const adminEmail = process.env.ADMIN_EMAIL || 'matt@mattlewsey.com';
+
+    if (emailEnabled) {
+        sendEmail({
+            from: process.env.SMTP_FROM || process.env.SMTP_USER,
+            to: adminEmail,
+            subject: `Contact form: ${name.trim()}`,
+            text: `New message from the contact form.\n\nName: ${name.trim()}\nEmail: ${email.trim()}\n\nMessage:\n${message.trim()}`,
+            replyTo: email.trim()
+        }).catch(err => console.error('Failed to send contact email:', err.message));
+    }
+
+    audit('contact_form_submitted', { name: name.trim(), email: email.trim() });
+
+    res.json({ success: true, message: 'Message sent. We\'ll get back to you soon.' });
 });
 
 // Global error handler — return JSON for API errors (including CSRF failures)

@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contact — Officially Human Art</title>
+    <link rel="stylesheet" href="/fonts/fonts.css">
+    <link rel="icon" type="image/svg+xml" href="/fingerprint-favicon.svg">
+    <style>
+        :root {
+            --navy: #2a2520;
+            --navy-light: #3d3630;
+            --navy-dark: #1a1510;
+            --cream: #f5f0e8;
+            --cream-dark: #ebe5da;
+            --gold: #3d3427;
+            --gold-light: #4a4035;
+            --gold-pale: #f0e6d2;
+            --ink: #1a1a1a;
+            --ink-light: #555555;
+            --ink-faint: #888888;
+            --success: #276749;
+            --error: #c53030;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--cream);
+            color: var(--ink);
+            line-height: 1.7;
+            -webkit-font-smoothing: antialiased;
+        }
+        .container { max-width: 800px; margin: 0 auto; padding: 0 2rem; }
+        header {
+            padding: 1rem 0;
+            background: rgba(245, 240, 232, 0.92);
+            backdrop-filter: blur(16px);
+            border-bottom: 1px solid rgba(26, 26, 26, 0.06);
+        }
+        .header-inner { display: flex; justify-content: space-between; align-items: center; max-width: 800px; margin: 0 auto; padding: 0 2rem; }
+        nav a { color: var(--ink-faint); text-decoration: none; font-size: 0.9rem; margin-left: 1.5rem; }
+        nav a:hover { color: var(--navy); }
+        main { padding: 3rem 0 4rem; }
+        h1 {
+            font-family: 'Fraunces', serif;
+            font-size: 2.25rem;
+            font-weight: 700;
+            color: var(--navy);
+            margin-bottom: 0.5rem;
+        }
+        p { margin-bottom: 1rem; font-size: 0.92rem; color: var(--ink-light); }
+        footer {
+            padding: 2rem 0; border-top: 1px solid rgba(26, 26, 26, 0.06);
+            text-align: center; font-size: 0.82rem; color: var(--ink-faint);
+        }
+        footer a { color: var(--ink-faint); text-decoration: none; margin: 0 0.75rem; }
+        footer a:hover { color: var(--navy); }
+
+        /* Auth Area */
+        .auth-area {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.75rem;
+            position: relative;
+            margin-left: 1.5rem;
+        }
+
+        .auth-area[data-state="loading"] .auth-login-btn,
+        .auth-area[data-state="loading"] .auth-user-name,
+        .auth-area[data-state="loading"] .auth-signout-btn { display: none; }
+
+        .auth-area[data-state="signed-out"] .auth-user-name,
+        .auth-area[data-state="signed-out"] .auth-signout-btn { display: none; }
+
+        .auth-area[data-state="signed-in"] .auth-login-btn { display: none; }
+        .auth-area[data-state="signed-in"] .auth-dropdown { display: none !important; }
+
+        .auth-btn {
+            font-family: 'Inter', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+
+        .auth-login-btn {
+            padding: 0.45rem 1rem;
+            background: transparent;
+            border: 1.5px solid var(--navy);
+            color: var(--navy);
+        }
+
+        .auth-login-btn:hover {
+            background: var(--navy);
+            color: #f5f0e8;
+        }
+
+        .auth-user-name {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--navy);
+        }
+
+        .auth-signout-btn {
+            padding: 0.4rem 0.85rem;
+            background: transparent;
+            color: var(--ink-faint);
+            font-size: 0.8rem;
+        }
+
+        .auth-signout-btn:hover { color: var(--error); }
+
+        .auth-dropdown {
+            display: none;
+            position: absolute;
+            top: calc(100% + 0.75rem);
+            right: 0;
+            width: 320px;
+            background: white;
+            border-radius: 12px;
+            border: 1px solid rgba(26, 26, 26, 0.1);
+            box-shadow: 0 12px 40px rgba(26, 26, 26, 0.15);
+            padding: 1.5rem;
+            z-index: 200;
+            animation: authSlideDown 0.2s ease;
+        }
+
+        .auth-dropdown.open { display: block; }
+
+        @keyframes authSlideDown {
+            from { opacity: 0; transform: translateY(-8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .auth-dropdown h3 {
+            font-family: 'Fraunces', serif;
+            font-size: 1.25rem;
+            color: var(--navy);
+            margin-bottom: 1rem;
+        }
+
+        .auth-error {
+            display: none;
+            padding: 0.6rem 0.85rem;
+            background: rgba(197, 48, 48, 0.08);
+            color: var(--error);
+            border-radius: 6px;
+            font-size: 0.82rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .auth-error.show { display: block; }
+
+        .auth-field { margin-bottom: 0.85rem; }
+
+        .auth-field label {
+            display: block;
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: var(--ink-light);
+            margin-bottom: 0.3rem;
+        }
+
+        .auth-field input {
+            width: 100%;
+            padding: 0.6rem 0.85rem;
+            border: 1.5px solid rgba(26, 26, 26, 0.18);
+            border-radius: 6px;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.9rem;
+            color: var(--ink);
+            background: var(--cream);
+            transition: border-color 0.2s;
+        }
+
+        .auth-field input:focus {
+            outline: none;
+            border-color: var(--navy);
+        }
+
+        .auth-submit-btn {
+            width: 100%;
+            padding: 0.7rem;
+            background: var(--navy);
+            color: #f5f0e8;
+            border: none;
+            border-radius: 6px;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .auth-submit-btn:hover { background: var(--navy-light); }
+        .auth-submit-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+        .auth-footer {
+            margin-top: 1rem;
+            text-align: center;
+            font-size: 0.82rem;
+            color: var(--ink-faint);
+        }
+
+        .auth-footer a {
+            color: var(--navy);
+            font-weight: 600;
+            text-decoration: none;
+        }
+
+        .auth-footer a:hover { text-decoration: underline; }
+
+        @media (max-width: 480px) {
+            .auth-dropdown {
+                width: calc(100vw - 2rem);
+                right: -1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-inner">
+            <a href="/" class="logo" style="display:flex;align-items:center;gap:12px;text-decoration:none;font-family:'Inter',sans-serif;">
+    <svg viewBox="0 0 70 85" fill="none" stroke="currentColor" stroke-width="1.2" xmlns="http://www.w3.org/2000/svg" style="width:36px;height:44px;color:#1a1a1a;">
+        <path d="M35 5 C15 5 5 22 5 42 C5 62 15 80 35 80" stroke-linecap="round"/>
+        <path d="M35 12 C20 12 12 26 12 42 C12 58 20 72 35 72 C50 72 58 58 58 42" stroke-linecap="round"/>
+        <path d="M35 19 C24 19 18 30 18 42 C18 54 24 65 35 65 C46 65 52 54 52 42 C52 30 46 19 35 19" stroke-linecap="round"/>
+        <path d="M35 26 C28 26 24 33 24 42 C24 51 28 58 35 58 C42 58 46 51 46 42" stroke-linecap="round"/>
+        <path d="M35 33 C31 33 29 37 29 42 C29 47 31 51 35 51 C39 51 41 47 41 42 C41 37 39 33 35 33" stroke-linecap="round"/>
+        <path d="M65 42 C65 22 55 5 35 5" stroke-linecap="round"/>
+        <path d="M58 42 C58 26 50 12 35 12" stroke-linecap="round"/>
+    </svg>
+    <span style="display:flex;flex-direction:column;line-height:1.1;">
+        <span style="font-size:14px;"><span style="font-weight:300;color:#666666;">officially</span><span style="font-weight:600;color:#1a1a1a;">human</span></span>
+        <span style="font-size:24px;font-weight:700;color:#1a1a1a;margin-top:-2px;">.art</span>
+    </span>
+</a>
+            <nav>
+                <a href="/">Home</a>
+                <a href="register.html">For Creators</a>
+                <a href="verify.html">Verify</a>
+                <div class="auth-area" id="auth-area" data-state="loading">
+                    <button type="button" class="auth-btn auth-login-btn" id="auth-login-toggle">Log In</button>
+                    <span class="auth-user-name" id="auth-user-name"></span>
+                    <button type="button" class="auth-btn auth-signout-btn" id="auth-signout-btn">Sign Out</button>
+                    <div class="auth-dropdown" id="auth-dropdown">
+                        <h3>Sign In</h3>
+                        <div class="auth-error" id="auth-error"></div>
+                        <form id="auth-login-form">
+                            <div class="auth-field">
+                                <label for="auth-email">Email</label>
+                                <input type="email" id="auth-email" required autocomplete="email">
+                            </div>
+                            <div class="auth-field">
+                                <label for="auth-password">Password</label>
+                                <input type="password" id="auth-password" required autocomplete="current-password">
+                            </div>
+                            <button type="submit" class="auth-submit-btn" id="auth-submit-btn">Sign In</button>
+                        </form>
+                        <div class="auth-footer">
+                            Don't have an account? <a href="register.html">Create one</a>
+                        </div>
+                    </div>
+                </div>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <div class="container">
+            <h1>Get in Touch</h1>
+            <p>Have a question, suggestion, or just want to say hello? We'd love to hear from you.</p>
+
+            <div id="contact-alert" style="display:none;padding:0.75rem 1rem;border-radius:6px;margin-bottom:1rem;font-size:0.9rem;"></div>
+            <form id="contact-form" style="background:#fff;border:1px solid rgba(26,26,26,0.1);border-radius:10px;padding:1.5rem;margin-top:1rem;">
+                <div style="margin-bottom:1rem;">
+                    <label for="contact-name" style="display:block;font-size:0.85rem;font-weight:600;color:var(--ink-light);margin-bottom:0.3rem;">Your Name <span style="color:var(--error);">*</span></label>
+                    <input type="text" id="contact-name" required style="width:100%;padding:0.6rem 0.85rem;border:1.5px solid rgba(26,26,26,0.18);border-radius:6px;font-family:inherit;font-size:0.9rem;background:var(--cream-dark);">
+                </div>
+                <div style="margin-bottom:1rem;">
+                    <label for="contact-email" style="display:block;font-size:0.85rem;font-weight:600;color:var(--ink-light);margin-bottom:0.3rem;">Email Address <span style="color:var(--error);">*</span></label>
+                    <input type="email" id="contact-email" required style="width:100%;padding:0.6rem 0.85rem;border:1.5px solid rgba(26,26,26,0.18);border-radius:6px;font-family:inherit;font-size:0.9rem;background:var(--cream-dark);">
+                </div>
+                <div style="margin-bottom:1.25rem;">
+                    <label for="contact-message" style="display:block;font-size:0.85rem;font-weight:600;color:var(--ink-light);margin-bottom:0.3rem;">Message <span style="color:var(--error);">*</span></label>
+                    <textarea id="contact-message" rows="5" required style="width:100%;padding:0.6rem 0.85rem;border:1.5px solid rgba(26,26,26,0.18);border-radius:6px;font-family:inherit;font-size:0.9rem;background:var(--cream-dark);resize:vertical;"></textarea>
+                </div>
+                <button type="submit" id="contact-submit-btn" style="padding:0.65rem 1.5rem;background:var(--navy);color:#f5f0e8;border:none;border-radius:6px;font-family:inherit;font-size:0.9rem;font-weight:600;cursor:pointer;">Send Message</button>
+            </form>
+        </div>
+    </main>
+
+    <footer>
+        <div class="container">
+            <a href="/" class="logo" style="display:flex;align-items:center;gap:10px;text-decoration:none;font-family:'Inter',sans-serif;">
+    <svg viewBox="0 0 70 85" fill="none" stroke="currentColor" stroke-width="1.2" xmlns="http://www.w3.org/2000/svg" style="width:28px;height:34px;color:#1a1a1a;">
+        <path d="M35 5 C15 5 5 22 5 42 C5 62 15 80 35 80" stroke-linecap="round"/>
+        <path d="M35 12 C20 12 12 26 12 42 C12 58 20 72 35 72 C50 72 58 58 58 42" stroke-linecap="round"/>
+        <path d="M35 19 C24 19 18 30 18 42 C18 54 24 65 35 65 C46 65 52 54 52 42 C52 30 46 19 35 19" stroke-linecap="round"/>
+        <path d="M35 26 C28 26 24 33 24 42 C24 51 28 58 35 58 C42 58 46 51 46 42" stroke-linecap="round"/>
+        <path d="M35 33 C31 33 29 37 29 42 C29 47 31 51 35 51 C39 51 41 47 41 42 C41 37 39 33 35 33" stroke-linecap="round"/>
+        <path d="M65 42 C65 22 55 5 35 5" stroke-linecap="round"/>
+        <path d="M58 42 C58 26 50 12 35 12" stroke-linecap="round"/>
+    </svg>
+    <span style="display:flex;flex-direction:column;line-height:1.1;">
+        <span style="font-size:11px;"><span style="font-weight:300;color:#666666;">officially</span><span style="font-weight:600;color:#1a1a1a;">human</span></span>
+        <span style="font-size:18px;font-weight:700;color:#1a1a1a;margin-top:-2px;">.art</span>
+    </span>
+</a>
+            <div style="margin-top:0.75rem;">
+                <a href="/">Home</a>
+                <a href="register.html">For Creators</a>
+                <a href="verify.html">Verify</a>
+                <a href="contact.html">Contact</a>
+                <a href="legal.html">Legal</a>
+            </div>
+            <p style="margin-top:0.75rem;">&copy; 2026 Officially Human Art</p>
+        </div>
+    </footer>
+    <script>
+    (function() {
+        'use strict';
+        var csrfToken = null;
+        var authArea = document.getElementById('auth-area');
+        var authDropdown = document.getElementById('auth-dropdown');
+        var authLoginToggle = document.getElementById('auth-login-toggle');
+        var authSignoutBtn = document.getElementById('auth-signout-btn');
+        var authUserName = document.getElementById('auth-user-name');
+        var authLoginForm = document.getElementById('auth-login-form');
+        var authError = document.getElementById('auth-error');
+        var authSubmitBtn = document.getElementById('auth-submit-btn');
+
+        function showAuthError(msg) {
+            authError.textContent = msg;
+            authError.classList.add('show');
+        }
+        function hideAuthError() { authError.classList.remove('show'); }
+
+        fetch('/api/csrf-token', { credentials: 'same-origin' })
+            .then(function(r) { return r.json(); })
+            .then(function(d) { if (d.token) csrfToken = d.token; })
+            .catch(function() {});
+
+        fetch('/api/artist/me', { credentials: 'same-origin' })
+            .then(function(r) { return r.json(); })
+            .then(function(d) {
+                if (d.success && d.artist) {
+                    authUserName.textContent = d.artist.name;
+                    authArea.setAttribute('data-state', 'signed-in');
+                } else {
+                    authArea.setAttribute('data-state', 'signed-out');
+                }
+            })
+            .catch(function() { authArea.setAttribute('data-state', 'signed-out'); });
+
+        authLoginToggle.addEventListener('click', function(e) {
+            e.stopPropagation();
+            authDropdown.classList.toggle('open');
+            hideAuthError();
+        });
+
+        document.addEventListener('click', function(e) {
+            if (!authDropdown.contains(e.target) && e.target !== authLoginToggle) {
+                authDropdown.classList.remove('open');
+            }
+        });
+
+        authLoginForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            hideAuthError();
+            var email = document.getElementById('auth-email').value.trim();
+            var password = document.getElementById('auth-password').value;
+            if (!email || !password) return;
+
+            authSubmitBtn.disabled = true;
+            authSubmitBtn.textContent = 'Signing in...';
+
+            var headers = { 'Content-Type': 'application/json' };
+            if (csrfToken) headers['X-CSRF-Token'] = csrfToken;
+
+            fetch('/api/artist/login', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: headers,
+                body: JSON.stringify({ email: email, password: password })
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(d) {
+                if (d.success && d.artist) {
+                    authUserName.textContent = d.artist.name;
+                    authArea.setAttribute('data-state', 'signed-in');
+                    authDropdown.classList.remove('open');
+                    authLoginForm.reset();
+                } else {
+                    showAuthError(d.message || 'Invalid email or password.');
+                }
+            })
+            .catch(function() { showAuthError('Connection error. Please try again.'); })
+            .finally(function() {
+                authSubmitBtn.disabled = false;
+                authSubmitBtn.textContent = 'Sign In';
+            });
+        });
+
+        authSignoutBtn.addEventListener('click', function() {
+            var headers = {};
+            if (csrfToken) headers['X-CSRF-Token'] = csrfToken;
+            fetch('/api/artist/logout', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: headers
+            }).catch(function() {});
+            authArea.setAttribute('data-state', 'signed-out');
+            authUserName.textContent = '';
+        });
+
+        // Contact form
+        var contactForm = document.getElementById('contact-form');
+        contactForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            var alert = document.getElementById('contact-alert');
+            var btn = document.getElementById('contact-submit-btn');
+            btn.disabled = true;
+            btn.textContent = 'Sending...';
+            alert.style.display = 'none';
+
+            var headers = { 'Content-Type': 'application/json' };
+            if (csrfToken) headers['X-CSRF-Token'] = csrfToken;
+
+            fetch('/api/contact', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: headers,
+                body: JSON.stringify({
+                    name: document.getElementById('contact-name').value.trim(),
+                    email: document.getElementById('contact-email').value.trim(),
+                    message: document.getElementById('contact-message').value.trim()
+                })
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(d) {
+                alert.style.display = 'block';
+                if (d.success) {
+                    alert.style.background = '#d1fae5';
+                    alert.style.color = '#065f46';
+                    alert.style.borderColor = '#6ee7b7';
+                    alert.textContent = d.message || 'Message sent. We\'ll get back to you soon.';
+                    contactForm.reset();
+                } else {
+                    alert.style.background = 'rgba(197,48,48,0.08)';
+                    alert.style.color = '#c53030';
+                    alert.style.borderColor = '#c53030';
+                    alert.textContent = d.message || 'Failed to send. Please try again.';
+                }
+            })
+            .catch(function() {
+                alert.style.display = 'block';
+                alert.style.background = 'rgba(197,48,48,0.08)';
+                alert.style.color = '#c53030';
+                alert.textContent = 'Connection error. Please try again.';
+            })
+            .finally(function() {
+                btn.disabled = false;
+                btn.textContent = 'Send Message';
+            });
+        });
+    })();
+    </script>
+</body>
+</html>
