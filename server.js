@@ -2101,10 +2101,21 @@ app.post('/api/stripe/create-subscription', doubleCsrfProtection, requireAuth, a
 
         stmts.updateArtistStripeSubscription.run(subscription.id, artistId);
 
+        // If subscription is already active (e.g. free trial, £0 invoice), no payment needed
+        const paymentIntent = subscription.latest_invoice && subscription.latest_invoice.payment_intent;
+        if (subscription.status === 'active') {
+            stmts.updateArtistPlan.run('creator', 'active', null, artistId);
+            return res.json({ success: true, subscriptionId: subscription.id, active: true });
+        }
+
+        if (!paymentIntent) {
+            return res.status(500).json({ success: false, message: 'Subscription created but no payment required. Please refresh.' });
+        }
+
         res.json({
             success: true,
             subscriptionId: subscription.id,
-            clientSecret: subscription.latest_invoice.payment_intent.client_secret
+            clientSecret: paymentIntent.client_secret
         });
     } catch (err) {
         console.error('Stripe create subscription error:', err.type, err.message, err.code);

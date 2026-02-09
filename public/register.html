@@ -3048,8 +3048,21 @@
             })
             .then(function(res) { return res.json(); })
             .then(function(data) {
-                if (!data.success || !data.clientSecret) {
+                if (!data.success) {
                     throw new Error(data.message || 'Failed to create subscription');
+                }
+                // Subscription already active (e.g. free trial) — no payment needed
+                if (data.active) {
+                    closePaymentModal();
+                    currentPlan.plan = 'creator';
+                    currentPlan.planStatus = 'active';
+                    currentPlan.certificateLimit = null;
+                    updatePlanUI();
+                    loadPlanInfo(currentArtist.id);
+                    return null;
+                }
+                if (!data.clientSecret) {
+                    throw new Error('No payment secret returned. Please refresh and try again.');
                 }
                 return stripeInstance.confirmCardPayment(data.clientSecret, {
                     payment_method: {
@@ -3059,6 +3072,7 @@
                 });
             })
             .then(function(result) {
+                if (!result) return; // Already handled (active subscription)
                 if (result.error) {
                     throw new Error(result.error.message);
                 }
