@@ -1230,6 +1230,7 @@
                         </form>
                         <div class="auth-footer">
                             Don't have an account? <a href="register.html">Create one</a>
+                            <br><a href="register.html#forgot" style="color:var(--ink-faint);">Forgot password?</a>
                         </div>
                     </div>
                 </div>
@@ -3248,10 +3249,15 @@
             });
         });
 
-        // Handle hash — #login or #reset=TOKEN
+        // Handle hash — #login, #forgot, or #reset=TOKEN
         var hash = window.location.hash;
         if (hash === '#login') {
             switchTab('signin');
+        } else if (hash === '#forgot') {
+            switchTab('signin');
+            signinForm.style.display = 'none';
+            forgotWrap.style.display = 'block';
+            resetWrap.style.display = 'none';
         } else if (hash.indexOf('#reset=') === 0) {
             switchTab('signin');
             signinForm.style.display = 'none';
