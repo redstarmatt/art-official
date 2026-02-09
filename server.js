@@ -2074,6 +2074,7 @@ app.get('/api/artist/plan/:artistId', requireAuth, (req, res) => {
 // Create Stripe subscription (session-protected)
 app.post('/api/stripe/create-subscription', doubleCsrfProtection, requireAuth, async (req, res) => {
     if (!stripe) return res.status(400).json({ success: false, message: 'Payments not configured' });
+    if (!process.env.STRIPE_CREATOR_PRICE_ID) return res.status(400).json({ success: false, message: 'Creator price not configured. Set STRIPE_CREATOR_PRICE_ID.' });
 
     const artistId = req.session.artistId;
     const artist = rowToArtist(stmts.getArtistById.get(artistId));
@@ -2107,7 +2108,8 @@ app.post('/api/stripe/create-subscription', doubleCsrfProtection, requireAuth, a
         });
     } catch (err) {
         console.error('Stripe create subscription error:', err.message);
-        res.status(500).json({ success: false, message: 'Failed to create subscription. Please try again or contact support.' });
+        const detail = err.type === 'StripeInvalidRequestError' ? (' ' + err.message) : '';
+        res.status(500).json({ success: false, message: 'Failed to create subscription.' + detail });
     }
 });
 
