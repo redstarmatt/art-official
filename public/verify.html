@@ -1025,7 +1025,7 @@
             .cert-details { grid-template-columns: 1fr; gap: 1rem; }
             .cert-body { padding: 1.75rem; }
             .cert-header { padding: 2rem 1.5rem 1.5rem; }
-            .cert-tier-header { flex-direction: column; align-items: flex-start; }
+            .cert-tier-header { flex-direction: column; align-items: center; text-align: center; }
             .share-buttons { flex-direction: column; }
             .share-btn { width: 100%; justify-content: center; }
             .embed-panel { padding: 1rem; }
@@ -1247,6 +1247,10 @@
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
                                     Copy Verification Link
                                 </button>
+                                <button type="button" class="share-btn" id="email-share-btn">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                                    Share by Email
+                                </button>
                                 <button type="button" class="share-btn" id="embed-toggle-btn">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
                                     Get Embed Code
@@ -1325,6 +1329,7 @@
                 <a href="/">Home</a>
                 <a href="register.html">For Artists</a>
                 <a href="verify.html">Verify</a>
+                <a href="contact.html">Contact</a>
                 <a href="legal.html">Legal</a>
             </div>
             <p>&copy; 2026 Officially Human Art</p>
@@ -1702,6 +1707,21 @@
             if (!currentCertId) return;
             var url = location.origin + '/verify.html?code=' + encodeURIComponent(currentCertId);
             copyText(url, this);
+        });
+
+        // ---- Share: Email ----
+        $('email-share-btn').addEventListener('click', function() {
+            if (!currentCertId) return;
+            var url = location.origin + '/verify.html?code=' + encodeURIComponent(currentCertId);
+            var title = $('display-title').textContent || 'Artwork';
+            var artist = $('display-artist').textContent || '';
+            var subject = encodeURIComponent('Officially Human Art Certificate: ' + title);
+            var body = encodeURIComponent(
+                'Check out this certified human-made artwork:\n\n' +
+                title + ' by ' + artist + '\n\n' +
+                'Verify the certificate: ' + url
+            );
+            window.open('mailto:?subject=' + subject + '&body=' + body, '_self');
         });
 
         // ---- Share: Embed Toggle ----

@@ -1066,13 +1066,8 @@ async function sendCertificateEmail(artist, certificate, host) {
     const tierColor = tierColors[certificate.tier] || tierColors.bronze;
     const tierLabel = certificate.tierLabel || certificate.tier || 'Bronze';
 
-    let qrDataUrl = '';
-    try {
-        qrDataUrl = await QRCode.toDataURL(verifyUrl, {
-            width: 200, margin: 2,
-            color: { dark: '#2a2520', light: '#f5f0e8' }
-        });
-    } catch (e) { /* skip QR if it fails */ }
+    const baseUrl = process.env.BASE_URL || host;
+    const qrImageUrl = `${baseUrl}/api/qr/${certificate.id}/image`;
 
     const html = `
     <div style="font-family:'Helvetica Neue',Arial,sans-serif;max-width:600px;margin:0 auto;background:#f5f0e8;">
@@ -1091,7 +1086,7 @@ async function sendCertificateEmail(artist, certificate, host) {
                     <p style="color:#a0aec0;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.1em;margin:0 0 0.2rem;">Certificate ID</p>
                     <p style="font-family:monospace;color:#1a1a1a;font-size:1.1rem;font-weight:600;margin:0;letter-spacing:0.08em;">${certificate.id}</p>
                 </div>
-                ${qrDataUrl ? `<div style="margin-top:1.25rem;text-align:center;"><img src="${qrDataUrl}" alt="QR Code" style="width:150px;height:150px;border-radius:8px;"></div>` : ''}
+                <div style="margin-top:1.25rem;text-align:center;"><img src="${qrImageUrl}" alt="QR Code" width="150" height="150" style="width:150px;height:150px;border-radius:8px;"></div>
             </div>
             <div style="text-align:center;margin-bottom:1.5rem;">
                 <a href="${verifyUrl}" style="display:inline-block;padding:0.75rem 2rem;background:#2a2520;color:#fafafa;text-decoration:none;border-radius:6px;font-weight:600;font-size:0.9rem;">View Your Certificate</a>
@@ -1886,7 +1881,7 @@ app.get('/api/verify/:certificateId', (req, res) => {
     }
 });
 
-// Generate QR code for certificate
+// Generate QR code for certificate (JSON response)
 app.get('/api/qr/:certificateId', async (req, res) => {
     const { certificateId } = req.params;
     const verifyUrl = `${req.protocol}://${req.get('host')}/verify.html?code=${certificateId}`;
@@ -1899,6 +1894,25 @@ app.get('/api/qr/:certificateId', async (req, res) => {
         res.json({ success: true, qrCode: qrDataUrl, verifyUrl });
     } catch (err) {
         res.status(500).json({ success: false, message: 'Failed to generate QR code' });
+    }
+});
+
+// Generate QR code as PNG image (for use in emails and external embeds)
+app.get('/api/qr/:certificateId/image', async (req, res) => {
+    const { certificateId } = req.params;
+    const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
+    const verifyUrl = `${baseUrl}/verify.html?code=${certificateId}`;
+
+    try {
+        const buffer = await QRCode.toBuffer(verifyUrl, {
+            width: 200, margin: 2,
+            color: { dark: '#2a2520', light: '#f5f0e8' }
+        });
+        res.set('Content-Type', 'image/png');
+        res.set('Cache-Control', 'public, max-age=86400');
+        res.send(buffer);
+    } catch (err) {
+        res.status(500).send('Failed to generate QR code');
     }
 });
 
