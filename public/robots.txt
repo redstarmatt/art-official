@@ -4,4 +4,4 @@ Disallow: /api/
 Disallow: /admin.html
 Disallow: /uploads/
 
-Sitemap: https://officallyhuman.art/sitemap.xml
+Sitemap: https://officiallyhuman.art/sitemap.xml

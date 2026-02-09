@@ -797,16 +797,29 @@ function getBlogPosts() {
         .sort((a, b) => new Date(b.date) - new Date(a.date));
 }
 
-function blogTemplate(title, content, { description, isIndex, keywords } = {}) {
+function blogTemplate(title, content, { description, isIndex, keywords, slug } = {}) {
     const esc = s => (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    const baseUrl = process.env.BASE_URL || 'https://officiallyhuman.art';
+    const pageUrl = slug ? `${baseUrl}/blog/${slug}` : `${baseUrl}/blog`;
+    const fullTitle = `${esc(title)} — Officially Human Art`;
+    const desc = esc(description || title);
     return `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>${esc(title)} — Officially Human Art</title>
-    <meta name="description" content="${esc(description || title)}">
+    <title>${fullTitle}</title>
+    <meta name="description" content="${desc}">
 ${keywords ? `    <meta name="keywords" content="${esc(keywords)}">` : ''}
+    <link rel="canonical" href="${pageUrl}">
+    <meta property="og:type" content="${slug ? 'article' : 'website'}">
+    <meta property="og:title" content="${fullTitle}">
+    <meta property="og:description" content="${desc}">
+    <meta property="og:url" content="${pageUrl}">
+    <meta property="og:site_name" content="Officially Human Art">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="${fullTitle}">
+    <meta name="twitter:description" content="${desc}">
     <link rel="stylesheet" href="/fonts/fonts.css">
     <link rel="icon" type="image/svg+xml" href="/fingerprint-favicon.svg">
     <style>
@@ -920,7 +933,7 @@ app.get('/blog/:slug', (req, res) => {
             <h1>${post.title}</h1>
             <div class="blog-meta">${dateStr}${post.author ? ' &middot; ' + post.author : ''}</div>
             ${renderBlogBody(post.body)}`;
-        res.send(blogTemplate(post.title, content, { description: post.excerpt, keywords: post.keywords }));
+        res.send(blogTemplate(post.title, content, { description: post.excerpt, keywords: post.keywords, slug: req.params.slug }));
     } catch {
         res.status(500).send(blogTemplate('Error', '<h1>Error loading post</h1><p><a href="/blog">Back to blog</a></p>'));
     }
