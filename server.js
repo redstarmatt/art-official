@@ -2107,9 +2107,8 @@ app.post('/api/stripe/create-subscription', doubleCsrfProtection, requireAuth, a
             clientSecret: subscription.latest_invoice.payment_intent.client_secret
         });
     } catch (err) {
-        console.error('Stripe create subscription error:', err.message);
-        const detail = err.type === 'StripeInvalidRequestError' ? (' ' + err.message) : '';
-        res.status(500).json({ success: false, message: 'Failed to create subscription.' + detail });
+        console.error('Stripe create subscription error:', err.type, err.message, err.code);
+        res.status(500).json({ success: false, message: 'Subscription error: ' + (err.message || 'Unknown error') });
     }
 });
 
