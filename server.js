@@ -808,6 +808,9 @@ function blogTemplate(title, content, { description, isIndex, keywords, slug } =
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-N1HS7C9R8N"></script>
+    <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-N1HS7C9R8N');</script>
     <title>${fullTitle}</title>
     <meta name="description" content="${desc}">
 ${keywords ? `    <meta name="keywords" content="${esc(keywords)}">` : ''}
