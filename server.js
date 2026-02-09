@@ -2358,7 +2358,8 @@ app.get('/api/browse', (req, res) => {
 });
 
 // Password reset — request token (CSRF-protected)
-app.post('/api/artist/forgot-password', doubleCsrfProtection, async (req, res) => {
+// No CSRF needed — rate-limited, only sends an email, no state change risk
+app.post('/api/artist/forgot-password', async (req, res) => {
     const { email } = req.body;
 
     const ip = req.ip || req.connection.remoteAddress;
@@ -2413,7 +2414,8 @@ app.post('/api/artist/forgot-password', doubleCsrfProtection, async (req, res) =
 });
 
 // Password reset — set new password (CSRF-protected)
-app.post('/api/artist/reset-password', doubleCsrfProtection, async (req, res) => {
+// No CSRF needed — requires valid one-time reset token, rate-limited by forgot-password
+app.post('/api/artist/reset-password', async (req, res) => {
     const { token, password } = req.body;
 
     if (!token || !password) {

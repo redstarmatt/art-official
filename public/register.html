@@ -1230,7 +1230,7 @@
                         </form>
                         <div class="auth-footer">
                             Don't have an account? <a href="register.html">Create one</a>
-                            <br><a href="register.html#forgot" style="color:var(--ink-faint);">Forgot password?</a>
+                            <br><a href="#" id="auth-forgot-link" style="color:var(--ink-faint);">Forgot password?</a>
                         </div>
                     </div>
                 </div>
@@ -3316,6 +3316,28 @@
                 authDropdown.classList.remove('open');
             }
         });
+
+        // Forgot password link in header dropdown — switch to forgot form directly
+        var authForgotLink = document.getElementById('auth-forgot-link');
+        if (authForgotLink) {
+            authForgotLink.addEventListener('click', function(e) {
+                e.preventDefault();
+                authDropdown.classList.remove('open');
+                // Use exposed page functions to switch to forgot password view
+                var signinForm = document.getElementById('signin-form');
+                var forgotWrap = document.getElementById('forgot-form-wrap');
+                var resetWrap = document.getElementById('reset-form-wrap');
+                // Switch to signin tab first
+                var tabBtns = document.querySelectorAll('.tab-btn');
+                var tabPanels = document.querySelectorAll('.tab-panel');
+                tabBtns.forEach(function(t) { t.classList.toggle('active', t.dataset.tab === 'signin'); });
+                tabPanels.forEach(function(p) { p.classList.toggle('active', p.id === 'panel-signin'); });
+                // Show forgot form
+                if (signinForm) signinForm.style.display = 'none';
+                if (forgotWrap) forgotWrap.style.display = 'block';
+                if (resetWrap) resetWrap.style.display = 'none';
+            });
+        }
 
         authLoginForm.addEventListener('submit', function(e) {
             e.preventDefault();
