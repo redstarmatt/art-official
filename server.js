@@ -2613,6 +2613,67 @@ app.post('/api/takedown', doubleCsrfProtection, (req, res) => {
 });
 
 // Contact form
+// Share certificate by email
+app.post('/api/certificate/share', doubleCsrfProtection, (req, res) => {
+    const { recipientEmail, certificateId, senderName } = req.body;
+
+    if (!recipientEmail || !certificateId) {
+        return res.status(400).json({ success: false, message: 'Recipient email and certificate ID are required.' });
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(recipientEmail)) {
+        return res.status(400).json({ success: false, message: 'Please enter a valid email address.' });
+    }
+
+    const ip = req.ip || req.connection.remoteAddress;
+    if (!rateLimit('share:' + ip, 10, 3600000)) {
+        return res.status(429).json({ success: false, message: 'Too many shares. Please try again later.' });
+    }
+
+    const cert = stmts.getCertById.get(certificateId);
+    if (!cert) {
+        return res.status(404).json({ success: false, message: 'Certificate not found.' });
+    }
+
+    const artist = rowToArtist(stmts.getArtistById.get(cert.artist_id));
+    const host = `${req.protocol}://${req.get('host')}`;
+    const verifyUrl = `${host}/verify.html?code=${encodeURIComponent(certificateId)}`;
+    const fromName = senderName ? senderName.trim() : 'Someone';
+
+    if (emailEnabled) {
+        sendEmail({
+            from: process.env.SMTP_FROM || process.env.SMTP_USER,
+            to: recipientEmail.trim(),
+            subject: `${fromName} shared a certificate: ${cert.title}`,
+            html: `
+            <div style="font-family:'Helvetica Neue',Arial,sans-serif;max-width:600px;margin:0 auto;background:#f5f0e8;">
+                <div style="background:#2a2520;color:#fafafa;padding:2rem;text-align:center;">
+                    <div style="font-family:Inter,-apple-system,sans-serif;font-size:1.2rem;font-weight:600;"><span style="font-weight:300;color:#999;">officially</span><span style="font-weight:600;">human</span><span style="font-weight:700;font-size:1.5rem;">.art</span></div>
+                </div>
+                <div style="padding:2rem;">
+                    <p style="color:#666666;margin-bottom:1.5rem;">${fromName} wanted to share this certified human-made artwork with you:</p>
+                    <div style="background:white;border:1px solid #e2ddd5;border-radius:8px;padding:1.5rem;margin-bottom:1.5rem;">
+                        <h2 style="margin:0 0 0.5rem;color:#2a2520;font-size:1.1rem;">${cert.title}</h2>
+                        <p style="margin:0 0 0.25rem;color:#666;font-size:0.9rem;">by ${artist ? artist.name : 'Unknown Artist'}</p>
+                        <p style="margin:0;color:#888;font-size:0.82rem;">Certificate: ${certificateId}</p>
+                    </div>
+                    <div style="text-align:center;margin-bottom:1.5rem;">
+                        <a href="${verifyUrl}" style="display:inline-block;padding:0.75rem 2rem;background:#2a2520;color:#fafafa;text-decoration:none;border-radius:6px;font-weight:600;font-size:0.9rem;">View Certificate</a>
+                    </div>
+                    <p style="color:#888888;font-size:0.82rem;">This certificate verifies that the artwork was registered as authentically human-made on Officially Human Art.</p>
+                </div>
+                <div style="background:#ebe5da;padding:1.25rem;text-align:center;font-size:0.75rem;color:#a0aec0;border-top:1px solid rgba(26,26,26,0.06);">
+                    <p style="margin:0;">&copy; 2026 Officially Human Art</p>
+                </div>
+            </div>`
+        }).catch(err => console.error('Failed to send share email:', err.message));
+    }
+
+    audit('certificate_shared', { certificateId, recipientEmail: recipientEmail.trim() });
+    res.json({ success: true, message: 'Certificate shared successfully.' });
+});
+
 app.post('/api/contact', doubleCsrfProtection, (req, res) => {
     const { name, email, message } = req.body;
 

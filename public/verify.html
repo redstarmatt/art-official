@@ -1250,7 +1250,7 @@
                                 </button>
                                 <button type="button" class="share-btn" id="email-share-btn">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-                                    Share by Email
+                                    Email Certificate
                                 </button>
                                 <button type="button" class="share-btn" id="embed-toggle-btn">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
@@ -1282,6 +1282,26 @@
                                         <code id="embed-md-code"></code>
                                         <button type="button" class="copy-btn" data-target="embed-md-code">Copy</button>
                                     </div>
+                                </div>
+                            </div>
+
+                            <!-- Email Share Panel -->
+                            <div class="embed-panel" id="email-share-panel">
+                                <div class="embed-panel-title">Email This Certificate</div>
+                                <div class="embed-section">
+                                    <div style="margin-bottom:0.75rem;">
+                                        <label for="share-recipient" style="display:block;font-size:0.82rem;font-weight:600;color:#2a2520;margin-bottom:0.3rem;">Recipient's Email</label>
+                                        <input type="email" id="share-recipient" placeholder="friend@example.com" style="width:100%;padding:0.5rem 0.75rem;border:1px solid #d4cfc7;border-radius:6px;font-size:0.88rem;font-family:inherit;box-sizing:border-box;">
+                                    </div>
+                                    <div style="margin-bottom:0.75rem;">
+                                        <label for="share-sender-name" style="display:block;font-size:0.82rem;font-weight:600;color:#2a2520;margin-bottom:0.3rem;">Your Name <span style="font-weight:400;color:#999;">(optional)</span></label>
+                                        <input type="text" id="share-sender-name" placeholder="Your name" style="width:100%;padding:0.5rem 0.75rem;border:1px solid #d4cfc7;border-radius:6px;font-size:0.88rem;font-family:inherit;box-sizing:border-box;">
+                                    </div>
+                                    <button type="button" class="share-btn" id="send-share-email-btn" style="width:100%;justify-content:center;background:#2a2520;color:#fafafa;border-color:#2a2520;">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                                        Send
+                                    </button>
+                                    <div id="share-email-feedback" style="display:none;margin-top:0.75rem;padding:0.6rem 0.75rem;border-radius:6px;font-size:0.85rem;text-align:center;"></div>
                                 </div>
                             </div>
                         </div>
@@ -1684,8 +1704,10 @@
                 notesSection.style.display = 'none';
             }
 
-            // Reset embed panel and report panel
+            // Reset share panels and report panel
             $('embed-panel').classList.remove('show');
+            $('email-share-panel').classList.remove('show');
+            $('share-email-feedback').style.display = 'none';
             $('report-panel').style.display = 'none';
 
             // Load timeline
@@ -1712,17 +1734,69 @@
 
         // ---- Share: Email ----
         $('email-share-btn').addEventListener('click', function() {
+            var panel = $('email-share-panel');
+            if (panel.classList.contains('show')) {
+                panel.classList.remove('show');
+                return;
+            }
+            $('embed-panel').classList.remove('show');
+            panel.classList.add('show');
+            $('share-recipient').focus();
+        });
+
+        $('send-share-email-btn').addEventListener('click', function() {
             if (!currentCertId) return;
-            var url = location.origin + '/verify.html?code=' + encodeURIComponent(currentCertId);
-            var title = $('display-title').textContent || 'Artwork';
-            var artist = $('display-artist').textContent || '';
-            var subject = encodeURIComponent('Officially Human Art Certificate: ' + title);
-            var body = encodeURIComponent(
-                'Check out this certified human-made artwork:\n\n' +
-                title + ' by ' + artist + '\n\n' +
-                'Verify the certificate: ' + url
-            );
-            window.open('mailto:?subject=' + subject + '&body=' + body, '_self');
+            var recipient = $('share-recipient').value.trim();
+            var senderName = $('share-sender-name').value.trim();
+            var feedback = $('share-email-feedback');
+            var btn = this;
+
+            if (!recipient) {
+                feedback.textContent = 'Please enter a recipient email.';
+                feedback.style.display = 'block';
+                feedback.style.background = 'rgba(200,50,50,0.08)';
+                feedback.style.color = '#c53030';
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = 'Sending...';
+            feedback.style.display = 'none';
+
+            var headers = { 'Content-Type': 'application/json' };
+            if (typeof authCsrf !== 'undefined' && authCsrf) headers['X-CSRF-Token'] = authCsrf;
+
+            fetch('/api/certificate/share', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: headers,
+                body: JSON.stringify({ recipientEmail: recipient, certificateId: currentCertId, senderName: senderName || undefined })
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(d) {
+                feedback.textContent = d.success ? 'Certificate sent!' : (d.message || 'Failed to send.');
+                feedback.style.display = 'block';
+                feedback.style.background = d.success ? 'rgba(39,103,73,0.08)' : 'rgba(200,50,50,0.08)';
+                feedback.style.color = d.success ? '#276749' : '#c53030';
+                if (d.success) {
+                    $('share-recipient').value = '';
+                    $('share-sender-name').value = '';
+                    setTimeout(function() {
+                        $('email-share-panel').classList.remove('show');
+                        feedback.style.display = 'none';
+                    }, 2000);
+                }
+            })
+            .catch(function() {
+                feedback.textContent = 'Connection error. Please try again.';
+                feedback.style.display = 'block';
+                feedback.style.background = 'rgba(200,50,50,0.08)';
+                feedback.style.color = '#c53030';
+            })
+            .finally(function() {
+                btn.disabled = false;
+                btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> Send';
+            });
         });
 
         // ---- Share: Embed Toggle ----

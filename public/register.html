@@ -1787,7 +1787,12 @@
                 var un = $('auth-user-name');
                 if (un) un.textContent = artist.name;
             }
-            switchTab('submit');
+            // If #dashboard hash, go straight to certificates; otherwise default to submit
+            if (window.location.hash === '#dashboard') {
+                switchTab('dashboard');
+            } else {
+                switchTab('submit');
+            }
         }
 
         function signOut() {
@@ -3112,7 +3117,7 @@
         function fetchCsrfToken() {
             return fetch('/api/csrf-token', { credentials: 'same-origin' })
                 .then(function(res) { return res.json(); })
-                .then(function(data) { if (data.token) csrfToken = data.token; });
+                .then(function(data) { if (data.token) { csrfToken = data.token; window._pageCsrfToken = data.token; } });
         }
 
         function restoreSession() {
@@ -3270,7 +3275,6 @@
     <script>
     (function() {
         'use strict';
-        var authCsrf = null;
         var authArea = document.getElementById('auth-area');
         var authDropdown = document.getElementById('auth-dropdown');
         var authLoginToggle = document.getElementById('auth-login-toggle');
@@ -3280,16 +3284,14 @@
         var authError = document.getElementById('auth-error');
         var authSubmitBtn = document.getElementById('auth-submit-btn');
 
+        // Reuse CSRF token from the main page script to avoid double-fetch invalidation
+        function getAuthCsrf() { return window._pageCsrfToken || null; }
+
         function showAuthError(msg) {
             authError.textContent = msg;
             authError.classList.add('show');
         }
         function hideAuthError() { authError.classList.remove('show'); }
-
-        fetch('/api/csrf-token', { credentials: 'same-origin' })
-            .then(function(r) { return r.json(); })
-            .then(function(d) { if (d.token) authCsrf = d.token; })
-            .catch(function() {});
 
         fetch('/api/artist/me', { credentials: 'same-origin' })
             .then(function(r) { return r.json(); })
@@ -3326,7 +3328,7 @@
             authSubmitBtn.textContent = 'Signing in...';
 
             var headers = { 'Content-Type': 'application/json' };
-            if (authCsrf) headers['X-CSRF-Token'] = authCsrf;
+            var ac = getAuthCsrf(); if (ac) headers['X-CSRF-Token'] = ac;
 
             fetch('/api/artist/login', {
                 method: 'POST',
@@ -3363,7 +3365,7 @@
                 window._pageSignOut();
             } else {
                 var headers = {};
-                if (authCsrf) headers['X-CSRF-Token'] = authCsrf;
+                var ac = getAuthCsrf(); if (ac) headers['X-CSRF-Token'] = ac;
                 fetch('/api/artist/logout', {
                     method: 'POST',
                     credentials: 'same-origin',
