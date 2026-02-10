@@ -435,12 +435,12 @@ app.use(helmet({
     contentSecurityPolicy: {
         directives: {
             defaultSrc: ["'self'"],
-            scriptSrc: ["'self'", "'unsafe-inline'", "https://js.stripe.com"],
+            scriptSrc: ["'self'", "'unsafe-inline'", "https://js.stripe.com", "https://www.googletagmanager.com"],
             styleSrc: ["'self'", "'unsafe-inline'"],
             imgSrc: ["'self'", "data:", "blob:"],
             mediaSrc: ["'self'"],
             fontSrc: ["'self'"],
-            connectSrc: ["'self'", "https://api.stripe.com"],
+            connectSrc: ["'self'", "https://api.stripe.com", "https://www.google-analytics.com", "https://www.googletagmanager.com", "https://analytics.google.com"],
             frameSrc: ["'self'", "https://js.stripe.com"],
             objectSrc: ["'none'"],
             upgradeInsecureRequests: []
