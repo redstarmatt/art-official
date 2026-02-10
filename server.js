@@ -437,10 +437,10 @@ app.use(helmet({
             defaultSrc: ["'self'"],
             scriptSrc: ["'self'", "'unsafe-inline'", "https://js.stripe.com", "https://www.googletagmanager.com"],
             styleSrc: ["'self'", "'unsafe-inline'"],
-            imgSrc: ["'self'", "data:", "blob:"],
+            imgSrc: ["'self'", "data:", "blob:", "https://www.google-analytics.com", "https://*.google-analytics.com", "https://*.googletagmanager.com"],
             mediaSrc: ["'self'"],
             fontSrc: ["'self'"],
-            connectSrc: ["'self'", "https://api.stripe.com", "https://www.google-analytics.com", "https://www.googletagmanager.com", "https://analytics.google.com"],
+            connectSrc: ["'self'", "https://api.stripe.com", "https://www.google-analytics.com", "https://*.google-analytics.com", "https://*.googletagmanager.com", "https://analytics.google.com"],
             frameSrc: ["'self'", "https://js.stripe.com"],
             objectSrc: ["'none'"],
             upgradeInsecureRequests: []
