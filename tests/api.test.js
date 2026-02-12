@@ -145,7 +145,7 @@ describe('Officially Human Art API', () => {
         const { app, db } = require('../server');
 
         // Clear rate limits from previous test runs
-        db.prepare('DELETE FROM rate_limits').run();
+        await db.supabase.from('rate_limits').delete().neq('key', '');
 
         await new Promise((resolve) => {
             server = app.listen(0, () => {
@@ -161,7 +161,9 @@ describe('Officially Human Art API', () => {
         if (server) {
             await new Promise((resolve) => server.close(resolve));
         }
-        // Force exit to prevent dangling timers from keeping process open
+        // Close pg pool and force exit to prevent dangling timers
+        const { pgPool } = require('../server');
+        if (pgPool) await pgPool.end().catch(() => {});
         setTimeout(() => process.exit(0), 200);
     });
 
@@ -294,7 +296,7 @@ describe('Officially Human Art API', () => {
 
         it('allows after email verification', async () => {
             const { db } = require('../server');
-            db.prepare('UPDATE artists SET email_verified = 1 WHERE email = ?').run(TEST_EMAIL);
+            await db.supabase.from('artists').update({ email_verified: true }).eq('email', TEST_EMAIL);
 
             const pngBuf = Buffer.from(
                 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==',

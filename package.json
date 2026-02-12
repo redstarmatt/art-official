@@ -14,9 +14,9 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@supabase/supabase-js": "^2.95.3",
     "bcryptjs": "^3.0.3",
-    "better-sqlite3": "^12.6.2",
-    "better-sqlite3-session-store": "^0.1.0",
+    "connect-pg-simple": "^10.0.0",
     "cookie-parser": "^1.4.7",
     "csrf-csrf": "^4.0.3",
     "express": "^5.2.1",
@@ -24,6 +24,7 @@
     "helmet": "^8.1.0",
     "multer": "^2.0.2",
     "nodemailer": "^7.0.13",
+    "pg": "^8.18.0",
     "qrcode": "^1.5.4",
     "stripe": "^20.3.0",
     "uuid": "^9.0.0"
