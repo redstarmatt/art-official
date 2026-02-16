@@ -454,6 +454,67 @@ app.get('/verify.html', async (req, res, next) => {
     res.send(html);
 });
 
+// Profile page with dynamic SEO meta tags
+app.get('/profile.html', (req, res, next) => {
+    const slug = req.query.artist;
+    if (!slug) return next();
+
+    const artist = rowToArtist(stmts.getArtistBySlug.get(slug));
+    if (!artist || artist.banned) return next();
+
+    const host = `${req.protocol}://${req.get('host')}`;
+    const profileUrl = `${host}/profile.html?artist=${encodeURIComponent(artist.slug)}`;
+    const escAttr = s => (s || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+
+    const certRows = stmts.getCertsByArtist.all(artist.id);
+    const certificates = certRows.map(rowToCert).filter(c => c.status === 'verified');
+    const certCount = certificates.length;
+
+    // Test/debug profiles get noindex to save crawl budget
+    const isTestProfile = /test|debug|curl-/i.test(artist.slug) || /test|debug/i.test(artist.name);
+    const description = artist.bio
+        ? escAttr(artist.bio.substring(0, 160))
+        : `${escAttr(artist.name)} has ${certCount} certified human-made work${certCount !== 1 ? 's' : ''} on Officially Human Art.`;
+
+    const metaTags = [];
+    if (isTestProfile) {
+        metaTags.push(`<meta name="robots" content="noindex, nofollow">`);
+    }
+    metaTags.push(`<meta name="description" content="${description}">`);
+    metaTags.push(`<link rel="canonical" href="${escAttr(profileUrl)}">`);
+    metaTags.push(`<meta property="og:type" content="profile">`);
+    metaTags.push(`<meta property="og:title" content="${escAttr(artist.name)} — Officially Human Art">`);
+    metaTags.push(`<meta property="og:description" content="${description}">`);
+    metaTags.push(`<meta property="og:url" content="${escAttr(profileUrl)}">`);
+    metaTags.push(`<meta name="twitter:card" content="summary">`);
+    metaTags.push(`<meta name="twitter:title" content="${escAttr(artist.name)} — Officially Human Art">`);
+    metaTags.push(`<meta name="twitter:description" content="${description}">`);
+
+    // Structured data (Person schema)
+    const structuredData = {
+        '@context': 'https://schema.org',
+        '@type': 'ProfilePage',
+        mainEntity: {
+            '@type': 'Person',
+            name: artist.name,
+            url: profileUrl
+        }
+    };
+    if (artist.bio) structuredData.mainEntity.description = artist.bio;
+    if (artist.location) structuredData.mainEntity.address = { '@type': 'PostalAddress', addressLocality: artist.location };
+    if (artist.portfolio) structuredData.mainEntity.sameAs = [artist.portfolio];
+    metaTags.push(`<script type="application/ld+json">${JSON.stringify(structuredData)}</script>`);
+
+    let html = fs.readFileSync(path.join(__dirname, 'public', 'profile.html'), 'utf8');
+    html = html.replace('</head>', '    ' + metaTags.join('\n    ') + '\n</head>');
+    html = html.replace(
+        '<title>Artist Profile — Officially Human Art</title>',
+        `<title>${escAttr(artist.name)} — Officially Human Art</title>`
+    );
+
+    res.send(html);
+});
+
 // Dynamic sitemap
 app.get('/sitemap.xml', async (req, res) => {
     const host = `${req.protocol}://${req.get('host')}`;
@@ -462,8 +523,8 @@ app.get('/sitemap.xml', async (req, res) => {
     const staticPages = [
         { url: '/', changefreq: 'weekly', priority: '1.0' },
         { url: '/verify.html', changefreq: 'monthly', priority: '0.8' },
-
         { url: '/register.html', changefreq: 'monthly', priority: '0.7' },
+        { url: '/contact.html', changefreq: 'monthly', priority: '0.5' },
         { url: '/legal.html', changefreq: 'yearly', priority: '0.3' },
     ];
 
@@ -476,9 +537,10 @@ app.get('/sitemap.xml', async (req, res) => {
         });
     }
 
-    // Add artist profiles
+    // Add artist profiles (exclude test/debug profiles)
     const artists = await db.getAllArtistSlugs();
     artists.forEach(a => {
+        if (/test|debug|curl-/i.test(a.slug)) return;
         staticPages.push({ url: `/profile.html?artist=${encodeURIComponent(a.slug)}`, changefreq: 'weekly', priority: '0.5' });
     });
 
@@ -655,6 +717,10 @@ app.get('/blog/:slug', (req, res) => {
         res.status(500).send(blogTemplate('Error', '<h1>Error loading post</h1><p><a href="/blog">Back to blog</a></p>'));
     }
 });
+
+// 301 redirects for removed/moved pages (SEO: avoid 404s in search console)
+app.get('/certificates', (req, res) => res.redirect(301, '/'));
+app.get('/browse.html', (req, res) => res.redirect(301, '/'));
 
 app.use(express.static('public'));
 
